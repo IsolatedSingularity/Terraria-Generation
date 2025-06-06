@@ -1,4 +1,4 @@
-# Terraria World Generation: Mathematical Modeling & Visualization
+# Terraria World Generation
 ![Corruption Spread Animation](Code+/terraria_corruption_evolution_focus.gif)
 
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/)
