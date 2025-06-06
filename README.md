@@ -1,13 +1,18 @@
 # Terraria World Generation: Mathematical Modeling & Visualization
+![Corruption Spread Animation](Code+/terraria_corruption_evolution_focus.gif)
 
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/)
 [![Matplotlib](https://img.shields.io/badge/matplotlib-3.5%2B-orange.svg)](https://matplotlib.org/)
 [![NumPy](https://img.shields.io/badge/numpy-1.21%2B-green.svg)](https://numpy.org/)
 [![Seaborn](https://img.shields.io/badge/seaborn-0.11%2B-lightblue.svg)](https://seaborn.pydata.org/)
 
+## Description
+
+This repository provides mathematical models and animations for Terraria's world generation. It demonstrates terrain formation, biome distribution, and corruption spreading through detailed analysis and visualization.
+
 A comprehensive mathematical analysis and visualization suite for Terraria's sophisticated world generation algorithms. This project implements and visualizes the **103-pass world generation system** using advanced computational techniques including Perlin noise, cellular automata, and statistical modeling.
 
-## 🌍 Project Overview
+## Project Overview
 
 Terraria employs one of the most complex procedural world generation systems in gaming, utilizing a **103-pass algorithmic approach** that combines:
 
@@ -31,7 +36,7 @@ Where:
 - `frequency`: Base noise frequency
 - `octaves`: Number of noise layers
 
-## 📊 Visualizations & Analysis
+## Visualizations & Analysis
 
 ### 1. Surface Terrain Generation
 
@@ -141,7 +146,7 @@ def generate_structure_positions(structure_type):
 
 Density heatmap showing structure concentration patterns across world layers.
 
-## 🎬 Dynamic World Evolution
+## Dynamic World Evolution
 
 ### Complete World Generation Process
 
@@ -179,7 +184,7 @@ C_t(i,j) & \text{otherwise}
 
 Detailed analysis of evil biome spreading mechanics with mathematical modeling of infection rates and barrier effects.
 
-## 🔬 Advanced Features
+## Advanced Features
 
 ### Hardmode Transformation Analysis
 
@@ -211,7 +216,7 @@ def analyze_generation_statistics(num_samples=150):
     return calculate_correlation_matrix(stats)
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -246,7 +251,7 @@ python Code+/terraria_corruption_evolution.py
 python Code+/terraria_complete_world_evolution.py
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 ├── Code/                           # Basic analysis modules
@@ -262,7 +267,7 @@ python Code+/terraria_complete_world_evolution.py
 └── References/                     # Research documentation
 ```
 
-## 🧮 Mathematical Models
+## Mathematical Models
 
 ### 1. Terrain Generation
 
@@ -298,7 +303,7 @@ where:
 - `θ`: Conversion threshold
 - `k`: Sigmoid steepness parameter
 
-## 📈 Results & Validation
+## Results & Validation
 
 ### Statistical Analysis
 
@@ -314,7 +319,7 @@ Our mathematical models achieve:
 - **87% correlation** with actual Terraria generation patterns
 - **Statistical significance** (p < 0.001) for all major relationships
 
-## 🔍 Technical Implementation
+## Technical Implementation
 
 ### Color Palettes
 
@@ -346,7 +351,7 @@ def create_world_evolution_animation(save_path):
     anim.save(save_path, writer='pillow', dpi=150)
 ```
 
-## 🎯 Key Insights
+## Key Insights
 
 1. **Biome Placement**: Follows strict mathematical constraints ensuring balanced world generation
 2. **Cave Systems**: Use fractal-like structures with depth-dependent density variations
@@ -354,21 +359,21 @@ def create_world_evolution_animation(save_path):
 4. **Structure Placement**: Follows spatial point processes with minimum distance constraints
 5. **Evolution Dynamics**: Evil biome spreading shows classic cellular automata behavior
 
-## 🔬 Future Research
+## Future Research
 
 - **3D noise implementation** for height variation in caves
 - **Machine learning models** for predicting optimal world layouts
 - **Real-time generation** optimization using GPU acceleration
 - **Comparative analysis** with other procedural generation systems
 
-## 📚 References
+## References
 
 - **GPT Research.txt**: Comprehensive analysis of Terraria's 103-pass system
 - **Perplexity Research.txt**: Technical implementation details and optimization strategies
 - Perlin, K. (1985). "An Image Synthesizer". Computer Graphics, 19(3), 287-296
 - Worley, S. (1996). "A Cellular Texture Basis Function". SIGGRAPH '96
 
-## 🤝 Contributing
+## Contributing
 
 This project serves as an educational resource for understanding complex procedural generation systems. Contributions are welcome for:
 - Additional biome analysis
@@ -376,7 +381,7 @@ This project serves as an educational resource for understanding complex procedu
 - Extended mathematical models
 - Alternative visualization techniques
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
@@ -385,3 +390,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 > **Note**: This implementation is for educational and research purposes. All Terraria-related content and mechanics are owned by Re-Logic.
 
 *Generated using advanced mathematical modeling and scientific visualization techniques.*
+
+## Tags
+
+procedural-generation, terraria, python, animation, visualization, cellular-automata
