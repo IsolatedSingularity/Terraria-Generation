@@ -30,7 +30,7 @@ Jenova/
 References/worldgen-research.md
 
 .env
-audit-*.md
+audit/
 
 # Tool caches
 .pytest_cache/
