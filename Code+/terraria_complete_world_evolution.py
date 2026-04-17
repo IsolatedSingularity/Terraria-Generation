@@ -1,706 +1,569 @@
 """
-Terraria Complete World Evolution Master Animation
-=================================================
+Terraria Complete World Evolution
+=================================
 
-This module creates comprehensive animations showing the complete evolution of a Terraria world
-from initial generation through corruption/crimson spread and hardmode transformations.
+Full lifecycle visualization from empty grid to late Hardmode.
+Seven phases: terrain, caves, biomes, pre-HM ores, V-pattern,
+altar smashing, and infection spread.
 
-Animation Features:
-1. Complete World Generation Process (103-pass system)
-2. Corruption/Crimson Evolution Over Time
-3. Hardmode Transformation with V-Pattern
-4. Altar Breaking and New Ore Generation
-5. Environmental Changes and Biome Interactions
+Grid is 840x240 (1/10 scale of Large world 8400x2400).
+Layer depths scaled proportionally from decompiled constants.
 
-Mathematical Models:
-- Multi-octave Perlin noise for terrain generation
-- Cellular automata for corruption spreading
-- Poisson distribution for structure placement
-- Exponential decay for ore generation probability
-- Sigmoid functions for biome transitions
-
-Author: Generated for Terraria Generation Analysis
-Date: 2024
+All algorithms use Engine.algorithms (TileRunner diamond-brush,
+cellularAutomataSmooth). Ore counts use int(area * 6E-05) formula.
+Infection spread uses tile update cycle rates with 4-tile air gap blocking.
 """
+
+import sys
+import os
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-from matplotlib.animation import FuncAnimation, PillowWriter
-from matplotlib.colors import ListedColormap, LinearSegmentedColormap
-import matplotlib.patches as patches
-from typing import Tuple, List, Dict, Optional
-import warnings
-warnings.filterwarnings('ignore')
+from typing import List, Tuple
 
-# Set visualization preferences
-plt.style.use('dark_background')
-sns.set_palette("rocket")
+from Engine.algorithms import (
+    tileRunner, cellularAutomataSmooth,
+    AIR, STONE, DIRT, MUD, GRASS, SAND, ASH, HELLSTONE,
+    COBALT, PALLADIUM, MYTHRIL, ORICHALCUM,
+    ADAMANTITE, TITANIUM, CHLOROPHYTE,
+    EBONSTONE, CRIMSTONE, CORRUPT_DIRT, CRIMSON_DIRT,
+    COPPER, TIN, IRON, LEAD, SILVER, TUNGSTEN, GOLD, PLATINUM,
+)
+from Engine.constants import (
+    LARGE, LayerDepths, StructureQuotas, OreConfig,
+    INFECTION_GAP_TILES, SURFACE_UPDATE_RATE, UNDERGROUND_UPDATE_RATE,
+)
 
-class TerrariaCompleteEvolution:
-    """Complete Terraria world evolution simulation system."""
-    
-    def __init__(self, width: int = 420, height: int = 120):
-        """
-        Initialize the complete evolution system.
-        
-        Args:
-            width: World width in blocks
-            height: World height in blocks
-        """
-        self.width = width
-        self.height = height
-        self.surface_level = height // 4
-        self.cavern_level = int(height * 0.6)
-        self.hell_level = int(height * 0.85)
-        
-        # Block type constants
-        self.AIR = 0
-        self.DIRT = 1
-        self.STONE = 2
-        self.GRASS = 3
-        self.SAND = 4
-        self.CORRUPTION = 5
-        self.CRIMSON = 6
-        self.HALLOW = 7
-        self.JUNGLE = 8
-        self.SNOW = 9
-        self.DUNGEON = 10
-        self.HELLSTONE = 11
-        self.COBALT = 12
-        self.MYTHRIL = 13
-        self.ADAMANTITE = 14
-        self.CHLOROPHYTE = 15
-        
-        # Color mapping for enhanced visualization
-        self.colors = {
-            self.AIR: '#000011',          # Deep space blue
-            self.DIRT: '#8B4513',         # Saddle brown
-            self.STONE: '#696969',        # Dim gray
-            self.GRASS: '#228B22',        # Forest green
-            self.SAND: '#F4A460',         # Sandy brown
-            self.CORRUPTION: '#9370DB',   # Medium purple
-            self.CRIMSON: '#DC143C',      # Crimson
-            self.HALLOW: '#FFB6C1',       # Light pink
-            self.JUNGLE: '#006400',       # Dark green
-            self.SNOW: '#F0F8FF',         # Alice blue
-            self.DUNGEON: '#2F4F4F',      # Dark slate gray
-            self.HELLSTONE: '#FF4500',    # Orange red
-            self.COBALT: '#0047AB',       # Cobalt blue
-            self.MYTHRIL: '#00FF7F',      # Spring green
-            self.ADAMANTITE: '#FF0000',   # Red
-            self.CHLOROPHYTE: '#7FFF00'   # Chartreuse
-        }
-        
-        # Initialize world states
-        self.world_history = []
-        self.current_world = None
-        self.corruption_centers = []
-        self.hardmode_active = False
-        
-    def generate_base_world(self) -> np.ndarray:
-        """
-        Generate the initial world using Terraria's generation algorithm.
-        
-        Returns:
-            2D numpy array representing the world
-        """
-        world = np.full((self.height, self.width), self.AIR, dtype=int)
-        
-        # Generate surface terrain using multi-octave noise
-        x_coords = np.arange(self.width)
-        surface_heights = []
-        
-        for x in x_coords:
-            # Multi-octave Perlin noise simulation
-            height = self.surface_level
-            height += 30 * np.sin(x * 0.01) * np.cos(x * 0.005)
-            height += 15 * np.sin(x * 0.03) * np.cos(x * 0.02)
-            height += 8 * np.sin(x * 0.08) * np.cos(x * 0.05)
-            height = int(np.clip(height, 20, self.surface_level + 40))
-            surface_heights.append(height)
-        
-        # Fill terrain layers
-        for x in range(self.width):
-            surface_y = surface_heights[x]
-            
-            # Determine biome type
-            biome = self._determine_biome(x)
-            
-            for y in range(surface_y, self.height):
-                if y == surface_y and biome != self.SAND:
-                    world[y, x] = self.GRASS
-                elif y < surface_y + 50:  # Dirt layer
-                    world[y, x] = self.DIRT if biome != self.SAND else self.SAND
-                elif y < self.hell_level:  # Stone layer
-                    world[y, x] = self.STONE
-                else:  # Hell layer
-                    world[y, x] = self.HELLSTONE
-            
-            # Apply biome-specific surface
-            if biome == self.JUNGLE:
-                world[surface_y, x] = self.JUNGLE
-            elif biome == self.SNOW:
-                world[surface_y, x] = self.SNOW
-        
-        # Carve caves using random walk algorithm
-        self._carve_cave_systems(world)
-        
-        # Place major structures
-        self._place_initial_structures(world)
-        
-        return world
-    
-    def _determine_biome(self, x: int) -> int:
-        """Determine biome type based on world position."""
-        pos = x / self.width
-        
-        if pos < 0.15:  # Snow biome
-            return self.SNOW
-        elif 0.75 < pos < 0.9:  # Jungle biome
-            return self.JUNGLE
-        elif pos > 0.9:  # Desert
-            return self.SAND
-        else:  # Forest/normal
-            return self.DIRT
-    
-    def _carve_cave_systems(self, world: np.ndarray) -> None:
-        """Carve cave systems using TileRunner algorithm."""
-        # Surface caves
-        for _ in range(100):
-            start_x = np.random.randint(0, self.width)
-            start_y = np.random.randint(self.surface_level, self.cavern_level)
-            self._carve_tunnel(world, start_x, start_y, strength=8, steps=30)
-        
+# ---------------------------------------------------------------------------
+# Local tile IDs not in Engine import
+# ---------------------------------------------------------------------------
+PEARLSTONE = 117
+HALLOW_DIRT = 118
+LIFE_CRYSTAL = 200
+
+# ---------------------------------------------------------------------------
+# RGB color table for rendering sparse tile IDs to an image
+# ---------------------------------------------------------------------------
+TILE_COLORS: dict[int, Tuple[int, int, int]] = {
+    AIR: (0, 0, 17),
+    DIRT: (139, 69, 19),
+    STONE: (105, 105, 105),
+    GRASS: (34, 139, 34),
+    SAND: (244, 164, 96),
+    ASH: (50, 50, 50),
+    HELLSTONE: (255, 69, 0),
+    MUD: (85, 60, 30),
+    CORRUPT_DIRT: (147, 112, 219),
+    EBONSTONE: (80, 40, 120),
+    CRIMSON_DIRT: (220, 20, 60),
+    CRIMSTONE: (139, 0, 0),
+    PEARLSTONE: (255, 182, 193),
+    HALLOW_DIRT: (255, 200, 220),
+    COPPER: (184, 115, 51),
+    TIN: (165, 165, 140),
+    IRON: (160, 160, 160),
+    LEAD: (80, 80, 120),
+    SILVER: (210, 210, 210),
+    TUNGSTEN: (140, 180, 140),
+    GOLD: (255, 215, 0),
+    PLATINUM: (220, 230, 240),
+    COBALT: (0, 71, 171),
+    PALLADIUM: (245, 130, 48),
+    MYTHRIL: (0, 255, 127),
+    ORICHALCUM: (255, 105, 180),
+    ADAMANTITE: (255, 0, 0),
+    TITANIUM: (128, 128, 128),
+    CHLOROPHYTE: (127, 255, 0),
+    LIFE_CRYSTAL: (255, 0, 128),
+}
+
+# ---------------------------------------------------------------------------
+# Infection spread lookup tables
+# ---------------------------------------------------------------------------
+CORRUPTION_TILES = frozenset({CORRUPT_DIRT, EBONSTONE})
+CRIMSON_TILES = frozenset({CRIMSON_DIRT, CRIMSTONE})
+HALLOW_TILES = frozenset({PEARLSTONE, HALLOW_DIRT})
+
+CORRUPTION_CONVERT: dict[int, int] = {
+    STONE: EBONSTONE, DIRT: CORRUPT_DIRT, GRASS: CORRUPT_DIRT, SAND: EBONSTONE,
+}
+CRIMSON_CONVERT: dict[int, int] = {
+    STONE: CRIMSTONE, DIRT: CRIMSON_DIRT, GRASS: CRIMSON_DIRT, SAND: CRIMSTONE,
+}
+HALLOW_CONVERT: dict[int, int] = {
+    STONE: PEARLSTONE, DIRT: HALLOW_DIRT, GRASS: HALLOW_DIRT, SAND: PEARLSTONE,
+}
+
+ORE_NAME_TO_ID: dict[str, int] = {
+    "Copper": COPPER, "Tin": TIN, "Iron": IRON, "Lead": LEAD,
+    "Silver": SILVER, "Tungsten": TUNGSTEN, "Gold": GOLD, "Platinum": PLATINUM,
+    "Cobalt": COBALT, "Palladium": PALLADIUM,
+    "Mythril": MYTHRIL, "Orichalcum": ORICHALCUM,
+    "Adamantite": ADAMANTITE, "Titanium": TITANIUM,
+}
+
+
+# ---------------------------------------------------------------------------
+# Rendering helper
+# ---------------------------------------------------------------------------
+def renderGrid(grid: np.ndarray) -> np.ndarray:
+    """Convert a tile-ID grid to an (H, W, 3) uint8 RGB image."""
+    h, w = grid.shape
+    img = np.zeros((h, w, 3), dtype=np.uint8)
+    for tileId, color in TILE_COLORS.items():
+        mask = grid == tileId
+        img[mask] = color
+    return img
+
+
+# ===================================================================
+# Main simulation class
+# ===================================================================
+class TerrariaCompleteWorldEvolution:
+    """Complete lifecycle simulation from empty grid to late Hardmode."""
+
+    def __init__(self, worldWidth: int = 840, worldHeight: int = 240, seed: int = 42):
+        self.worldWidth = worldWidth
+        self.worldHeight = worldHeight
+        self.seed = seed
+        self.rng = np.random.default_rng(seed)
+
+        # Scale factors relative to Large world (8400x2400)
+        self.xScale = worldWidth / LARGE.width
+        self.yScale = worldHeight / LARGE.height
+        self.scaledArea = worldWidth * worldHeight
+        self.areaRatio = self.scaledArea / LARGE.area
+
+        # Layer depths (scaled from Large constants)
+        layers = LayerDepths.forLarge()
+        self.worldSurface: int = int(layers.worldSurface * self.yScale)
+        self.rockLayer: int = int(layers.rockLayer * self.yScale)
+        self.hellLayer: int = int(layers.hellLayer * self.yScale)
+
+        # Structure quotas (scaled)
+        quotas = StructureQuotas.forLarge()
+        self.lifeCrystalsMax: int = max(1, int(quotas.lifeCrystalsMax * self.areaRatio))
+
+        # Ore loop count: int(area * 6E-05)
+        self.oreLoopCount: int = OreConfig.loopCount(self.scaledArea)
+
+        # Evil type selection
+        self.evilType: str = self.rng.choice(["corruption", "crimson"])
+
+        # Pre-HM ore selection (one from each alternating pair)
+        self.preHmOres: List[str] = []
+        for pair in OreConfig.PRE_HARDMODE_PAIRS:
+            self.preHmOres.append(pair[int(self.rng.integers(0, 2))])
+
+        # HM ore selection (one from each tier)
+        self.hmOres: List[str] = []
+        for tier in OreConfig.HARDMODE_TIERS:
+            self.hmOres.append(tier[int(self.rng.integers(0, 2))])
+
+        # World grid
+        self.grid: np.ndarray = np.full(
+            (worldHeight, worldWidth), AIR, dtype=np.int32
+        )
+
+        # Surface height profile (populated by buildTerrain)
+        self.surfaceY: np.ndarray = np.full(worldWidth, self.worldSurface, dtype=np.int32)
+
+        # Evil biome extents (populated by paintBiomes)
+        self.evilXStart: int = 0
+        self.evilXEnd: int = 0
+
+        # Snapshot history for visualization
+        self.history: List[Tuple[str, np.ndarray]] = []
+
+    # ------------------------------------------------------------------
+    # Phase 1: Base terrain
+    # ------------------------------------------------------------------
+    def buildTerrain(self) -> None:
+        """Empty world -> layered terrain with surface noise."""
+        w, h = self.worldWidth, self.worldHeight
+
+        # Surface height profile with multi-octave sine noise
+        x = np.arange(w, dtype=np.float64)
+        surface = np.full(w, float(self.worldSurface))
+        surface += 3.0 * np.sin(x * 0.015)
+        surface += 2.0 * np.sin(x * 0.04) * np.cos(x * 0.025)
+        surface += 1.0 * np.sin(x * 0.10)
+        self.surfaceY = np.clip(surface, 10, self.worldSurface + 12).astype(np.int32)
+
+        # Vectorized layer fill using full-shape boolean masks
+        rowIdx = np.broadcast_to(np.arange(h)[:, None], (h, w))
+        surfIdx = np.broadcast_to(self.surfaceY[None, :], (h, w))
+
+        self.grid[rowIdx == surfIdx] = GRASS
+        self.grid[(rowIdx > surfIdx) & (rowIdx < self.rockLayer)] = DIRT
+        self.grid[(rowIdx >= self.rockLayer) & (rowIdx < self.hellLayer)] = STONE
+        self.grid[rowIdx >= self.hellLayer] = ASH
+
+        # Scatter hellstone within the hell layer
+        hellMask = self.grid == ASH
+        hellCoords = np.argwhere(hellMask)
+        nHellstone = int(hellCoords.shape[0] * 0.15)
+        if nHellstone > 0:
+            idxs = self.rng.choice(hellCoords.shape[0], size=nHellstone, replace=False)
+            self.grid[hellCoords[idxs, 0], hellCoords[idxs, 1]] = HELLSTONE
+
+    # ------------------------------------------------------------------
+    # Phase 2: Cave systems
+    # ------------------------------------------------------------------
+    def carveCaves(self) -> None:
+        """TileRunner random-walk caves + cellularAutomataSmooth."""
+        w = self.worldWidth
+
+        # Surface-level caves
+        nSurface = max(4, int(80 * self.xScale))
+        for _ in range(nSurface):
+            cx = int(self.rng.integers(10, w - 10))
+            cy = int(self.rng.integers(self.worldSurface + 5, self.rockLayer))
+            strength = float(self.rng.uniform(3.0, 6.0))
+            steps = int(self.rng.integers(15, 40))
+            tileRunner(self.grid, cx, cy, strength, steps, tileType=-1)
+
         # Deep caves
-        for _ in range(50):
-            start_x = np.random.randint(0, self.width)
-            start_y = np.random.randint(self.cavern_level, self.hell_level)
-            self._carve_tunnel(world, start_x, start_y, strength=12, steps=50)
-    
-    def _carve_tunnel(self, world: np.ndarray, start_x: int, start_y: int, 
-                     strength: int, steps: int) -> None:
-        """Carve a single tunnel using random walk."""
-        x, y = start_x, start_y
-        
-        for _ in range(steps):
-            # Random walk direction
-            dx = np.random.randint(-2, 3)
-            dy = np.random.randint(-1, 2)
-            
-            x = np.clip(x + dx, 0, self.width - 1)
-            y = np.clip(y + dy, 0, self.height - 1)
-            
-            # Carve circular area
-            for i in range(-strength//2, strength//2 + 1):
-                for j in range(-strength//2, strength//2 + 1):
-                    if i*i + j*j <= (strength//2)**2:
-                        nx, ny = x + i, y + j
-                        if 0 <= nx < self.width and 0 <= ny < self.height:
-                            if world[ny, nx] != self.AIR:
-                                world[ny, nx] = self.AIR
-            
-            strength = max(3, int(strength * 0.99))
-    
-    def _place_initial_structures(self, world: np.ndarray) -> None:
-        """Place initial structures like dungeon."""
-        # Simple dungeon placement
-        dungeon_x = 50 if np.random.choice([True, False]) else self.width - 100
-        dungeon_y = self.surface_level - 20
-        
-        for x in range(dungeon_x, dungeon_x + 50):
-            for y in range(dungeon_y, dungeon_y + 80):
-                if 0 <= x < self.width and 0 <= y < self.height:
-                    world[y, x] = self.DUNGEON
-    
-    def initialize_corruption(self, world: np.ndarray, corruption_type: int = None) -> np.ndarray:
-        """
-        Initialize corruption/crimson infection points.
-        
-        Args:
-            world: Current world state
-            corruption_type: Type of evil biome (CORRUPTION or CRIMSON)
-        
-        Returns:
-            World with initial corruption
-        """
-        if corruption_type is None:
-            corruption_type = np.random.choice([self.CORRUPTION, self.CRIMSON])
-        
-        # Pre-hardmode corruption pockets
-        num_pockets = np.random.randint(3, 6)
-        for _ in range(num_pockets):
-            x = np.random.randint(self.width // 4, 3 * self.width // 4)
-            y = np.random.randint(self.surface_level, self.cavern_level)
-            
-            # Create initial corruption pocket
-            for i in range(-15, 16):
-                for j in range(-10, 11):
-                    nx, ny = x + i, y + j
-                    if 0 <= nx < self.width and 0 <= ny < self.height:
-                        if world[ny, nx] in [self.DIRT, self.STONE, self.GRASS]:
-                            if np.random.random() < 0.7:
-                                world[ny, nx] = corruption_type
-            
-            self.corruption_centers.append((x, y, corruption_type))
-        
-        return world
-    
-    def spread_corruption(self, world: np.ndarray, intensity: float = 0.1) -> np.ndarray:
-        """
-        Spread corruption using cellular automata.
-        
-        Args:
-            world: Current world state
-            intensity: Spreading intensity (0.0 to 1.0)
-        
-        Returns:
-            World with spread corruption
-        """
-        new_world = world.copy()
-        
-        for y in range(1, self.height - 1):
-            for x in range(1, self.width - 1):
-                if world[y, x] in [self.CORRUPTION, self.CRIMSON]:
-                    # Spread to neighboring blocks
-                    for dy in [-1, 0, 1]:
-                        for dx in [-1, 0, 1]:
-                            nx, ny = x + dx, y + dy
-                            if world[ny, nx] in [self.DIRT, self.STONE, self.GRASS, self.SAND]:
-                                if np.random.random() < intensity:
-                                    new_world[ny, nx] = world[y, x]  # Same corruption type
-        
-        return new_world
-    
-    def trigger_hardmode(self, world: np.ndarray) -> np.ndarray:
-        """
-        Trigger hardmode with V-pattern corruption and hallow.
-        
-        Args:
-            world: Current world state
-        
-        Returns:
-            World with hardmode changes
-        """
-        new_world = world.copy()
-        self.hardmode_active = True
-        
-        # Create V-pattern from center
-        center_x = self.width // 2
-        
-        # Left diagonal (corruption/crimson)
-        for i in range(min(center_x, self.hell_level)):
-            x = center_x - i
-            y = i + self.surface_level
-            if 0 <= x < self.width and 0 <= y < self.height:
-                # Create diagonal stripe
-                for offset in range(-5, 6):
-                    if 0 <= x + offset < self.width:
-                        corruption_type = self.corruption_centers[0][2] if self.corruption_centers else self.CORRUPTION
-                        new_world[y, x + offset] = corruption_type
-        
-        # Right diagonal (hallow)
-        for i in range(min(self.width - center_x, self.hell_level)):
-            x = center_x + i
-            y = i + self.surface_level
-            if 0 <= x < self.width and 0 <= y < self.height:
-                # Create diagonal stripe
-                for offset in range(-5, 6):
-                    if 0 <= x + offset < self.width:
-                        new_world[y, x + offset] = self.HALLOW
-        
-        return new_world
-    
-    def generate_hardmode_ores(self, world: np.ndarray) -> np.ndarray:
-        """
-        Generate hardmode ores after altar breaking.
-        
-        Args:
-            world: Current world state
-        
-        Returns:
-            World with hardmode ores
-        """
-        new_world = world.copy()
-        
-        # Cobalt ore (most common)
-        for _ in range(50):
-            x = np.random.randint(0, self.width)
-            y = np.random.randint(self.cavern_level, self.hell_level)
-            
-            if new_world[y, x] == self.STONE:
-                # Create small vein
-                for i in range(-2, 3):
-                    for j in range(-2, 3):
-                        nx, ny = x + i, y + j
-                        if 0 <= nx < self.width and 0 <= ny < self.height:
-                            if new_world[ny, nx] == self.STONE and np.random.random() < 0.6:
-                                new_world[ny, nx] = self.COBALT
-        
-        # Mythril ore (less common)
-        for _ in range(30):
-            x = np.random.randint(0, self.width)
-            y = np.random.randint(self.cavern_level, self.hell_level)
-            
-            if new_world[y, x] == self.STONE:
-                for i in range(-1, 2):
-                    for j in range(-1, 2):
-                        nx, ny = x + i, y + j
-                        if 0 <= nx < self.width and 0 <= ny < self.height:
-                            if new_world[ny, nx] == self.STONE and np.random.random() < 0.5:
-                                new_world[ny, nx] = self.MYTHRIL
-        
-        # Adamantite ore (rare)
-        for _ in range(15):
-            x = np.random.randint(0, self.width)
-            y = np.random.randint(self.hell_level - 50, self.hell_level)
-            
-            if new_world[y, x] == self.STONE:
-                for i in range(-1, 2):
-                    for j in range(-1, 2):
-                        nx, ny = x + i, y + j
-                        if 0 <= nx < self.width and 0 <= ny < self.height:
-                            if new_world[ny, nx] == self.STONE and np.random.random() < 0.4:
-                                new_world[ny, nx] = self.ADAMANTITE
-        
-        # Chlorophyte ore (jungle only, post-mech bosses)
-        jungle_start = int(0.75 * self.width)
-        jungle_end = int(0.9 * self.width)
-        
-        for _ in range(20):
-            x = np.random.randint(jungle_start, jungle_end)
-            y = np.random.randint(self.cavern_level, self.hell_level - 20)
-            
-            if new_world[y, x] == self.STONE:
-                new_world[y, x] = self.CHLOROPHYTE
-        
-        return new_world
-    
-    def create_color_map(self) -> ListedColormap:
-        """Create custom colormap for world visualization."""
-        colors = [self.colors[i] for i in range(len(self.colors))]
-        return ListedColormap(colors)
-    
-    def simulate_complete_evolution(self, total_frames: int = 200) -> List[np.ndarray]:
-        """
-        Simulate the complete world evolution process.
-        
-        Args:
-            total_frames: Total number of animation frames
-        
-        Returns:
-            List of world states for animation
-        """
-        world_states = []
-        
-        # Phase 1: Initial world generation (frames 0-30)
-        print("Generating initial world...")
-        world = self.generate_base_world()
-        for _ in range(30):
-            world_states.append(world.copy())
-        
-        # Phase 2: Initial corruption placement (frames 31-50)
-        print("Placing initial corruption...")
-        world = self.initialize_corruption(world)
-        for _ in range(20):
-            world_states.append(world.copy())
-        
-        # Phase 3: Pre-hardmode corruption spread (frames 51-100)
-        print("Spreading pre-hardmode corruption...")
-        for frame in range(50):
-            intensity = 0.02 + (frame / 50) * 0.05  # Gradually increase spread
-            world = self.spread_corruption(world, intensity)
-            world_states.append(world.copy())
-        
-        # Phase 4: Hardmode trigger (frames 101-120)
-        print("Triggering hardmode...")
-        world = self.trigger_hardmode(world)
-        for _ in range(20):
-            world_states.append(world.copy())
-        
-        # Phase 5: Hardmode ore generation (frames 121-140)
-        print("Generating hardmode ores...")
-        world = self.generate_hardmode_ores(world)
-        for _ in range(20):
-            world_states.append(world.copy())
-        
-        # Phase 6: Intense hardmode corruption spread (frames 141-200)
-        print("Intense hardmode spreading...")
-        for frame in range(60):
-            intensity = 0.08 + (frame / 60) * 0.12  # Much more intense spreading
-            world = self.spread_corruption(world, intensity)
-            world_states.append(world.copy())
-        
-        self.world_history = world_states
-        return world_states
+        nDeep = max(4, int(60 * self.xScale))
+        for _ in range(nDeep):
+            cx = int(self.rng.integers(10, w - 10))
+            cy = int(self.rng.integers(self.rockLayer, self.hellLayer - 5))
+            strength = float(self.rng.uniform(5.0, 10.0))
+            steps = int(self.rng.integers(20, 60))
+            tileRunner(self.grid, cx, cy, strength, steps, tileType=-1)
 
-def create_master_evolution_animation(save_path: str):
-    """
-    Create the master animation showing complete Terraria world evolution.
-    
-    Args:
-        save_path: Path to save the animation
-    """
-    print("Creating Master Terraria World Evolution Animation...")
-    print("=" * 60)
-    
-    # Initialize evolution system
-    evolution = TerrariaCompleteEvolution(width=420, height=120)
-    
-    # Simulate complete evolution
-    world_states = evolution.simulate_complete_evolution(total_frames=200)
-    
-    # Create figure with enhanced styling
-    fig, ax = plt.subplots(figsize=(20, 8))
-    fig.patch.set_facecolor('#000011')
-    ax.set_facecolor('#000011')
-    
-    # Create colormap
-    cmap = evolution.create_color_map()
-    
-    # Animation phase descriptions
-    phase_descriptions = {
-        0: "Phase 1: Initial World Generation\nMulti-octave Perlin noise terrain formation",
-        30: "Phase 2: Pre-Hardmode Corruption Seeding\nSmall infection pockets placed randomly",
-        50: "Phase 3: Natural Corruption Spread\nCellular automata-based expansion",
-        100: "Phase 4: Wall of Flesh Defeated!\nHardmode activated - V-pattern begins",
-        120: "Phase 5: Altar Breaking Consequences\nHardmode ores scattered throughout caverns",
-        140: "Phase 6: Accelerated Evil Spread\nIntense corruption and hallow expansion"
-    }
-    
-    def animate(frame):
-        ax.clear()
-        
-        # Get current world state
-        world = world_states[frame]
-        
-        # Display world
-        im = ax.imshow(world, cmap=cmap, aspect='auto', vmin=0, vmax=15,
-                      extent=[0, evolution.width, evolution.height, 0])
-        
-        # Add layer boundaries
-        ax.axhline(y=evolution.surface_level, color='cyan', linestyle='--', 
-                  alpha=0.5, linewidth=1, label='Surface Level')
-        ax.axhline(y=evolution.cavern_level, color='yellow', linestyle='--', 
-                  alpha=0.5, linewidth=1, label='Cavern Level')
-        ax.axhline(y=evolution.hell_level, color='red', linestyle='--', 
-                  alpha=0.5, linewidth=1, label='Hell Level')
-        
-        # Dynamic title based on phase
-        current_phase = "Phase 6: Accelerated Evil Spread"
-        for phase_frame, description in phase_descriptions.items():
-            if frame >= phase_frame:
-                current_phase = description
-        
-        ax.set_title(f'Terraria Complete World Evolution\n{current_phase}\nFrame: {frame+1}/200', 
-                    fontsize=16, fontweight='bold', color='white', pad=20)
-        
-        # Styling
-        ax.set_xlabel('World X Coordinate (blocks)', fontsize=12, color='white', fontweight='bold')
-        ax.set_ylabel('World Depth (blocks)', fontsize=12, color='white', fontweight='bold')
-        ax.tick_params(colors='white')
-        
-        # Add progress bar
-        progress = frame / len(world_states)
-        progress_bar = patches.Rectangle((10, evolution.height - 15), 
-                                       progress * (evolution.width - 20), 8,
-                                       facecolor='lime', alpha=0.7)
-        ax.add_patch(progress_bar)
-        
-        # Progress bar outline
-        progress_outline = patches.Rectangle((10, evolution.height - 15), 
-                                           evolution.width - 20, 8,
-                                           facecolor='none', edgecolor='white', linewidth=2)
-        ax.add_patch(progress_outline)
-        
-        # Add mathematical formula
-        if frame < 50:
-            formula = r'$h(x) = h_0 + \sum_{i=0}^{n} A_i \sin(f_i x + \phi_i)$'
-            desc = "Multi-octave noise terrain generation"
-        elif frame < 100:
-            formula = r'$C_{t+1}(x,y) = C_t(x,y) + \alpha \sum N(x,y)$'
-            desc = "Cellular automata corruption spread"
-        elif frame < 140:
-            formula = r'$V(x,y) = |x - x_c| + |y - y_c| < W_{stripe}$'
-            desc = "V-pattern hardmode transformation"
+        # Smooth cave edges (organic rounded look)
+        cellularAutomataSmooth(self.grid, iterations=2)
+
+    # ------------------------------------------------------------------
+    # Phase 3: Biome painting
+    # ------------------------------------------------------------------
+    def paintBiomes(self) -> None:
+        """Evil biome, jungle, and desert surface/subsurface painting."""
+        w = self.worldWidth
+
+        # Evil biome on one side
+        evilSide = str(self.rng.choice(["left", "right"]))
+        if evilSide == "left":
+            self.evilXStart, self.evilXEnd = int(w * 0.15), int(w * 0.30)
         else:
-            formula = r'$P_{ore}(d) = \rho_0 e^{-\lambda d} \cdot \beta_{biome}$'
-            desc = "Exponential ore distribution with depth"
-        
-        ax.text(0.02, 0.98, f'{desc}\n{formula}', 
-               transform=ax.transAxes, fontsize=11, color='white',
-               bbox=dict(boxstyle='round,pad=0.5', facecolor='black', alpha=0.8),
-               verticalalignment='top')
-        
-        return [im]
-    
-    # Create animation
-    print("Rendering animation frames...")
-    anim = FuncAnimation(fig, animate, frames=len(world_states), 
-                        interval=150, repeat=True, blit=False)
-    
-    # Save animation
-    print(f"Saving master evolution animation to {save_path}")
-    writer = PillowWriter(fps=8)
-    anim.save(save_path, writer=writer, dpi=150)
-    plt.close(fig)
-    
-    print("Master evolution animation completed!")
+            self.evilXStart, self.evilXEnd = int(w * 0.70), int(w * 0.85)
 
-def create_corruption_focus_animation(save_path: str):
-    """
-    Create a focused animation showing corruption/crimson evolution mechanics.
-    
-    Args:
-        save_path: Path to save the animation
-    """
-    print("Creating Corruption Evolution Focus Animation...")
-    print("=" * 50)
-    
-    # Initialize smaller world for detailed view
-    evolution = TerrariaCompleteEvolution(width=200, height=80)
-    
-    # Generate base world
-    world = evolution.generate_base_world()
-    
-    # Focus on corruption evolution
-    world_states = []
-    
-    # Initialize with heavy corruption
-    world = evolution.initialize_corruption(world, evolution.CORRUPTION)
-    
-    # Simulate detailed corruption spread
-    for frame in range(100):
-        if frame == 50:
-            # Trigger hardmode at midpoint
-            world = evolution.trigger_hardmode(world)
-        
-        # Different spread rates pre/post hardmode
-        intensity = 0.05 if frame < 50 else 0.15
-        world = evolution.spread_corruption(world, intensity)
-        world_states.append(world.copy())
-    
-    # Create figure
-    fig, ax = plt.subplots(figsize=(16, 10))
-    fig.patch.set_facecolor('#1a1a2e')
-    ax.set_facecolor('#1a1a2e')
-    
-    # Custom colormap for corruption focus
-    corruption_colors = [
-        '#000011',  # Air
-        '#8B4513',  # Dirt
-        '#696969',  # Stone
-        '#228B22',  # Grass
-        '#F4A460',  # Sand
-        '#4B0082',  # Corruption (enhanced)
-        '#8B0000',  # Crimson (enhanced)
-        '#FF69B4',  # Hallow (enhanced)
-        '#006400',  # Jungle
-        '#F0F8FF',  # Snow
-        '#2F4F4F',  # Dungeon
-        '#FF4500',  # Hellstone
-        '#0047AB',  # Cobalt
-        '#00FF7F',  # Mythril
-        '#FF0000',  # Adamantite
-        '#7FFF00'   # Chlorophyte
-    ]
-    cmap = ListedColormap(corruption_colors)
-    
-    def animate_corruption(frame):
-        ax.clear()
-        
-        # Get current world state
-        world = world_states[frame]
-        
-        # Display world with enhanced contrast
-        im = ax.imshow(world, cmap=cmap, aspect='auto', vmin=0, vmax=15,
-                      extent=[0, evolution.width, evolution.height, 0])
-        
-        # Dynamic title
-        if frame < 50:
-            phase = "Pre-Hardmode: Natural Corruption Spread"
-            rate = "Spread Rate: 5% per iteration"
+        if self.evilType == "corruption":
+            stoneTile, dirtTile = EBONSTONE, CORRUPT_DIRT
         else:
-            phase = "Hardmode: Accelerated Evil Expansion"
-            rate = "Spread Rate: 15% per iteration + V-Pattern"
-        
-        ax.set_title(f'Terraria Corruption Evolution Mechanics\n{phase}\n{rate}\nFrame: {frame+1}/100', 
-                    fontsize=14, fontweight='bold', color='white', pad=20)
-        
-        # Add cellular automata visualization
-        if frame > 0:
-            prev_world = world_states[frame-1]
-            # Highlight newly corrupted areas
-            diff = (world != prev_world) & (world == evolution.CORRUPTION)
-            if np.any(diff):
-                y_coords, x_coords = np.where(diff)
-                ax.scatter(x_coords, y_coords, c='yellow', s=20, alpha=0.7, marker='*')
-        
-        # Styling
-        ax.set_xlabel('X Coordinate (blocks)', fontsize=12, color='white', fontweight='bold')
-        ax.set_ylabel('Depth (blocks)', fontsize=12, color='white', fontweight='bold')
-        ax.tick_params(colors='white')
-        
-        # Add corruption statistics
-        corruption_count = np.sum(world == evolution.CORRUPTION)
-        hallow_count = np.sum(world == evolution.HALLOW)
-        total_blocks = evolution.width * evolution.height
-        
-        stats_text = (
-            f"Corruption Coverage: {corruption_count/total_blocks*100:.1f}%\n"
-            f"Hallow Coverage: {hallow_count/total_blocks*100:.1f}%\n"
-            f"Total Evil Blocks: {corruption_count + hallow_count}"
-        )
-        
-        ax.text(0.98, 0.98, stats_text,
-               transform=ax.transAxes, fontsize=10, color='white',
-               bbox=dict(boxstyle='round,pad=0.5', facecolor='purple', alpha=0.8),
-               verticalalignment='top', horizontalalignment='right')
-          # Add cellular automata formula
-        formula = (
-            "Cellular Automata Rule:\n"
-            r"$C_{t+1}(i,j) = f(neighbors, threshold)$"
-        )
-        
-        ax.text(0.02, 0.02, formula,
-               transform=ax.transAxes, fontsize=9, color='white',
-               bbox=dict(boxstyle='round,pad=0.5', facecolor='black', alpha=0.8),
-               verticalalignment='bottom')
-        
-        return [im]
-    
-    # Create animation
-    print("Rendering corruption focus animation...")
-    anim = FuncAnimation(fig, animate_corruption, frames=len(world_states), 
-                        interval=200, repeat=True, blit=False)
-    
-    # Save animation
-    print(f"Saving corruption focus animation to {save_path}")
-    writer = PillowWriter(fps=6)
-    anim.save(save_path, writer=writer, dpi=150)
-    plt.close(fig)
-    
-    print("Corruption focus animation completed!")
+            stoneTile, dirtTile = CRIMSTONE, CRIMSON_DIRT
 
+        yMin = max(0, self.worldSurface - 5)
+        yMax = min(self.worldHeight, self.rockLayer + 20)
+        region = self.grid[yMin:yMax, self.evilXStart:self.evilXEnd]
+        region[region == STONE] = stoneTile
+        region[np.isin(region, [DIRT, GRASS])] = dirtTile
+
+        # Jungle on opposite side
+        if evilSide == "left":
+            jStart, jEnd = int(w * 0.70), int(w * 0.90)
+        else:
+            jStart, jEnd = int(w * 0.10), int(w * 0.30)
+
+        jYMin = max(0, self.worldSurface - 2)
+        jYMax = min(self.worldHeight, self.hellLayer)
+        jungleRegion = self.grid[jYMin:jYMax, jStart:jEnd]
+        jungleRegion[np.isin(jungleRegion, [DIRT, GRASS])] = MUD
+
+        # Small desert near center
+        dStart, dEnd = int(w * 0.42), int(w * 0.50)
+        dYMin = max(0, self.worldSurface - 3)
+        dYMax = min(self.worldHeight, self.rockLayer - 10)
+        desertRegion = self.grid[dYMin:dYMax, dStart:dEnd]
+        desertRegion[np.isin(desertRegion, [DIRT, GRASS])] = SAND
+
+    # ------------------------------------------------------------------
+    # Phase 4: Pre-Hardmode placement
+    # ------------------------------------------------------------------
+    def placePreHardmode(self) -> None:
+        """Life Crystals (403 max scaled) + pre-HM ores via TileRunner."""
+        w, h = self.worldWidth, self.worldHeight
+
+        # Life Crystals between rockLayer and hellLayer
+        stoneCoords = np.argwhere(
+            (self.grid == STONE)
+            & (np.arange(h)[:, None] >= self.rockLayer)
+            & (np.arange(h)[:, None] < self.hellLayer - 5)
+        )
+        if stoneCoords.shape[0] > 0:
+            nCrystals = min(self.lifeCrystalsMax, stoneCoords.shape[0])
+            chosen = self.rng.choice(stoneCoords.shape[0], size=nCrystals, replace=False)
+            for idx in chosen:
+                self.grid[stoneCoords[idx, 0], stoneCoords[idx, 1]] = LIFE_CRYSTAL
+
+        # Pre-HM ores: int(area * 6E-05) TileRunner calls per type
+        depthRanges = [
+            (self.worldSurface, self.rockLayer),                      # Copper/Tin
+            (self.worldSurface, self.hellLayer),                      # Iron/Lead
+            (self.rockLayer, self.hellLayer),                         # Silver/Tungsten
+            (min(int(self.rockLayer * 1.2), h - 3), self.hellLayer),  # Gold/Platinum
+        ]
+
+        for i, oreName in enumerate(self.preHmOres):
+            tileId = ORE_NAME_TO_ID[oreName]
+            yMin = max(2, depthRanges[i][0])
+            yMax = min(h - 2, depthRanges[i][1])
+            if yMax <= yMin:
+                continue
+            for _ in range(self.oreLoopCount):
+                ox = int(self.rng.integers(10, w - 10))
+                oy = int(self.rng.integers(yMin, yMax))
+                strength = float(self.rng.uniform(2.0, 4.0))
+                steps = int(self.rng.integers(5, 15))
+                tileRunner(self.grid, ox, oy, strength, steps,
+                           tileType=tileId, overRide=False)
+
+    # ------------------------------------------------------------------
+    # Phase 5: Hardmode V-pattern
+    # ------------------------------------------------------------------
+    def carveVPattern(self) -> None:
+        """TileRunner along 2 diagonal vectors from center surface.
+
+        Left arm: evil tiles. Right arm: hallow tiles.
+        Strength ~4, overRide=False so only solid tiles are converted.
+        """
+        centerX = self.worldWidth // 2
+        startY = self.worldSurface
+        endY = self.hellLayer
+        deltaY = endY - startY
+
+        evilTile = EBONSTONE if self.evilType == "corruption" else CRIMSTONE
+        hallowTile = PEARLSTONE
+
+        numSegments = 20
+        for i in range(numSegments):
+            t = i / numSegments
+            yPos = int(startY + t * deltaY)
+            xOffset = int(t * deltaY * 0.6)
+
+            # Left arm (evil)
+            lx = max(5, centerX - xOffset)
+            tileRunner(
+                self.grid, lx, yPos,
+                strength=4.0, steps=15,
+                tileType=evilTile,
+                speedX=-0.5, speedY=0.8,
+                overRide=False,
+            )
+
+            # Right arm (hallow)
+            rx = min(self.worldWidth - 5, centerX + xOffset)
+            tileRunner(
+                self.grid, rx, yPos,
+                strength=4.0, steps=15,
+                tileType=hallowTile,
+                speedX=0.5, speedY=0.8,
+                overRide=False,
+            )
+
+    # ------------------------------------------------------------------
+    # Phase 6: Altar smashing
+    # ------------------------------------------------------------------
+    def smashAltars(self, numAltars: int = 6) -> None:
+        """3-cycle hardmode ores via TileRunner, int(area*6E-05)/cycle."""
+        w, h = self.worldWidth, self.worldHeight
+
+        hmDepthRanges = [
+            (self.rockLayer, self.hellLayer),                          # Tier 1
+            (min(int(self.rockLayer * 1.2), h - 3), self.hellLayer),   # Tier 2
+            (min(int(self.rockLayer * 1.5), h - 3), self.hellLayer),   # Tier 3
+        ]
+
+        for altar in range(numAltars):
+            cycle = (altar % 3) + 1
+            tierIdx = cycle - 1
+            oreName = self.hmOres[tierIdx]
+            tileId = ORE_NAME_TO_ID[oreName]
+            yMin = max(2, hmDepthRanges[tierIdx][0])
+            yMax = min(h - 2, hmDepthRanges[tierIdx][1])
+            if yMax <= yMin:
+                continue
+
+            loopsThisCycle = max(1, self.oreLoopCount // cycle)
+            for _ in range(loopsThisCycle):
+                ox = int(self.rng.integers(10, w - 10))
+                oy = int(self.rng.integers(yMin, yMax))
+                strength = float(self.rng.uniform(2.0, 3.5))
+                steps = int(self.rng.integers(5, 12))
+                tileRunner(self.grid, ox, oy, strength, steps,
+                           tileType=tileId, overRide=False)
+
+    # ------------------------------------------------------------------
+    # Phase 7: Infection spread
+    # ------------------------------------------------------------------
+    def simulateSpread(self, steps: int = 15) -> List[np.ndarray]:
+        """Tile update cycle infection spread with air gap blocking.
+
+        Surface tiles spread at ~1/SURFACE_UPDATE_RATE per second;
+        underground at ~1/UNDERGROUND_UPDATE_RATE. Spread is tile-to-tile
+        through solid material only; a contiguous air gap of
+        INFECTION_GAP_TILES (4) blocks all propagation.
+        """
+        h, w = self.worldHeight, self.worldWidth
+        snapshots: List[np.ndarray] = []
+
+        # Select evil infection set
+        if self.evilType == "corruption":
+            evilTiles, evilConvert = CORRUPTION_TILES, CORRUPTION_CONVERT
+        else:
+            evilTiles, evilConvert = CRIMSON_TILES, CRIMSON_CONVERT
+
+        infectionGroups = [
+            (evilTiles, evilConvert),
+            (HALLOW_TILES, HALLOW_CONVERT),
+        ]
+
+        # Depth-based probability grid
+        # Ratio preserves surface:underground ~ 830:140 ~ 6:1
+        surfaceProb = 0.30
+        undergroundProb = 0.05
+        probGrid = np.full((h, w), undergroundProb, dtype=np.float64)
+        probGrid[: self.rockLayer, :] = surfaceProb
+
+        # Carve a 4-tile quarantine trench to demonstrate air gap blocking
+        trenchX = self.worldWidth // 3
+        for col in range(trenchX, trenchX + INFECTION_GAP_TILES):
+            self.grid[self.worldSurface - 5 : self.hellLayer, col] = AIR
+
+        directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+
+        for step in range(steps):
+            newGrid = self.grid.copy()
+            padded = np.pad(self.grid, 1, mode="constant", constant_values=AIR)
+
+            for infTiles, convertMap in infectionGroups:
+                # Infection source mask in padded coordinates
+                infMask = np.zeros_like(padded, dtype=bool)
+                for tid in infTiles:
+                    infMask |= padded == tid
+
+                for dy, dx in directions:
+                    neighborInf = infMask[1 + dy : 1 + dy + h, 1 + dx : 1 + dx + w]
+                    for fromTile, toTile in convertMap.items():
+                        candidates = neighborInf & (self.grid == fromTile)
+                        if not np.any(candidates):
+                            continue
+                        roll = self.rng.random((h, w))
+                        newGrid[candidates & (roll < probGrid)] = toTile
+
+            self.grid = newGrid
+
+            # Record early and late snapshots
+            if step == steps // 3 or step == steps - 1:
+                snapshots.append(self.grid.copy())
+
+        return snapshots
+
+    # ------------------------------------------------------------------
+    # Run all phases
+    # ------------------------------------------------------------------
+    def runEvolution(self) -> List[Tuple[str, np.ndarray]]:
+        """Execute the full 7-phase lifecycle, returning snapshot history."""
+        self.buildTerrain()
+        self.history.append(("Phase 1: Base Terrain", self.grid.copy()))
+
+        self.carveCaves()
+        self.history.append(("Phase 2: Cave Systems", self.grid.copy()))
+
+        self.paintBiomes()
+        self.history.append(("Phase 3: Biome Painting", self.grid.copy()))
+
+        self.placePreHardmode()
+        self.history.append(("Phase 4: Pre-Hardmode", self.grid.copy()))
+
+        self.carveVPattern()
+        self.history.append(("Phase 5: V-Pattern", self.grid.copy()))
+
+        self.smashAltars()
+        self.history.append(("Phase 6: Altar Smashing", self.grid.copy()))
+
+        spreadSnapshots = self.simulateSpread(steps=15)
+        if len(spreadSnapshots) >= 2:
+            self.history.append(("Phase 7a: Early Spread", spreadSnapshots[0]))
+            self.history.append(("Phase 7b: Late Spread", spreadSnapshots[1]))
+        else:
+            self.history.append(("Phase 7: Infection Spread", self.grid.copy()))
+            self.history.append(("Final State", self.grid.copy()))
+
+        return self.history
+
+
+# ===================================================================
+# Visualization
+# ===================================================================
+def plotEvolution(
+    history: List[Tuple[str, np.ndarray]],
+    evolution: TerrariaCompleteWorldEvolution,
+) -> None:
+    """Render 2x4 multi-panel evolution grid and save as PNG."""
+    plt.style.use("dark_background")
+    fig, axes = plt.subplots(2, 4, figsize=(28, 8), facecolor="#0a0a1a")
+
+    for idx in range(min(8, len(history))):
+        label, grid = history[idx]
+        row, col = divmod(idx, 4)
+        ax = axes[row, col]
+        img = renderGrid(grid)
+        ax.imshow(img, aspect="auto", interpolation="nearest")
+        ax.set_title(label, color="white", fontsize=11, fontweight="bold", pad=6)
+        ax.tick_params(colors="#666666", labelsize=5)
+
+        # Layer boundary reference lines
+        ax.axhline(y=evolution.worldSurface, color="cyan", ls="--", alpha=0.25, lw=0.5)
+        ax.axhline(y=evolution.rockLayer, color="yellow", ls="--", alpha=0.25, lw=0.5)
+        ax.axhline(y=evolution.hellLayer, color="red", ls="--", alpha=0.25, lw=0.5)
+        ax.set_facecolor("#0a0a1a")
+
+    plt.suptitle(
+        "Terraria Complete World Evolution | 1/10 Scale (840x240)",
+        color="white", fontsize=14, fontweight="bold", y=0.98,
+    )
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
+
+    outputDir = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "Plots", "Code+",
+    )
+    os.makedirs(outputDir, exist_ok=True)
+    outputPath = os.path.join(outputDir, "terraria_complete_world_evolution.png")
+    plt.savefig(outputPath, dpi=150, bbox_inches="tight", facecolor=fig.get_facecolor())
+    plt.close(fig)
+    print(f"Saved: {outputPath}")
+
+
+# ===================================================================
+# Entry point
+# ===================================================================
 if __name__ == "__main__":
-    print("Starting Terraria Complete World Evolution Animations...")
-    print("=" * 65)
-    
-    # Create output directory
-    output_dir = r"c:\Users\hunkb\OneDrive\Desktop\Terraria Generation\Code+"
-    
-    # Generate master evolution animation
-    master_path = f"{output_dir}/terraria_master_world_evolution.gif"
-    create_master_evolution_animation(master_path)
-    
-    # Generate corruption focus animation
-    corruption_path = f"{output_dir}/terraria_corruption_evolution_focus.gif"
-    create_corruption_focus_animation(corruption_path)
-    
-    print("\n" + "=" * 65)
-    print("All Terraria evolution animations completed successfully!")
-    print("Files created:")
-    print(f"- {master_path}")
-    print(f"- {corruption_path}")
-    print("\nThese animations demonstrate the complete Terraria world")
-    print("evolution from initial generation through hardmode transformation.")
+    print("Terraria Complete World Evolution")
+    print("=" * 40)
+    print(f"World: {LARGE.width}x{LARGE.height} large, rendered at 1/10 scale")
+    layers = LayerDepths.forLarge()
+    print(f"Layers: worldSurface={layers.worldSurface}, "
+          f"rockLayer={layers.rockLayer}, hellLayer={layers.hellLayer}")
+    print(f"Ore loops per type: {OreConfig.loopCount(840 * 240)} "
+          f"(area={840 * 240}, factor={OreConfig.DENSITY_FACTOR})")
+    print(f"Life Crystals max (scaled): "
+          f"{max(1, int(StructureQuotas.forLarge().lifeCrystalsMax * (840*240) / LARGE.area))}")
+    print(f"Infection gap: {INFECTION_GAP_TILES} tiles")
+    print(f"Spread rates: surface ~{SURFACE_UPDATE_RATE}s, "
+          f"underground ~{UNDERGROUND_UPDATE_RATE}s")
+    print()
+
+    evo = TerrariaCompleteWorldEvolution(worldWidth=840, worldHeight=240, seed=42)
+    history = evo.runEvolution()
+
+    print(f"Phases captured: {len(history)}")
+    for label, grid in history:
+        print(f"  {label}: {grid.shape}")
+
+    plotEvolution(history, evo)
+    print("Done.")
