@@ -31,3 +31,10 @@ References/worldgen-research.md
 
 .env
 audit-*.md
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log
+.ipynb_checkpoints/

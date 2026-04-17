@@ -58,9 +58,19 @@ ADAMANTITE = 114
 TITANIUM = 115
 CHLOROPHYTE = 116
 
-# Tiles immune to Cavinator destruction
+# Tiles immune to Cavinator destruction (CanBeClearedDuringGeneration = False)
+# Includes: biome shells, dungeon/temple bricks, granite, hardened sand/sandstone
+DUNGEON_BRICK = 120
+LIHZAHRD_BRICK = 121
+GRANITE_BLOCK = 123
+HARDENED_SAND = 124
+SANDSTONE_BLOCK = 125
+
 IMMUNE_TILES = frozenset({
     ASH, HELLSTONE, MUD,  # Biome shells
+    DUNGEON_BRICK, LIHZAHRD_BRICK,  # Structure bricks
+    GRANITE_BLOCK, HARDENED_SAND, SANDSTONE_BLOCK,  # Cave materials
+    CHLOROPHYTE,  # Hardmode growth
 })
 
 
@@ -114,12 +124,16 @@ def tileRunner(
         if currentStrength <= 0:
             break
 
-        # Diamond-shaped brush: iterate over tiles within manhattan distance
+        # Diamond-shaped brush with per-tile noise for organic edges
         radius = int(currentStrength / 2.0)
-        for dx in range(-radius, radius + 1):
-            for dy in range(-radius, radius + 1):
-                # Diamond check: manhattan distance <= radius
-                if abs(dx) + abs(dy) > radius:
+        radiusNoise = rng.integers(0, 2)  # +0 or +1 noise per step
+        effectiveRadius = radius + radiusNoise
+
+        for dx in range(-effectiveRadius, effectiveRadius + 1):
+            for dy in range(-effectiveRadius, effectiveRadius + 1):
+                # Diamond check with per-tile jitter for jagged edges
+                tileNoise = rng.integers(0, 2)  # 0 or 1
+                if abs(dx) + abs(dy) > effectiveRadius + tileNoise:
                     continue
 
                 tx = int(cx) + dx
@@ -134,9 +148,10 @@ def tileRunner(
                     if grid[ty, tx] not in IMMUNE_TILES:
                         grid[ty, tx] = AIR
                 elif tileType == -2:
-                    # Carve + lava mode
+                    # Carve + lava mode (use hellLayer = maxY - 200 for full grids)
                     if grid[ty, tx] not in IMMUNE_TILES:
-                        grid[ty, tx] = LAVA if ty >= maxY - 200 else AIR
+                        hellThreshold = max(maxY - 200, int(maxY * 0.917))
+                        grid[ty, tx] = LAVA if ty >= hellThreshold else AIR
                 else:
                     # Place mode
                     if addTile:
@@ -148,16 +163,16 @@ def tileRunner(
                         if grid[ty, tx] != AIR:
                             grid[ty, tx] = tileType
 
-        # Decay strength organically
-        currentStrength *= rng.uniform(0.95, 0.99)
+        # Linear/step strength decay (matches decompiled source)
+        currentStrength -= rng.integers(0, 3)
 
         # Update drift vectors with randomization (drunkard's walk)
         speedX += rng.uniform(-0.5, 0.5)
         speedY += rng.uniform(-0.5, 0.5) if not noYChange else 0.0
 
-        # Clamp speed to prevent extreme drift
-        speedX = np.clip(speedX, -2.0, 2.0)
-        speedY = np.clip(speedY, -2.0, 2.0)
+        # Clamp speed to +-1.0 for gentle drift (game default)
+        speedX = np.clip(speedX, -1.0, 1.0)
+        speedY = np.clip(speedY, -1.0, 1.0)
 
         # Move center point
         cx += speedX
@@ -292,6 +307,8 @@ def cellularAutomataSmooth(
     iterations: int = 3,
     birthThreshold: int = 5,
     deathThreshold: int = 3,
+    affectedTiles: frozenset[int] | None = None,
+    fillTile: int = STONE,
 ) -> npt.NDArray[np.int32]:
     """Post-carving cellular automata smoothing pass.
 
@@ -299,13 +316,16 @@ def cellularAutomataSmooth(
     - If a solid tile has fewer than deathThreshold solid neighbors, destroy it.
     - If an air tile has more than birthThreshold solid neighbors, fill it.
 
-    This creates the organic, rounded cave edges characteristic of Terraria.
+    The game applies CA only to specific tile types per pass context.
 
     Args:
         grid: 2D tile array, modified in place.
         iterations: Number of smoothing passes.
         birthThreshold: Neighbor count above which air becomes solid.
         deathThreshold: Neighbor count below which solid becomes air.
+        affectedTiles: If provided, only smooth tiles of these types.
+                       None means all non-air tiles are eligible.
+        fillTile: Tile type to use when filling air cells.
 
     Returns:
         The modified grid.
@@ -318,6 +338,13 @@ def cellularAutomataSmooth(
 
         for y in range(1, maxY - 1):
             for x in range(1, maxX - 1):
+                currentTile = snapshot[y, x]
+
+                # Skip tiles not in the affected set (if specified)
+                if affectedTiles is not None:
+                    if currentTile != AIR and currentTile not in affectedTiles:
+                        continue
+
                 # Count solid neighbors (8-connected)
                 solidCount = 0
                 for dy in range(-1, 2):
@@ -327,14 +354,14 @@ def cellularAutomataSmooth(
                         if snapshot[y + dy, x + dx] != AIR:
                             solidCount += 1
 
-                if snapshot[y, x] != AIR:
+                if currentTile != AIR:
                     # Solid tile: destroy if too few solid neighbors
                     if solidCount < deathThreshold:
                         grid[y, x] = AIR
                 else:
                     # Air tile: fill if too many solid neighbors
                     if solidCount > birthThreshold:
-                        grid[y, x] = STONE
+                        grid[y, x] = fillTile
 
     return grid
 
@@ -394,6 +421,15 @@ def settleLiquids(
                     moved = True
                 elif currentTile == LAVA and below == HONEY:
                     grid[y + 1, x] = CRISPY_HONEY_BLOCK
+                    grid[y, x] = AIR
+                    moved = True
+                elif currentTile == HONEY and below == WATER:
+                    # Honey + Water = HoneyBlock
+                    grid[y + 1, x] = 145  # HONEY_BLOCK
+                    grid[y, x] = AIR
+                    moved = True
+                elif currentTile == WATER and below == HONEY:
+                    grid[y + 1, x] = 145  # HONEY_BLOCK
                     grid[y, x] = AIR
                     moved = True
                 elif below in liquidTypes or below != AIR:

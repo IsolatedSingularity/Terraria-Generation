@@ -467,7 +467,7 @@ def visualize(sim: TerrariaHardmodeTransformation,
               savePath: Optional[str] = None) -> None:
     if savePath is None:
         savePath = os.path.join(os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__))), "Plots", "Code+")
+            os.path.abspath(__file__))), "Plots", "Advanced")
     """Create multi-panel hardmode transformation visualization.
 
     Panels:

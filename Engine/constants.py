@@ -2,10 +2,11 @@
 Terraria world generation constants derived from decompiled C# source.
 
 All values sourced from WorldGen.cs, Main.cs, and tModLoader documentation.
-World sizes, layer depths, structure quotas, and ore distribution parameters.
+World sizes, layer depths, structure quotas, ore distribution parameters,
+tile IDs, wall types, and biome detection thresholds.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
@@ -176,3 +177,172 @@ UNDERGROUND_UPDATE_RATE: float = 830.0
 
 # Meteorite threshold: 400 * (maxTilesX / 4200) total tiles allowed
 METEORITE_TILES_PER_SMALL: int = 400
+
+# Biome spread radius (tiles checked per update cycle)
+INFECTION_SPREAD_RADIUS: int = 3
+
+# ---------------------------------------------------------------------------
+# Tile IDs for structures, terrain, and special blocks
+# ---------------------------------------------------------------------------
+DUNGEON_BRICK: int = 120
+LIHZAHRD_BRICK: int = 121
+MARBLE_BLOCK: int = 122
+GRANITE_BLOCK: int = 123
+HARDENED_SAND: int = 124
+SANDSTONE: int = 125
+COBWEB: int = 126
+SHIMMER: int = 127
+MUSHROOM_GRASS: int = 128
+JUNGLE_GRASS: int = 129
+LIVING_WOOD: int = 130
+LEAF: int = 131
+CLAY: int = 132
+SILT: int = 133
+MINECART_TRACK: int = 134
+CHEST: int = 135
+POT: int = 136
+SUNFLOWER: int = 137
+FALLEN_LOG: int = 138
+ALTAR: int = 139
+LIFE_CRYSTAL: int = 140
+DART_TRAP: int = 141
+BOULDER_TRAP: int = 142
+PYRAMID_BRICK: int = 143
+HIVE: int = 144
+HONEY_BLOCK: int = 145
+
+# ---------------------------------------------------------------------------
+# Wall IDs (parallel wall array)
+# ---------------------------------------------------------------------------
+WALL_NONE: int = 0
+WALL_DIRT: int = 1
+WALL_STONE: int = 2
+WALL_DUNGEON_BLUE: int = 7
+WALL_DUNGEON_GREEN: int = 8
+WALL_DUNGEON_PINK: int = 9
+WALL_WOOD: int = 4
+WALL_LIHZAHRD: int = 10
+WALL_SPIDER: int = 11
+WALL_MARBLE: int = 12
+WALL_GRANITE: int = 13
+WALL_SANDSTONE: int = 14
+WALL_MUSHROOM: int = 15
+WALL_JUNGLE: int = 16
+WALL_HALLOW: int = 17
+WALL_CORRUPTION: int = 18
+WALL_CRIMSON: int = 19
+
+# ---------------------------------------------------------------------------
+# FrameImportant tile IDs (multi-tile objects that must not be overwritten)
+# ---------------------------------------------------------------------------
+FRAME_IMPORTANT_TILES: frozenset = frozenset({
+    LIFE_CRYSTAL, CHEST, POT, DART_TRAP, BOULDER_TRAP,
+    ALTAR, SUNFLOWER, FALLEN_LOG, MINECART_TRACK,
+})
+
+# ---------------------------------------------------------------------------
+# Full immune tile set for Cavinator (CanBeClearedDuringGeneration = False)
+# ---------------------------------------------------------------------------
+IMMUNE_TILES_FULL: frozenset = frozenset({
+    5,    # ASH
+    6,    # HELLSTONE
+    7,    # MUD
+    DUNGEON_BRICK,
+    LIHZAHRD_BRICK,
+    GRANITE_BLOCK,
+    HARDENED_SAND,
+    SANDSTONE,
+    116,  # CHLOROPHYTE
+})
+
+# ---------------------------------------------------------------------------
+# Biome detection thresholds (tile counts in 150-tile rectangle)
+# ---------------------------------------------------------------------------
+BIOME_THRESHOLDS = {
+    "hallow": 200,
+    "corruption": 200,
+    "crimson": 200,
+    "jungle": 140,
+    "snow": 1500,
+    "desert": 1500,
+    "mushroom": 100,
+    "dungeon": 250,
+    "marble": 150,
+    "granite": 150,
+    "spider": 200,
+    "shimmer": 300,
+}
+
+# ---------------------------------------------------------------------------
+# Structure placement specific constants
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class DungeonConfig:
+    """Dungeon eating algorithm parameters."""
+    minRooms: int = 15
+    maxRooms: int = 30
+    minRoomWidth: int = 10
+    maxRoomWidth: int = 20
+    minRoomHeight: int = 8
+    maxRoomHeight: int = 16
+    wallTypes: tuple = (WALL_DUNGEON_BLUE, WALL_DUNGEON_GREEN, WALL_DUNGEON_PINK)
+
+@dataclass(frozen=True)
+class TempleConfig:
+    """Jungle Temple (Lihzahrd) parameters."""
+    minRooms: int = 10
+    maxRooms: int = 20
+    minRoomWidth: int = 8
+    maxRoomWidth: int = 16
+    minRoomHeight: int = 6
+    maxRoomHeight: int = 12
+    trapDensity: float = 0.15
+
+@dataclass(frozen=True)
+class PyramidConfig:
+    """Desert pyramid parameters."""
+    minWidth: int = 80
+    maxWidth: int = 120
+    corridorWidth: int = 4
+    maxPerWorld: int = 2
+
+@dataclass(frozen=True)
+class LivingTreeConfig:
+    """Living Tree parameters."""
+    trunkWidth: int = 4
+    minHeight: int = 40
+    maxHeight: int = 80
+    canopyRadius: int = 15
+    hollowChance: float = 0.5
+    branchCount: int = 4
+
+@dataclass(frozen=True)
+class ShimmerConfig:
+    """Shimmer/Aether biome parameters (post-1.4.4)."""
+    radius: int = 30
+    correlatedToJungle: bool = True
+    depth: str = "cavern"
+
+# ---------------------------------------------------------------------------
+# Seed format: size.difficulty.evil.special.identifier
+# ---------------------------------------------------------------------------
+SEED_SIZES = {"1": "Small", "2": "Medium", "3": "Large"}
+SEED_DIFFICULTIES = {"1": "Classic", "2": "Expert", "3": "Master", "4": "Journey"}
+SEED_EVILS = {"1": "Corruption", "2": "Crimson", "3": "Random"}
+SECRET_SEEDS = {
+    "05162020": "drunkWorld",
+    "5162020": "drunkWorld",
+    "celebrationmk10": "celebrationmk10",
+    "getfixedboi": "zenithWorld",
+    "not the bees": "notTheBees",
+    "for the worthy": "forTheWorthy",
+    "don't dig up": "remixWorld",
+    "no traps": "noTraps",
+}
+
+# ---------------------------------------------------------------------------
+# Clentaminator purification parameters
+# ---------------------------------------------------------------------------
+CLENTAMINATOR_SPRAY_RANGE: int = 60
+CLENTAMINATOR_SPRAY_WIDTH: int = 2
+PURIFICATION_POWDER_RANGE: int = 4

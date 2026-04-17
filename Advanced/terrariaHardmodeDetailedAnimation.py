@@ -462,7 +462,7 @@ class TerrariaHardmodeAnimation:
         if savePath is None:
             savePath = os.path.join(
                 os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                "Plots", "Code+", "terraria_hardmode_animation.gif",
+                "Plots", "Advanced", "terraria_hardmode_animation.gif",
             )
         os.makedirs(os.path.dirname(savePath), exist_ok=True)
 

@@ -530,7 +530,7 @@ def plotEvolution(
 
     outputDir = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "Plots", "Code+",
+        "Plots", "Advanced",
     )
     os.makedirs(outputDir, exist_ok=True)
     outputPath = os.path.join(outputDir, "terraria_complete_world_evolution.png")
