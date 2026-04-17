@@ -1,584 +1,662 @@
 """
-Terraria Corruption/Crimson Evolution Visualization System
-=========================================================
+Terraria corruption/crimson/hallow evolution simulation.
 
-This module implements comprehensive visualizations of corruption and crimson spread mechanics
-in Terraria, modeling the algorithmic spread patterns, growth rates, and environmental
-interactions that define these biome evolutions over time.
-
-Mathematical Foundation:
-- Cellular automata for spread simulation
-- Exponential growth models: N(t) = N₀ × e^(rt)
-- Distance-based influence: I(d) = I₀ × e^(-αd)
-- Environmental resistance factors
-- Probabilistic spread mechanics
-
-Author: Generated for Terraria Generation Analysis
-Date: 2024
+Models pre-hardmode evil biome placement, hardmode V-pattern creation via
+TileRunner, and tile update cycle biome spread with air gap infection blocking.
+All tile conversion rules match decompiled WorldGen.cs behavior.
 """
+
+import sys
+import os
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import seaborn as sns
-from matplotlib.animation import FuncAnimation
-from scipy.ndimage import binary_dilation, distance_transform_edt
-from scipy.spatial.distance import cdist
-import matplotlib.patches as patches
-from matplotlib.colors import ListedColormap
-from typing import Tuple, List, Dict, Optional
+from typing import Optional
 import warnings
-warnings.filterwarnings('ignore')
 
-# Set style and color preferences
-plt.style.use('dark_background')
+warnings.filterwarnings("ignore")
+
+from Engine.algorithms import (
+    tileRunner,
+    AIR, DIRT, STONE, SAND, ICE, MUD, GRASS, SNOW,
+    CORRUPT_DIRT, EBONSTONE, CRIMSON_DIRT, CRIMSTONE,
+    PEARLSTONE, HALLOW_DIRT, PEARLSAND,
+    CORRUPT_ICE, CRIMSON_ICE, HALLOW_ICE,
+)
+from Engine.constants import (
+    LARGE, LayerDepths, INFECTION_GAP_TILES,
+    SURFACE_UPDATE_RATE, UNDERGROUND_UPDATE_RATE,
+)
+
+plt.style.use("dark_background")
 sns.set_palette("mako")
 
+
+# ---------------------------------------------------------------------------
+# Tile conversion rules by infection type
+# ---------------------------------------------------------------------------
+CORRUPTION_CONVERSIONS: dict[int, int] = {
+    DIRT: CORRUPT_DIRT, STONE: EBONSTONE, ICE: CORRUPT_ICE, GRASS: CORRUPT_DIRT,
+}
+CRIMSON_CONVERSIONS: dict[int, int] = {
+    DIRT: CRIMSON_DIRT, STONE: CRIMSTONE, ICE: CRIMSON_ICE, GRASS: CRIMSON_DIRT,
+}
+HALLOW_CONVERSIONS: dict[int, int] = {
+    STONE: PEARLSTONE, DIRT: HALLOW_DIRT, SAND: PEARLSAND,
+    ICE: HALLOW_ICE, GRASS: HALLOW_DIRT,
+}
+
+CORRUPTION_TILES = frozenset({CORRUPT_DIRT, EBONSTONE, CORRUPT_ICE})
+CRIMSON_TILES = frozenset({CRIMSON_DIRT, CRIMSTONE, CRIMSON_ICE})
+HALLOW_TILES = frozenset({PEARLSTONE, HALLOW_DIRT, PEARLSAND, HALLOW_ICE})
+ALL_INFECTED_TILES = CORRUPTION_TILES | CRIMSON_TILES | HALLOW_TILES
+CONVERTIBLE_TILES = frozenset({DIRT, STONE, ICE, SAND, GRASS})
+
+
+def _getConversions(infectionType: str) -> dict[int, int]:
+    """Return tile conversion dict for the given infection category."""
+    if infectionType == "corruption":
+        return CORRUPTION_CONVERSIONS
+    if infectionType == "crimson":
+        return CRIMSON_CONVERSIONS
+    if infectionType == "hallow":
+        return HALLOW_CONVERSIONS
+    return {}
+
+
+# Shared color palette
+TILE_COLORS: dict[int, tuple[float, float, float]] = {
+    AIR: (0.08, 0.08, 0.12),
+    DIRT: (0.45, 0.32, 0.22),
+    STONE: (0.50, 0.50, 0.50),
+    GRASS: (0.20, 0.70, 0.20),
+    SAND: (0.90, 0.80, 0.50),
+    ICE: (0.70, 0.85, 1.00),
+    MUD: (0.35, 0.25, 0.15),
+    SNOW: (0.88, 0.90, 0.95),
+    CORRUPT_DIRT: (0.40, 0.00, 0.60),
+    EBONSTONE: (0.30, 0.00, 0.45),
+    CORRUPT_ICE: (0.50, 0.20, 0.70),
+    CRIMSON_DIRT: (0.70, 0.05, 0.15),
+    CRIMSTONE: (0.60, 0.00, 0.10),
+    CRIMSON_ICE: (0.80, 0.20, 0.30),
+    PEARLSTONE: (0.95, 0.85, 1.00),
+    HALLOW_DIRT: (0.90, 0.80, 0.95),
+    PEARLSAND: (1.00, 0.95, 0.80),
+    HALLOW_ICE: (0.85, 0.90, 1.00),
+}
+
+
+def _gridToRgb(grid: np.ndarray) -> np.ndarray:
+    """Convert tile-ID grid to (H, W, 3) float32 RGB image."""
+    h, w = grid.shape
+    rgb = np.full((h, w, 3), TILE_COLORS[AIR], dtype=np.float32)
+    for tileId, color in TILE_COLORS.items():
+        mask = grid == tileId
+        if np.any(mask):
+            rgb[mask] = color
+    return rgb
+
+
+# ---------------------------------------------------------------------------
+# Main class
+# ---------------------------------------------------------------------------
 class TerrariaCorruptionEvolution:
+    """Simulates corruption/crimson/hallow placement and spread.
+
+    Implements pre-hardmode evil pockets (TileRunner), hardmode V-pattern
+    (TileRunner along diagonals), tile-update-cycle biome spread with
+    air gap infection blocking, and tile-type-specific conversion rules.
     """
-    Comprehensive system for modeling and visualizing corruption/crimson spread
-    in Terraria worlds, incorporating realistic growth mechanics and environmental
-    interactions.
-    
-    The system models:
-    - Initial infection points based on world generation
-    - Exponential spread with environmental resistance
-    - Biome-specific spread rates and patterns
-    - Player intervention effects
-    - Hardmode acceleration mechanics
-    """
-    
-    def __init__(self, world_width: int = 4200, world_height: int = 1200):
-        """
-        Initialize the corruption evolution system.
-        
-        Parameters:
-        -----------
-        world_width : int
-            Width of the world in blocks (default: 4200 for large world)
-        world_height : int
-            Height of the world in blocks (default: 1200 for large world)
-        """
-        self.width = world_width
-        self.height = world_height
-        
-        # Block type definitions
-        self.EMPTY = 0
-        self.DIRT = 1
-        self.STONE = 2
-        self.GRASS = 3
-        self.CORRUPTION = 4
-        self.CRIMSON = 5
-        self.HALLOW = 6
-        self.SAND = 7
-        self.SNOW = 8
-        self.JUNGLE = 9
-        self.MUD = 10
-        
-        # Spread parameters based on Terraria mechanics
-        self.base_spread_rate = 0.02  # Base probability per tick
-        self.distance_decay = 0.1     # Distance influence decay
-        self.hardmode_multiplier = 3.0  # Hardmode spread acceleration
-        self.biome_resistance = {
-            self.DIRT: 1.0,
-            self.STONE: 0.8,
-            self.GRASS: 1.2,
-            self.SAND: 1.5,
-            self.SNOW: 0.6,
-            self.JUNGLE: 0.3,
-            self.MUD: 0.4
-        }
-        
-        # Color mapping for visualization
-        self.colors = {
-            self.EMPTY: (0.1, 0.1, 0.1),      # Dark background
-            self.DIRT: (0.4, 0.3, 0.2),       # Brown dirt
-            self.STONE: (0.5, 0.5, 0.5),      # Gray stone
-            self.GRASS: (0.2, 0.7, 0.2),      # Green grass
-            self.CORRUPTION: (0.3, 0.0, 0.5), # Purple corruption
-            self.CRIMSON: (0.7, 0.0, 0.2),    # Red crimson
-            self.HALLOW: (1.0, 0.8, 1.0),     # Pink hallow
-            self.SAND: (0.9, 0.8, 0.5),       # Yellow sand
-            self.SNOW: (0.9, 0.9, 1.0),       # White snow
-            self.JUNGLE: (0.1, 0.5, 0.1),     # Dark green jungle
-            self.MUD: (0.3, 0.4, 0.2)         # Muddy brown
-        }
-        
-        self.world = None
-        self.corruption_history = []
-        self.time_steps = []
-        
-    def generate_base_world(self) -> np.ndarray:
-        """
-        Generate a base world with various biomes for corruption to spread through.
-        
-        Returns:
-        --------
-        np.ndarray
-            2D array representing the world with different block types
-        """
-        world = np.full((self.height, self.width), self.EMPTY, dtype=int)
-        
-        # Create surface terrain using noise
-        surface_noise = self._generate_terrain_noise()
-        surface_height = (surface_noise * 200 + self.height // 2).astype(int)
-        
-        # Fill world with appropriate blocks
-        for x in range(self.width):
-            surface_y = surface_height[x]
-            
-            # Determine biome based on x position
-            biome_type = self._determine_biome(x)
-            
-            # Fill from surface down
-            for y in range(surface_y, self.height):
-                if y == surface_y and biome_type != self.SAND:
-                    world[y, x] = self.GRASS
-                elif y < surface_y + 50:  # Topsoil layer
-                    world[y, x] = self.DIRT if biome_type != self.SAND else self.SAND
-                elif y < surface_y + 100:  # Subsoil
-                    world[y, x] = self.DIRT if biome_type not in [self.JUNGLE, self.SNOW] else biome_type
-                else:  # Deep stone
-                    world[y, x] = self.STONE
-            
-            # Add biome-specific surface blocks
-            if biome_type == self.JUNGLE:
-                world[surface_y, x] = self.JUNGLE
-            elif biome_type == self.SNOW:
-                world[surface_y, x] = self.SNOW
-        
-        return world
-    
-    def _generate_terrain_noise(self) -> np.ndarray:
-        """Generate terrain height using multiple octaves of noise."""
-        x = np.linspace(0, 8 * np.pi, self.width)
-        
-        # Multi-octave noise for realistic terrain
-        terrain = (
-            0.5 * np.sin(x * 0.5) +
-            0.3 * np.sin(x * 1.2 + 1.5) +
-            0.2 * np.sin(x * 2.8 + 3.0) +
-            0.1 * np.sin(x * 5.5 + 4.5)
+
+    def __init__(
+        self,
+        worldWidth: int = 8400,
+        worldHeight: int = 2400,
+        evilType: str = "corruption",
+        seed: int = 12345,
+    ):
+        self.worldWidth = worldWidth
+        self.worldHeight = worldHeight
+        self.evilType = evilType
+        self.seed = seed
+        self.rng = np.random.default_rng(seed)
+
+        # Layer depths scaled to actual world size
+        if worldHeight >= 2400:
+            base = LayerDepths.forLarge()
+        elif worldHeight >= 1800:
+            base = LayerDepths.forMedium()
+        else:
+            base = LayerDepths.forSmall()
+        scale = worldHeight / base.maxTilesY
+        self.layers = LayerDepths(
+            worldSurface=base.worldSurface * scale,
+            rockLayer=base.rockLayer * scale,
+            hellLayer=int(worldHeight - 200 * scale),
+            maxTilesY=worldHeight,
         )
-        
-        return terrain
-    
-    def _determine_biome(self, x: int) -> int:
-        """Determine biome type based on world position."""
-        # Normalize position to 0-1
-        pos = x / self.width
-        
-        if pos < 0.15:  # Left side - Snow/Tundra
-            return self.SNOW
-        elif pos < 0.25:  # Transition zone
-            return self.DIRT
-        elif 0.75 < pos < 0.85:  # Right side jungle area
-            return self.JUNGLE
-        elif pos > 0.9:  # Far right desert
-            return self.SAND
-        else:  # Central areas
-            return self.DIRT
-    
-    def initialize_corruption_points(self, corruption_type: int = None) -> None:
+
+        self.grid = np.zeros((worldHeight, worldWidth), dtype=np.int32)
+
+        # Backwards-compat aliases (terraria_master_evolution.py reads these)
+        self.EMPTY = AIR
+        self.DIRT = DIRT
+        self.STONE = STONE
+        self.GRASS = GRASS
+        self.SAND = SAND
+        self.SNOW = SNOW
+        self.JUNGLE = MUD
+        self.MUD = MUD
+        self.ICE = ICE
+        self.CORRUPTION = CORRUPT_DIRT
+        self.CRIMSON = CRIMSON_DIRT
+        self.HALLOW = HALLOW_DIRT
+
+        self.corruptionHistory: list[int] = []
+        self.corruption_history = self.corruptionHistory  # alias
+        self.world = self.grid  # alias
+        self.tileColors = TILE_COLORS
+
+    # ------------------------------------------------------------------
+    # World setup
+    # ------------------------------------------------------------------
+    def initializeWorld(self) -> None:
+        """Set up base terrain with layer strata, surface grass, biome strips."""
+        w, h = self.worldWidth, self.worldHeight
+        surface = int(self.layers.worldSurface)
+        rock = int(self.layers.rockLayer)
+        nScale = h / 2400.0  # proportional noise/depth scaling
+
+        # Multi-octave surface profile
+        xNorm = np.linspace(0, 12 * np.pi, w)
+        surfaceProfile = (
+            surface
+            + (30 * nScale) * np.sin(xNorm * 0.3)
+            + (15 * nScale) * np.sin(xNorm * 0.8 + 1.2)
+            + (8 * nScale) * np.sin(xNorm * 1.7 + 2.5)
+            + (4 * nScale) * np.sin(xNorm * 3.5 + 4.0)
+        ).astype(int)
+        surfaceProfile = np.clip(surfaceProfile, 1, h - 2)
+
+        # Vectorized strata fill
+        rowIdx = np.arange(h)[:, None]
+        surfaceLine = surfaceProfile[None, :]
+        self.grid[:] = AIR
+        belowSurface = rowIdx >= surfaceLine
+        self.grid[belowSurface] = DIRT
+        self.grid[belowSurface & (rowIdx >= rock)] = STONE
+
+        # Grass at surface
+        cols = np.arange(w)
+        self.grid[surfaceProfile, cols] = GRASS
+
+        # Biome strips with scaled depth
+        self._fillBiomeStrip(surfaceProfile, int(w * 0.05), int(w * 0.18),
+                             ICE, max(4, int(80 * nScale)), {DIRT})
+        self._fillBiomeStrip(surfaceProfile, int(w * 0.72), int(w * 0.88),
+                             MUD, max(4, int(100 * nScale)), {DIRT})
+        self._fillBiomeStrip(surfaceProfile, int(w * 0.40), int(w * 0.48),
+                             SAND, max(4, int(60 * nScale)), {DIRT, GRASS})
+
+        self.world = self.grid
+
+    def _fillBiomeStrip(
+        self,
+        surfaceProfile: np.ndarray,
+        colStart: int,
+        colEnd: int,
+        tile: int,
+        depth: int,
+        replaceable: set[int],
+    ) -> None:
+        """Overwrite tiles in a strip below the surface with a biome tile."""
+        h = self.worldHeight
+        for c in range(colStart, min(colEnd, self.worldWidth)):
+            sy = surfaceProfile[c]
+            seg = self.grid[sy : min(sy + depth, h), c]
+            for old in replaceable:
+                seg[seg == old] = tile
+
+    # ------------------------------------------------------------------
+    # Pre-hardmode evil
+    # ------------------------------------------------------------------
+    def placePreHardmodeEvil(self) -> None:
+        """Place 3-5 evil pockets using TileRunner passes."""
+        evilTile = CORRUPT_DIRT if self.evilType == "corruption" else CRIMSON_DIRT
+        surface = int(self.layers.worldSurface)
+        rock = int(self.layers.rockLayer)
+        sScale = max(0.5, self.worldHeight / 2400.0)
+        numPockets = int(self.rng.integers(3, 6))
+
+        for _ in range(numPockets):
+            px = int(self.rng.integers(self.worldWidth // 4, 3 * self.worldWidth // 4))
+            py = int(self.rng.integers(surface + 5, max(surface + 6, rock)))
+
+            numPasses = int(self.rng.integers(3, 8))
+            for _ in range(numPasses):
+                tileRunner(
+                    self.grid, px, py,
+                    strength=float(self.rng.uniform(8 * sScale, 20 * sScale)),
+                    steps=int(self.rng.integers(
+                        max(5, int(15 * sScale)),
+                        max(6, int(40 * sScale)),
+                    )),
+                    tileType=evilTile,
+                    overRide=False,
+                )
+                px = int(np.clip(
+                    px + self.rng.integers(-30, 31), 0, self.worldWidth - 1))
+                py = int(np.clip(
+                    py + self.rng.integers(-10, 11), 0, self.worldHeight - 1))
+
+        self.world = self.grid
+
+    # ------------------------------------------------------------------
+    # Hardmode V-pattern
+    # ------------------------------------------------------------------
+    def triggerHardmode(self) -> None:
+        """Create V-pattern from world center via TileRunner along diagonals.
+
+        Two arms extend from (centerX, worldSurface) diagonally down to
+        the hell layer. One arm carries evil, the other hallow. Each arm
+        is constructed from multiple TileRunner passes along the diagonal
+        vector, not fixed-width strips.
         """
-        Initialize corruption/crimson infection points based on world generation rules.
-        
-        In Terraria, corruption/crimson spawns:
-        - In a V-pattern from the center after Wall of Flesh defeat
-        - Small scattered pockets during world generation
-        
-        Parameters:
-        -----------
-        corruption_type : int
-            Type of corruption (CORRUPTION or CRIMSON)
+        centerX = self.worldWidth // 2
+        surface = int(self.layers.worldSurface)
+        hell = self.layers.hellLayer
+        sScale = max(0.5, self.worldHeight / 2400.0)
+
+        evilTile = CORRUPT_DIRT if self.evilType == "corruption" else CRIMSON_DIRT
+        hallowTile = PEARLSTONE
+
+        # 50/50 swap which side is evil vs hallow
+        if self.rng.random() < 0.5:
+            evilTile, hallowTile = hallowTile, evilTile
+
+        vertDrop = hell - surface
+        horzSpread = self.worldWidth // 4
+        leftDx = -horzSpread / max(vertDrop, 1)
+        rightDx = horzSpread / max(vertDrop, 1)
+
+        numPasses = max(30, vertDrop // 20)
+
+        for i in range(numPasses):
+            t = i / numPasses
+            y = int(surface + vertDrop * t)
+            lx = int(centerX + leftDx * vertDrop * t)
+            rx = int(centerX + rightDx * vertDrop * t)
+
+            tileRunner(
+                self.grid, lx, y,
+                strength=float(self.rng.uniform(10 * sScale, 25 * sScale)),
+                steps=int(self.rng.integers(
+                    max(5, int(10 * sScale)),
+                    max(6, int(30 * sScale)),
+                )),
+                tileType=evilTile, overRide=False,
+                speedX=float(leftDx * 2), speedY=0.5,
+            )
+            tileRunner(
+                self.grid, rx, y,
+                strength=float(self.rng.uniform(10 * sScale, 25 * sScale)),
+                steps=int(self.rng.integers(
+                    max(5, int(10 * sScale)),
+                    max(6, int(30 * sScale)),
+                )),
+                tileType=hallowTile, overRide=False,
+                speedX=float(rightDx * 2), speedY=0.5,
+            )
+
+        self.world = self.grid
+
+    # ------------------------------------------------------------------
+    # Biome spread simulation
+    # ------------------------------------------------------------------
+    def simulateSpread(self, gameSeconds: float) -> None:
+        """Tile-update-cycle spread with asymmetric surface/underground rates.
+
+        Surface tiles update every ~140 s, underground every ~830 s.
+        Each sampled infected tile picks one random neighbor within radius 3
+        and converts it if the target is convertible and no air gap blocks.
         """
-        if corruption_type is None:
-            corruption_type = np.random.choice([self.CORRUPTION, self.CRIMSON])
-        
-        # Pre-hardmode: Small scattered pockets (world generation)
-        num_initial_pockets = np.random.randint(3, 7)
-        for _ in range(num_initial_pockets):
-            x = np.random.randint(self.width // 4, 3 * self.width // 4)
-            y = np.random.randint(self.height // 3, 2 * self.height // 3)
-            
-            # Create small infection pocket
-            self._create_infection_pocket(x, y, corruption_type, radius=20)
-    
-    def trigger_hardmode_spread(self, corruption_type: int = None) -> None:
-        """
-        Trigger the hardmode V-pattern corruption spread.
-        
-        When the Wall of Flesh is defeated, corruption/crimson spreads in a V-pattern
-        from the center of the world, along with hallow on one side.
-        
-        Parameters:
-        -----------
-        corruption_type : int
-            Type of corruption for the V-pattern
-        """
-        if corruption_type is None:
-            corruption_type = np.random.choice([self.CORRUPTION, self.CRIMSON])
-        
-        center_x = self.width // 2
-        center_y = self.height // 2
-        
-        # Create V-pattern spread
-        v_width = self.width // 3
-        v_angle = np.pi / 6  # 30 degrees
-        
-        # Left arm of V (corruption/crimson)
-        for i in range(v_width):
-            x_offset = -i * np.cos(v_angle)
-            y_offset = i * np.sin(v_angle)
-            
-            x = int(center_x + x_offset)
-            y = int(center_y + y_offset)
-            
-            if 0 <= x < self.width and 0 <= y < self.height:
-                self._create_infection_strip(x, y, corruption_type, width=50)
-        
-        # Right arm of V (hallow)
-        for i in range(v_width):
-            x_offset = i * np.cos(v_angle)
-            y_offset = i * np.sin(v_angle)
-            
-            x = int(center_x + x_offset)
-            y = int(center_y + y_offset)
-            
-            if 0 <= x < self.width and 0 <= y < self.height:
-                self._create_infection_strip(x, y, self.HALLOW, width=50)
-    
-    def _create_infection_pocket(self, x: int, y: int, infection_type: int, radius: int) -> None:
-        """Create a circular infection pocket."""
-        for dy in range(-radius, radius + 1):
-            for dx in range(-radius, radius + 1):
-                if dx**2 + dy**2 <= radius**2:
-                    nx, ny = x + dx, y + dy
-                    if (0 <= nx < self.width and 0 <= ny < self.height and 
-                        self.world[ny, nx] not in [self.EMPTY]):
-                        self.world[ny, nx] = infection_type
-    
-    def _create_infection_strip(self, x: int, y: int, infection_type: int, width: int) -> None:
-        """Create a vertical strip of infection."""
-        half_width = width // 2
-        for dy in range(-self.height // 4, self.height // 4):
-            for dx in range(-half_width, half_width + 1):
-                nx, ny = x + dx, y + dy
-                if (0 <= nx < self.width and 0 <= ny < self.height and 
-                    self.world[ny, nx] not in [self.EMPTY]):
-                    self.world[ny, nx] = infection_type
-    
+        surface = int(self.layers.worldSurface)
+
+        infectedMask = np.isin(self.grid, list(ALL_INFECTED_TILES))
+        infectedPos = np.argwhere(infectedMask)
+
+        if len(infectedPos) == 0:
+            self.corruptionHistory.append(0)
+            return
+
+        isSurface = infectedPos[:, 0] < surface
+        surfCount = int(np.sum(isSurface))
+        underCount = len(infectedPos) - surfCount
+
+        surfUpdates = (
+            int(surfCount * gameSeconds / SURFACE_UPDATE_RATE) if surfCount > 0 else 0
+        )
+        underUpdates = (
+            int(underCount * gameSeconds / UNDERGROUND_UPDATE_RATE)
+            if underCount > 0 else 0
+        )
+        totalUpdates = min(surfUpdates + underUpdates, 50000)
+
+        if totalUpdates == 0:
+            self.corruptionHistory.append(int(np.sum(infectedMask)))
+            return
+
+        # Build proportional sample array from surface and underground
+        chunks: list[np.ndarray] = []
+        if surfUpdates > 0 and surfCount > 0:
+            surfPos = infectedPos[isSurface]
+            n = min(surfUpdates, totalUpdates)
+            chunks.append(surfPos[self.rng.integers(0, len(surfPos), size=n)])
+        if underUpdates > 0 and underCount > 0:
+            underPos = infectedPos[~isSurface]
+            remaining = totalUpdates - (len(chunks[0]) if chunks else 0)
+            if remaining > 0:
+                n = min(underUpdates, remaining)
+                chunks.append(underPos[self.rng.integers(0, len(underPos), size=n)])
+
+        if not chunks:
+            self.corruptionHistory.append(int(np.sum(infectedMask)))
+            return
+
+        samples = np.concatenate(chunks)
+
+        for k in range(len(samples)):
+            sy, sx = int(samples[k, 0]), int(samples[k, 1])
+            srcTile = self.grid[sy, sx]
+
+            if srcTile in CORRUPTION_TILES:
+                infType = "corruption"
+            elif srcTile in CRIMSON_TILES:
+                infType = "crimson"
+            elif srcTile in HALLOW_TILES:
+                infType = "hallow"
+            else:
+                continue
+
+            # Pick one random neighbor within radius 3
+            dy = int(self.rng.integers(-3, 4))
+            dx = int(self.rng.integers(-3, 4))
+            if dy == 0 and dx == 0:
+                continue
+            ny, nx = sy + dy, sx + dx
+            if 0 <= nx < self.worldWidth and 0 <= ny < self.worldHeight:
+                if self._canInfect(nx, ny, sx, sy, infType):
+                    self._convertTile(nx, ny, infType)
+
+        count = int(np.count_nonzero(np.isin(self.grid, list(ALL_INFECTED_TILES))))
+        self.corruptionHistory.append(count)
+        self.world = self.grid
+
+    # ------------------------------------------------------------------
+    # Infection checks
+    # ------------------------------------------------------------------
+    def _canInfect(
+        self, x: int, y: int, sourceX: int, sourceY: int, infectionType: str,
+    ) -> bool:
+        """Check tile convertibility and air gap blocking."""
+        target = self.grid[y, x]
+        if target not in CONVERTIBLE_TILES:
+            return False
+        if target in ALL_INFECTED_TILES:
+            return False
+        conversions = _getConversions(infectionType)
+        if target not in conversions:
+            return False
+        if self._hasAirGap(x, y, sourceX, sourceY):
+            return False
+        return True
+
+    def _hasAirGap(self, x: int, y: int, sourceX: int, sourceY: int) -> bool:
+        """Return True if INFECTION_GAP_TILES consecutive air tiles on the path."""
+        dx = x - sourceX
+        dy = y - sourceY
+        steps = max(abs(dx), abs(dy))
+        if steps <= 1:
+            return False
+
+        consecutive = 0
+        for i in range(1, steps):
+            t = i / steps
+            cx = int(sourceX + dx * t)
+            cy = int(sourceY + dy * t)
+            if not (0 <= cx < self.worldWidth and 0 <= cy < self.worldHeight):
+                return True
+            if self.grid[cy, cx] == AIR:
+                consecutive += 1
+                if consecutive >= INFECTION_GAP_TILES:
+                    return True
+            else:
+                consecutive = 0
+        return False
+
+    def _convertTile(self, x: int, y: int, infectionType: str) -> None:
+        """Apply tile-type-specific conversion."""
+        conversions = _getConversions(infectionType)
+        target = self.grid[y, x]
+        if target in conversions:
+            self.grid[y, x] = conversions[target]
+
+    # ------------------------------------------------------------------
+    # Legacy shims (terraria_master_evolution.py compatibility)
+    # ------------------------------------------------------------------
+    def initialize_corruption_points(self) -> None:
+        """Legacy: initializeWorld + placePreHardmodeEvil."""
+        if np.count_nonzero(self.grid) == 0:
+            self.initializeWorld()
+        self.placePreHardmodeEvil()
+
+    def trigger_hardmode_spread(self) -> None:
+        """Legacy: triggerHardmode."""
+        self.triggerHardmode()
+
     def simulate_spread_step(self, hardmode: bool = False) -> None:
-        """
-        Simulate one step of corruption/crimson spread.
-        
-        The spread algorithm uses:
-        - Distance-based probability
-        - Biome resistance factors
-        - Environmental constraints
-        
-        Parameters:
-        -----------
-        hardmode : bool
-            Whether hardmode is active (increases spread rate)
-        """
-        new_world = self.world.copy()
-        spread_rate = self.base_spread_rate
-        
-        if hardmode:
-            spread_rate *= self.hardmode_multiplier
-        
-        # Find all corruption/crimson/hallow blocks
-        infection_types = [self.CORRUPTION, self.CRIMSON, self.HALLOW]
-        infected_blocks = np.where(np.isin(self.world, infection_types))
-        
-        # For each infected block, try to spread to neighbors
-        for i in range(len(infected_blocks[0])):
-            y, x = infected_blocks[0][i], infected_blocks[1][i]
-            infection_type = self.world[y, x]
-            
-            # Check 8-connected neighbors
-            for dy in [-1, 0, 1]:
-                for dx in [-1, 0, 1]:
-                    if dy == 0 and dx == 0:
-                        continue
-                    
-                    ny, nx = y + dy, x + dx
-                    
-                    if (0 <= nx < self.width and 0 <= ny < self.height):
-                        target_block = self.world[ny, nx]
-                        
-                        # Can only spread to non-empty, non-infected blocks
-                        if (target_block not in [self.EMPTY] + infection_types):
-                            
-                            # Calculate spread probability
-                            resistance = self.biome_resistance.get(target_block, 1.0)
-                            distance_factor = 1.0  # Adjacent blocks
-                            
-                            spread_prob = spread_rate / resistance * distance_factor
-                            
-                            if np.random.random() < spread_prob:
-                                new_world[ny, nx] = infection_type
-        
-        self.world = new_world
-        
-        # Record statistics
-        corruption_count = np.sum(np.isin(self.world, [self.CORRUPTION, self.CRIMSON, self.HALLOW]))
-        self.corruption_history.append(corruption_count)
-    
-    def simulate_evolution(self, time_steps: int = 100, hardmode_start: int = 50) -> None:
-        """
-        Run a complete evolution simulation.
-        
-        Parameters:
-        -----------
-        time_steps : int
-            Total number of simulation steps
-        hardmode_start : int
-            Step at which hardmode begins
-        """
-        # Initialize world and corruption
-        self.world = self.generate_base_world()
-        self.initialize_corruption_points()
-        
-        self.corruption_history = []
-        self.time_steps = list(range(time_steps))
-        
-        print("Running corruption evolution simulation...")
-        
-        for step in range(time_steps):
-            # Trigger hardmode spread at specified step
-            if step == hardmode_start:
-                self.trigger_hardmode_spread()
-                print(f"Hardmode activated at step {step}")
-            
-            # Simulate spread
-            is_hardmode = step >= hardmode_start
-            self.simulate_spread_step(hardmode=is_hardmode)
-            
-            if step % 20 == 0:
-                print(f"Step {step}/{time_steps} - Infected blocks: {self.corruption_history[-1]}")
-    
-    def create_evolution_visualization(self, save_path: str = None) -> plt.Figure:
-        """
-        Create comprehensive visualization of corruption evolution.
-        
-        Parameters:
-        -----------
-        save_path : str, optional
-            Path to save the visualization
-            
-        Returns:
-        --------
-        plt.Figure
-            The created figure
-        """
-        fig = plt.figure(figsize=(20, 16))
-        gs = fig.add_gridspec(3, 3, height_ratios=[2, 1, 1], width_ratios=[1, 1, 1])
-        
-        # Main world visualization
-        ax_world = fig.add_subplot(gs[0, :])
-        self._plot_world_state(ax_world, "Final Corruption State")
-        
-        # Evolution timeline
-        ax_timeline = fig.add_subplot(gs[1, :])
-        self._plot_evolution_timeline(ax_timeline)
-        
-        # Statistics panels
-        ax_growth = fig.add_subplot(gs[2, 0])
-        self._plot_growth_rate(ax_growth)
-        
-        ax_biome = fig.add_subplot(gs[2, 1])
-        self._plot_biome_resistance(ax_biome)
-        
-        ax_spread = fig.add_subplot(gs[2, 2])
-        self._plot_spread_pattern(ax_spread)
-        
-        plt.tight_layout()
-        
-        if save_path:
-            plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            print(f"Visualization saved to {save_path}")
-        
-        return fig
-    
-    def _plot_world_state(self, ax: plt.Axes, title: str) -> None:
-        """Plot the current world state with color-coded blocks."""
-        # Create color map
-        colors = [self.colors[i] for i in range(len(self.colors))]
-        cmap = ListedColormap(colors)
-        
-        # Downsample for visualization
-        sample_rate = max(1, self.width // 800)
-        world_sample = self.world[::sample_rate, ::sample_rate]
-        
-        im = ax.imshow(world_sample, cmap=cmap, aspect='auto', vmin=0, vmax=len(colors)-1)
-        ax.set_title(title, fontsize=16, fontweight='bold')
-        ax.set_xlabel("World X Position")
-        ax.set_ylabel("World Y Position")
-        
-        # Add colorbar legend
-        cbar = plt.colorbar(im, ax=ax, shrink=0.6)
-        cbar.set_label("Block Type", rotation=270, labelpad=20)
-    
-    def _plot_evolution_timeline(self, ax: plt.Axes) -> None:
-        """Plot the evolution of corruption over time."""
-        ax.plot(self.time_steps, self.corruption_history, 
-               color=sns.color_palette("rocket")[3], linewidth=3, 
-               label='Infected Blocks')
-        
-        # Mark hardmode activation
-        if len(self.time_steps) > 50:
-            ax.axvline(x=50, color='red', linestyle='--', alpha=0.7, 
-                      label='Hardmode Activation')
-        
-        ax.set_title("Corruption Evolution Over Time", fontsize=14, fontweight='bold')
-        ax.set_xlabel("Time Steps")
-        ax.set_ylabel("Number of Infected Blocks")
-        ax.legend()
-        ax.grid(True, alpha=0.3)
-    
-    def _plot_growth_rate(self, ax: plt.Axes) -> None:
-        """Plot the growth rate analysis."""
-        if len(self.corruption_history) > 1:
-            growth_rates = np.diff(self.corruption_history)
-            ax.plot(self.time_steps[1:], growth_rates, 
-                   color=sns.color_palette("mako")[4], linewidth=2)
-            
-            ax.set_title("Growth Rate", fontsize=12, fontweight='bold')
-            ax.set_xlabel("Time")
-            ax.set_ylabel("Blocks/Step")
-            ax.grid(True, alpha=0.3)
-    
-    def _plot_biome_resistance(self, ax: plt.Axes) -> None:
-        """Plot biome resistance factors."""
-        biomes = list(self.biome_resistance.keys())
-        resistances = list(self.biome_resistance.values())
-        
-        colors = sns.color_palette("cubehelix", len(biomes))
-        ax.bar(range(len(biomes)), resistances, color=colors)
-        ax.set_title("Biome Resistance", fontsize=12, fontweight='bold')
-        ax.set_xlabel("Biome Type")
-        ax.set_ylabel("Resistance Factor")
-        ax.set_xticks(range(len(biomes)))
-        ax.set_xticklabels([str(b) for b in biomes], rotation=45)
-    
-    def _plot_spread_pattern(self, ax: plt.Axes) -> None:
-        """Plot spread pattern analysis."""
-        # Calculate infection density by region
-        regions = 10
-        region_width = self.width // regions
-        densities = []
-        
-        for i in range(regions):
-            start_x = i * region_width
-            end_x = (i + 1) * region_width
-            region = self.world[:, start_x:end_x]
-            
-            infected = np.sum(np.isin(region, [self.CORRUPTION, self.CRIMSON, self.HALLOW]))
-            total = np.sum(region != self.EMPTY)
-            density = infected / max(total, 1)
-            densities.append(density)
-        
-        colors = sns.color_palette("rocket", regions)
-        ax.bar(range(regions), densities, color=colors)
-        ax.set_title("Infection Density by Region", fontsize=12, fontweight='bold')
-        ax.set_xlabel("World Region")
-        ax.set_ylabel("Infection Density")
+        """Legacy: one spread step (~500 s pre-hardmode, ~2000 s hardmode)."""
+        self.simulateSpread(500.0 if not hardmode else 2000.0)
+        self.corruption_history = self.corruptionHistory
 
-def create_corruption_animation(world_gen: TerrariaCorruptionEvolution, 
-                              save_path: str = None) -> FuncAnimation:
-    """
-    Create an animated visualization of corruption spread over time.
-    
-    Parameters:
-    -----------
-    world_gen : TerrariaCorruptionEvolution
-        The world generator with simulation data
-    save_path : str, optional
-        Path to save the animation
-        
-    Returns:
-    --------
-    FuncAnimation
-        The created animation
-    """
-    # Run simulation and store states
-    world_gen.world = world_gen.generate_base_world()
-    world_gen.initialize_corruption_points()
-    
-    world_states = [world_gen.world.copy()]
-    
-    for step in range(100):
-        if step == 50:  # Hardmode activation
-            world_gen.trigger_hardmode_spread()
-        
-        world_gen.simulate_spread_step(hardmode=step >= 50)
-        world_states.append(world_gen.world.copy())
-    
-    # Create animation
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(16, 12))
-    
-    # Setup color mapping
-    colors = [world_gen.colors[i] for i in range(len(world_gen.colors))]
-    cmap = ListedColormap(colors)
-    
-    # Initial plot
-    sample_rate = max(1, world_gen.width // 400)
-    im1 = ax1.imshow(world_states[0][::sample_rate, ::sample_rate], 
-                     cmap=cmap, aspect='auto')
-    ax1.set_title("Corruption Evolution", fontsize=16, fontweight='bold')
-    
-    # Statistics plot
-    line, = ax2.plot([], [], color=sns.color_palette("rocket")[3], linewidth=3)
-    ax2.set_xlim(0, len(world_states))
-    ax2.set_ylim(0, max(world_gen.corruption_history) * 1.1 if world_gen.corruption_history else 1000)
-    ax2.set_title("Infection Growth", fontsize=14, fontweight='bold')
-    ax2.set_xlabel("Time Steps")
-    ax2.set_ylabel("Infected Blocks")
-    ax2.grid(True, alpha=0.3)
-    
-    def animate(frame):
-        # Update world visualization
-        world_sample = world_states[frame][::sample_rate, ::sample_rate]
-        im1.set_array(world_sample)
-        
-        # Update statistics
-        if frame < len(world_gen.corruption_history):
-            x_data = list(range(frame + 1))
-            y_data = world_gen.corruption_history[:frame + 1]
-            line.set_data(x_data, y_data)
-        
-        # Update title with current step
-        ax1.set_title(f"Corruption Evolution - Step {frame}" + 
-                     (" (HARDMODE)" if frame >= 50 else ""), 
-                     fontsize=16, fontweight='bold')
-        
-        return [im1, line]
-    
-    anim = FuncAnimation(fig, animate, frames=len(world_states), 
-                        interval=100, blit=False, repeat=True)
-    
-    if save_path:
-        anim.save(save_path, writer='pillow', fps=10)
-        print(f"Animation saved to {save_path}")
-    
-    return anim
 
-# Example usage and testing
+# ---------------------------------------------------------------------------
+# Visualization helpers
+# ---------------------------------------------------------------------------
+def _addLegend(ax: plt.Axes) -> None:
+    """Add compact biome color legend to an axis."""
+    entries = {
+        "Air": TILE_COLORS[AIR],
+        "Dirt": TILE_COLORS[DIRT],
+        "Stone": TILE_COLORS[STONE],
+        "Grass": TILE_COLORS[GRASS],
+        "Sand": TILE_COLORS[SAND],
+        "Ice": TILE_COLORS[ICE],
+        "Mud": TILE_COLORS[MUD],
+        "Corrupt": TILE_COLORS[CORRUPT_DIRT],
+        "Crimson": TILE_COLORS[CRIMSON_DIRT],
+        "Hallow": TILE_COLORS[PEARLSTONE],
+    }
+    handles = [mpatches.Patch(color=c, label=l) for l, c in entries.items()]
+    ax.legend(handles=handles, loc="upper right", fontsize=5, ncol=2, framealpha=0.5)
+
+
+def _buildAirGapDemo() -> np.ndarray:
+    """Return a small grid demonstrating air gap infection blocking.
+
+    Top half: no barrier, corruption spreads freely through stone.
+    Bottom half: 4-tile air trench blocks corruption from crossing.
+    """
+    dW, dH = 120, 80
+    sim = TerrariaCorruptionEvolution(worldWidth=dW, worldHeight=dH, seed=99)
+    sim.grid[:] = STONE
+
+    # Top half: seed corruption at left, no barrier
+    sim.grid[5:35, 10:28] = CORRUPT_DIRT
+
+    # Bottom half: seed corruption at left, air trench at x=55
+    sim.grid[45:75, 10:28] = CORRUPT_DIRT
+    sim.grid[40:80, 55 : 55 + INFECTION_GAP_TILES] = AIR
+
+    for _ in range(20):
+        sim.simulateSpread(3000.0)
+
+    return sim.grid.copy()
+
+
+# ---------------------------------------------------------------------------
+# Public figure builders
+# ---------------------------------------------------------------------------
+def createEvolutionFigure(savePath: Optional[str] = None) -> plt.Figure:
+    """2x3 panel figure: evil pockets, V-pattern, spread frames, air gap, timeline."""
+    if savePath is None:
+        savePath = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "..", "Plots", "Code+", "corruption_evolution.png",
+        )
+
+    print("Running reduced-resolution corruption evolution (840x240)...")
+    sim = TerrariaCorruptionEvolution(worldWidth=840, worldHeight=240, seed=42)
+
+    sim.initializeWorld()
+    sim.placePreHardmodeEvil()
+    snapPreHM = sim.grid.copy()
+
+    sim.triggerHardmode()
+    snapV = sim.grid.copy()
+
+    sim.simulateSpread(5000.0)
+    snapSpread1 = sim.grid.copy()
+
+    for _ in range(5):
+        sim.simulateSpread(5000.0)
+    snapSpread2 = sim.grid.copy()
+
+    snapAirGap = _buildAirGapDemo()
+
+    fig, axes = plt.subplots(3, 2, figsize=(18, 14))
+    panels = [
+        (snapPreHM, "Pre-Hardmode Evil Pockets (TileRunner)"),
+        (snapV, "Hardmode V-Pattern (WoF Defeated)"),
+        (snapSpread1, "Spread: +5 000 Game Seconds"),
+        (snapSpread2, "Spread: +30 000 Game Seconds"),
+    ]
+
+    for idx, (snap, title) in enumerate(panels):
+        r, c = divmod(idx, 2)
+        axes[r, c].imshow(_gridToRgb(snap), aspect="auto", interpolation="nearest")
+        axes[r, c].set_title(title, fontsize=11, fontweight="bold")
+        axes[r, c].set_xlabel("X (tiles, 1:10 scale)")
+        axes[r, c].set_ylabel("Y (tiles)")
+    _addLegend(axes[0, 0])
+
+    # Air gap demo panel
+    axes[2, 0].imshow(_gridToRgb(snapAirGap), aspect="auto", interpolation="nearest")
+    axes[2, 0].set_title(
+        f"Air Gap Demo: {INFECTION_GAP_TILES}-Tile Trench Blocks Spread",
+        fontsize=11, fontweight="bold",
+    )
+    axes[2, 0].set_xlabel("X (tiles)")
+    axes[2, 0].set_ylabel("Y (tiles)")
+    axes[2, 0].axhline(y=39, color="yellow", linewidth=0.8, linestyle="--", alpha=0.6)
+    axes[2, 0].text(62, 18, "No barrier", color="white", fontsize=8, ha="left")
+    axes[2, 0].text(
+        62, 58, f"{INFECTION_GAP_TILES}-tile air trench",
+        color="yellow", fontsize=8, ha="left",
+    )
+
+    # Infection timeline panel
+    ax = axes[2, 1]
+    if sim.corruptionHistory:
+        ax.plot(
+            range(len(sim.corruptionHistory)),
+            sim.corruptionHistory,
+            color=sns.color_palette("rocket")[3],
+            linewidth=2,
+        )
+    ax.set_title("Infected Tile Count Over Spread Steps", fontsize=11, fontweight="bold")
+    ax.set_xlabel("Spread Step")
+    ax.set_ylabel("Infected Tiles")
+    ax.grid(True, alpha=0.3)
+
+    fig.suptitle(
+        "Terraria Corruption Evolution (840x240, 1:10 Scale)",
+        fontsize=14, fontweight="bold", y=0.98,
+    )
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
+
+    os.makedirs(os.path.dirname(os.path.abspath(savePath)), exist_ok=True)
+    fig.savefig(savePath, dpi=200, bbox_inches="tight")
+    print(f"Saved: {savePath}")
+    plt.close(fig)
+    return fig
+
+
+def createSpreadAnimation(savePath: Optional[str] = None) -> None:
+    """Animated GIF showing corruption spread at reduced resolution (840x240)."""
+    from matplotlib.animation import FuncAnimation
+
+    if savePath is None:
+        savePath = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "..", "Plots", "Code+", "corruption_spread.gif",
+        )
+
+    print("Creating spread animation (840x240)...")
+    sim = TerrariaCorruptionEvolution(worldWidth=840, worldHeight=240, seed=42)
+    sim.initializeWorld()
+    sim.placePreHardmodeEvil()
+
+    frames: list[np.ndarray] = [sim.grid.copy()]
+
+    # Pre-hardmode: 10 steps
+    for _ in range(10):
+        sim.simulateSpread(1000.0)
+        frames.append(sim.grid.copy())
+
+    # Hardmode trigger
+    sim.triggerHardmode()
+    frames.append(sim.grid.copy())
+    hmFrame = len(frames) - 1
+
+    # Post-hardmode: 30 steps
+    for _ in range(30):
+        sim.simulateSpread(3000.0)
+        frames.append(sim.grid.copy())
+
+    fig, ax = plt.subplots(figsize=(14, 4))
+    im = ax.imshow(_gridToRgb(frames[0]), aspect="auto", interpolation="nearest")
+    ax.set_xlabel("X (tiles, 1:10 scale)")
+    ax.set_ylabel("Y (tiles)")
+    titleObj = ax.set_title("", fontsize=12, fontweight="bold")
+
+    def _update(f: int):
+        im.set_data(_gridToRgb(frames[f]))
+        phase = "HARDMODE" if f >= hmFrame else "Pre-Hardmode"
+        titleObj.set_text(
+            f"Corruption Spread -- Frame {f}/{len(frames) - 1} [{phase}]"
+        )
+        return [im, titleObj]
+
+    anim = FuncAnimation(fig, _update, frames=len(frames), interval=200, blit=False)
+
+    os.makedirs(os.path.dirname(os.path.abspath(savePath)), exist_ok=True)
+    anim.save(savePath, writer="pillow", fps=5)
+    print(f"Saved: {savePath}")
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    print("Terraria Corruption Evolution Visualization System")
-    print("=" * 50)
-    
-    # Create system
-    corruption_system = TerrariaCorruptionEvolution(world_width=2100, world_height=600)
-    
-    # Run evolution simulation
-    corruption_system.simulate_evolution(time_steps=100, hardmode_start=50)
-      # Create visualizations
-    save_path = "corruption_evolution_analysis.png"
-    fig = corruption_system.create_evolution_visualization(save_path=save_path)
-    plt.show()
-    
-    print("\nEvolution simulation complete!")
-    print(f"Final infected blocks: {corruption_system.corruption_history[-1]}")
-    print(f"Peak growth rate: {max(np.diff(corruption_system.corruption_history)):.1f} blocks/step")
+    print("Terraria Corruption Evolution")
+    print("=" * 40)
+    createEvolutionFigure()
+    createSpreadAnimation()
+    print("Done.")

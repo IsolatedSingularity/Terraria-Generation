@@ -1,0 +1,29 @@
+[project]
+name = "terraria-generation"
+version = "0.1.0"
+description = "Accurate Terraria world generation simulation based on decompiled source analysis."
+requires-python = ">=3.11"
+dependencies = [
+    "numpy==2.2.5",
+    "matplotlib==3.10.1",
+    "seaborn==0.13.2",
+    "scipy==1.15.2",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP"]
+# N: we use camelCase by convention, suppress PEP 8 naming warnings
+ignore = ["N802", "N803", "N806", "N815", "N816"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["Engine"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false

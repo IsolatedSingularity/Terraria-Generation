@@ -1,444 +1,632 @@
 """
-Terraria World Generation Visualization
-=====================================
+Terraria World Generation - 19-Pass Pipeline
+=============================================
 
-This module creates comprehensive visualizations of Terraria's 103-pass world generation system,
-showing the step-by-step construction of terrain, biomes, and structures.
+Implements a faithful subset of Terraria's 103-pass world generation system
+using diamond-brush TileRunner, cellular automata smoothing, and proper
+layer depth calculations derived from decompiled WorldGen.cs.
 
-Mathematical Foundation:
-- Surface generation: height(x) = base + Σ(amplitude_i × noise(x × frequency_i))
-- Cave carving: TileRunner algorithm with random walk patterns
-- Biome placement: Rule-based positioning with distance constraints
-- Structure generation: Probabilistic placement with spatial validation
-
-Author: Terraria Generation Project
+All algorithms imported from Engine.algorithms; constants from Engine.constants.
 """
+
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-import matplotlib.patches as patches
 import seaborn as sns
-from matplotlib.colors import LinearSegmentedColormap
-import os
+from matplotlib.colors import ListedColormap
 import warnings
 warnings.filterwarnings('ignore')
 
-# Set seaborn style and preferred color palettes
+from Engine.algorithms import (
+    tileRunner, digTunnel, cellularAutomataSmooth, settleLiquids,
+    AIR, DIRT, STONE, GRASS, SAND, ASH, MUD, SNOW, ICE,
+    HELLSTONE, LAVA, WATER, COPPER, IRON, SILVER, GOLD,
+    EBONSTONE, CORRUPT_DIRT,
+)
+from Engine.constants import LARGE, LayerDepths, StructureQuotas, OreConfig
+from Engine.structureMap import StructureMap, Rectangle
+
 sns.set_style("whitegrid")
 sns.set_context("paper", font_scale=1.2)
 plt.rcParams['figure.facecolor'] = 'white'
 plt.rcParams['axes.facecolor'] = 'white'
 
-# Custom color palettes as requested
-MAKO_CMAP = sns.color_palette("mako", as_cmap=True)
-CUBEHELIX_CMAP = sns.cubehelix_palette(start=2, rot=0, dark=0, light=.95, reverse=True, as_cmap=True)
-ROCKET_CMAP = sns.color_palette("rocket", as_cmap=True)
+# Tile IDs not in Engine (used locally for visualization grouping)
+_DUNGEON_BRICK = 200
+_LIFE_CRYSTAL = 201
+
+# Ordered color map: index = tile ID -> hex color
+TILE_COLORS = {
+    AIR: '#87CEEB',
+    DIRT: '#8B4513',
+    STONE: '#696969',
+    GRASS: '#90EE90',
+    SAND: '#F4A460',
+    ASH: '#4A4A4A',
+    HELLSTONE: '#FF4500',
+    MUD: '#6B4226',
+    SNOW: '#E8E8F0',
+    ICE: '#ADD8E6',
+    WATER: '#1E90FF',
+    LAVA: '#FF2400',
+    COPPER: '#B87333',
+    IRON: '#A9A9A9',
+    SILVER: '#C0C0C0',
+    GOLD: '#FFD700',
+    EBONSTONE: '#9370DB',
+    CORRUPT_DIRT: '#7B68AE',
+    _DUNGEON_BRICK: '#2F4F4F',
+    _LIFE_CRYSTAL: '#FF69B4',
+}
+
+
+def _buildColormap() -> ListedColormap:
+    """Build a ListedColormap covering all tile IDs up to max used."""
+    maxId = max(TILE_COLORS.keys()) + 1
+    colors = []
+    defaultColor = '#000000'
+    for i in range(maxId):
+        hexColor = TILE_COLORS.get(i, defaultColor)
+        colors.append(hexColor)
+    return ListedColormap(colors)
+
+
+TERRAIN_CMAP = _buildColormap()
+
 
 class TerrariaWorldGenerator:
+    """Simulates Terraria's world generation using a 19-pass pipeline.
+
+    Supports full-size (8400x2400) and reduced-resolution modes.
+    Layer depths, cave counts, and ore density scale proportionally.
     """
-    Simulates Terraria's world generation process using mathematical models
-    based on the 103-pass generation system.
-    """
-    
-    def __init__(self, world_width=8400, world_height=2400, seed=42):
-        """
-        Initialize world generator for large world dimensions.
-        
-        Args:
-            world_width: World width in blocks (8400 for large world)
-            world_height: World height in blocks (2400 for large world)
-            seed: Random seed for deterministic generation
-        """
+
+    PASS_LIST = [
+        "Reset",
+        "Terrain",
+        "Stone Layer",
+        "Sand Patches",
+        "Surface Caves",
+        "Dirt Layer Caves",
+        "Rock Layer Caves",
+        "Smooth World",
+        "Snow Biome",
+        "Jungle",
+        "Corruption",
+        "Floating Islands",
+        "Underworld",
+        "Shinies",
+        "Dungeon",
+        "Settle Liquids",
+        "Life Crystals",
+        "Grass",
+        "Border Buffer",
+    ]
+
+    def __init__(self, worldWidth: int = 8400, worldHeight: int = 2400, seed: int = 12345):
+        self.worldWidth = worldWidth
+        self.worldHeight = worldHeight
+        self.seed = seed
         np.random.seed(seed)
-        self.world_width = world_width
-        self.world_height = world_height
-        self.surface_level = world_height // 4
-        self.cavern_level = int(world_height * 0.6)
-        self.hell_level = int(world_height * 0.85)
-        
-        # Initialize world grid
-        self.world = np.zeros((world_height, world_width), dtype=int)
-        self.generation_stages = []
-        
-        # Block type definitions
-        self.block_types = {
-            0: 'Air',
-            1: 'Dirt', 
-            2: 'Stone',
-            3: 'Grass',
-            4: 'Sand',
-            5: 'Corruption',
-            6: 'Crimson',
-            7: 'Hallow',
-            8: 'Jungle',
-            9: 'Snow',
-            10: 'Dungeon',
-            11: 'Hell'
-        }
-        
-        # Color mapping for visualization
-        self.block_colors = {
-            0: '#87CEEB',   # Air - Sky Blue
-            1: '#8B4513',   # Dirt - Saddle Brown
-            2: '#696969',   # Stone - Dim Gray
-            3: '#90EE90',   # Grass - Light Green
-            4: '#F4A460',   # Sand - Sandy Brown
-            5: '#9370DB',   # Corruption - Medium Purple
-            6: '#DC143C',   # Crimson - Crimson
-            7: '#FFB6C1',   # Hallow - Light Pink
-            8: '#228B22',   # Jungle - Forest Green
-            9: '#F0F8FF',   # Snow - Alice Blue
-            10: '#2F4F4F',  # Dungeon - Dark Slate Gray
-            11: '#8B0000'   # Hell - Dark Red
-        }
-    
-    def simple_noise(self, x, y=0, frequency=0.01, octaves=4, amplitude=1.0):
-        """
-        Simple noise implementation using trigonometric functions.
-        
-        Args:
-            x, y: Coordinates
-            frequency: Base frequency
-            octaves: Number of noise layers
-            amplitude: Maximum amplitude
-            
-        Returns:
-            Noise value between -amplitude and amplitude
-        """
-        value = 0
-        current_amplitude = amplitude
-        current_frequency = frequency
-        
-        for _ in range(octaves):
-            value += current_amplitude * np.sin(x * current_frequency * 2 * np.pi)
-            if y != 0:
-                value += current_amplitude * np.cos(y * current_frequency * 2 * np.pi)
-            current_amplitude *= 0.5
-            current_frequency *= 2
-        
-        return value
-    
-    def generate_surface_terrain(self):
-        """
-        Generate surface terrain using 1D noise for height variation.
-        Pass 1-5: Terrain formation and basic height map.
-        """
-        print("Generating surface terrain...")
-        
-        # Generate height map
-        x_coords = np.arange(self.world_width)
-        heights = []
-        
-        for x in x_coords:
-            # Multi-octave noise for natural terrain
-            height = self.surface_level
-            height += self.simple_noise(x, frequency=0.01, octaves=4, amplitude=30)
-            height += self.simple_noise(x, frequency=0.05, octaves=2, amplitude=10)
-            height = int(np.clip(height, 50, self.surface_level + 50))
-            heights.append(height)
-        
-        # Fill terrain
-        for x in range(self.world_width):
-            surface_y = heights[x]
-            
-            # Fill from surface to bottom
-            for y in range(surface_y, self.world_height):
-                if y < surface_y + 50:
-                    self.world[y, x] = 1  # Dirt layer
-                else:
-                    self.world[y, x] = 2  # Stone layer
-            
-            # Add grass on surface
-            if surface_y > 0:
-                self.world[surface_y, x] = 3
-        
-        # Store this stage
-        self.generation_stages.append(('Surface Terrain', self.world.copy()))
-    
-    def carve_caves(self):
-        """
-        Carve cave systems using random walk algorithm (TileRunner).
-        Pass 6-25: Cave generation with increasing size by depth.
-        """
-        print("Carving cave systems...")
-        
-        # Small caves in dirt layer
-        for _ in range(200):
-            start_x = np.random.randint(0, self.world_width)
-            start_y = np.random.randint(self.surface_level, self.cavern_level)
-            self._carve_tunnel(start_x, start_y, strength=8, steps=50)
-        
-        # Large caves in stone layer
-        for _ in range(100):
-            start_x = np.random.randint(0, self.world_width)
-            start_y = np.random.randint(self.cavern_level, self.hell_level)
-            self._carve_tunnel(start_x, start_y, strength=15, steps=100)
-        
-        self.generation_stages.append(('Cave Systems', self.world.copy()))
-    
-    def _carve_tunnel(self, start_x, start_y, strength, steps):
-        """
-        Carve a single tunnel using random walk algorithm.
-        
-        Args:
-            start_x, start_y: Starting coordinates
-            strength: Tunnel radius
-            steps: Number of steps to take
-        """
-        x, y = start_x, start_y
-        
-        for _ in range(steps):
-            # Random walk direction
-            dx = np.random.randint(-2, 3)
-            dy = np.random.randint(-1, 2)
-            
-            x = np.clip(x + dx, 0, self.world_width - 1)
-            y = np.clip(y + dy, 0, self.world_height - 1)
-            
-            # Carve circular area
-            for i in range(-strength//2, strength//2 + 1):
-                for j in range(-strength//2, strength//2 + 1):
-                    if i*i + j*j <= (strength//2)**2:
-                        nx, ny = x + i, y + j
-                        if 0 <= nx < self.world_width and 0 <= ny < self.world_height:
-                            if self.world[ny, nx] != 0:  # Don't carve air
-                                self.world[ny, nx] = 0  # Air
-            
-            # Gradually reduce strength
-            strength = max(3, int(strength * 0.98))
-    
-    def place_biomes(self):
-        """
-        Place major biomes according to Terraria's rules.
-        Pass 26-45: Biome placement and terrain conversion.
-        """
-        print("Placing biomes...")
-        
-        # Determine dungeon side (left or right)
-        dungeon_left = np.random.choice([True, False])
-        
-        # Snow biome (same side as dungeon)
-        if dungeon_left:
-            snow_start = 0
-            snow_end = self.world_width // 6
-            jungle_start = 4 * self.world_width // 6
-            jungle_end = self.world_width
+        self.rng = np.random.default_rng(seed)
+
+        # Scale factor relative to Large world
+        self.scaleX = worldWidth / LARGE.width
+        self.scaleY = worldHeight / LARGE.height
+        self.areaScale = self.scaleX * self.scaleY
+
+        # Layer depths (scaled from Large defaults)
+        refLayers = LayerDepths.forLarge()
+        self.worldSurface = int(refLayers.worldSurface * self.scaleY)
+        self.rockLayer = int(refLayers.rockLayer * self.scaleY)
+        self.hellLayer = int((refLayers.maxTilesY - 200) * self.scaleY)
+
+        # Structure quotas (full-size; passes scale counts internally)
+        self.quotas = StructureQuotas.forLarge()
+        self.structureMap = StructureMap()
+        self.borderBuffer = max(1, int(LARGE.borderBuffer * min(self.scaleX, self.scaleY)))
+
+        # Primary grid
+        self.grid = np.zeros((worldHeight, worldWidth), dtype=np.int32)
+        self.passLog: list[str] = []
+        self.snapshots: list[tuple[str, np.ndarray]] = []
+
+        # Biome layout state (set during generation)
+        self._dungeonLeft: bool = True
+        self._evilCenter: int = 0
+
+    # ------------------------------------------------------------------
+    # Backward-compat: master_evolution.py reads .world
+    # ------------------------------------------------------------------
+    @property
+    def world(self) -> np.ndarray:
+        return self.grid
+
+    @world.setter
+    def world(self, value: np.ndarray) -> None:
+        self.grid = value
+
+    # ------------------------------------------------------------------
+    # Main entry point
+    # ------------------------------------------------------------------
+    def generate(self) -> np.ndarray:
+        """Run all 19 passes in order and return the completed grid."""
+        passes = [
+            ("Reset", self._passReset),
+            ("Terrain", self._passTerrain),
+            ("Stone Layer", self._passStoneLayer),
+            ("Sand Patches", self._passSandPatches),
+            ("Surface Caves", self._passSurfaceCaves),
+            ("Dirt Layer Caves", self._passDirtLayerCaves),
+            ("Rock Layer Caves", self._passRockLayerCaves),
+            ("Smooth World", self._passSmoothWorld),
+            ("Snow Biome", self._passSnowBiome),
+            ("Jungle", self._passJungle),
+            ("Corruption", self._passCorruption),
+            ("Floating Islands", self._passFloatingIslands),
+            ("Underworld", self._passUnderworld),
+            ("Shinies", self._passShinies),
+            ("Dungeon", self._passDungeon),
+            ("Settle Liquids", self._passSettleLiquids),
+            ("Life Crystals", self._passLifeCrystals),
+            ("Grass", self._passGrass),
+            ("Border Buffer", self._passBorderBuffer),
+        ]
+        for name, fn in passes:
+            fn()
+            self.passLog.append(name)
+            self.snapshots.append((name, self.grid.copy()))
+        return self.grid
+
+    # ------------------------------------------------------------------
+    # Backward-compatible API for terraria_master_evolution.py
+    # ------------------------------------------------------------------
+    def generate_surface_terrain(self) -> None:
+        """Legacy: run Reset + Terrain + Stone Layer + Sand Patches."""
+        for fn in [self._passReset, self._passTerrain, self._passStoneLayer, self._passSandPatches]:
+            fn()
+
+    def carve_caves(self) -> None:
+        """Legacy: run cave passes + smoothing."""
+        for fn in [self._passSurfaceCaves, self._passDirtLayerCaves,
+                    self._passRockLayerCaves, self._passSmoothWorld]:
+            fn()
+
+    def place_biomes(self) -> None:
+        """Legacy: run biome passes."""
+        for fn in [self._passSnowBiome, self._passJungle, self._passCorruption,
+                    self._passFloatingIslands]:
+            fn()
+
+    def place_structures(self) -> None:
+        """Legacy: run structure and finishing passes."""
+        for fn in [self._passUnderworld, self._passShinies, self._passDungeon,
+                    self._passSettleLiquids, self._passLifeCrystals,
+                    self._passGrass, self._passBorderBuffer]:
+            fn()
+
+    # ------------------------------------------------------------------
+    # Helper: 1D surface heightmap via multi-octave sine noise
+    # ------------------------------------------------------------------
+    def _surfaceHeight(self, x: int) -> int:
+        """Return surface Y for column x using layered sine noise."""
+        base = self.worldSurface
+        h = 0.0
+        h += 30.0 * self.scaleY * np.sin(x * 0.005 + self.seed * 0.1)
+        h += 15.0 * self.scaleY * np.sin(x * 0.012 + self.seed * 0.3)
+        h += 7.0 * self.scaleY * np.sin(x * 0.03 + self.seed * 0.7)
+        return int(np.clip(base + h, 10, self.worldSurface + 50 * self.scaleY))
+
+    # ------------------------------------------------------------------
+    # Pass implementations
+    # ------------------------------------------------------------------
+    def _passReset(self) -> None:
+        """Pass 0: Clear the grid to AIR."""
+        self.grid[:] = AIR
+        self.structureMap.clear()
+
+    def _passTerrain(self) -> None:
+        """Pass 1: Generate surface heightmap and fill dirt below."""
+        for x in range(self.worldWidth):
+            surfaceY = self._surfaceHeight(x)
+            if surfaceY < self.worldHeight:
+                self.grid[surfaceY:, x] = DIRT
+
+    def _passStoneLayer(self) -> None:
+        """Pass 2: Fill stone below the dirt-to-stone transition."""
+        for x in range(self.worldWidth):
+            surfaceY = self._surfaceHeight(x)
+            # Stone starts ~50 tiles below surface (scaled), blending into rockLayer
+            stoneStart = surfaceY + max(1, int(50 * self.scaleY))
+            stoneStart = min(stoneStart, self.worldHeight - 1)
+            mask = self.grid[stoneStart:, x] == DIRT
+            self.grid[stoneStart:, x][mask] = STONE
+
+    def _passSandPatches(self) -> None:
+        """Pass 3: Place sand patches on the surface (desert/beach areas)."""
+        # Beaches: leftmost and rightmost 5% of world
+        beachWidth = max(10, int(self.worldWidth * 0.05))
+        for x in list(range(beachWidth)) + list(range(self.worldWidth - beachWidth, self.worldWidth)):
+            surfaceY = self._surfaceHeight(x)
+            depth = max(2, int(20 * self.scaleY))
+            yEnd = min(surfaceY + depth, self.worldHeight)
+            mask = self.grid[surfaceY:yEnd, x] != AIR
+            self.grid[surfaceY:yEnd, x][mask] = SAND
+
+        # Desert patch (random location in middle third)
+        desertCenter = self.rng.integers(self.worldWidth // 3, 2 * self.worldWidth // 3)
+        desertHalf = max(20, int(150 * self.scaleX))
+        desertDepth = max(5, int(60 * self.scaleY))
+        for x in range(max(0, desertCenter - desertHalf), min(self.worldWidth, desertCenter + desertHalf)):
+            surfaceY = self._surfaceHeight(x)
+            yEnd = min(surfaceY + desertDepth, self.worldHeight)
+            mask = self.grid[surfaceY:yEnd, x] != AIR
+            self.grid[surfaceY:yEnd, x][mask] = SAND
+
+    def _passSurfaceCaves(self) -> None:
+        """Pass 4: Small caves near the surface using TileRunner."""
+        count = max(5, int(self.worldWidth * self.worldHeight * 1.5e-05))
+        for _ in range(count):
+            sx = self.rng.integers(0, self.worldWidth)
+            sy = self.rng.integers(self.worldSurface, min(self.worldSurface + int(100 * self.scaleY), self.rockLayer))
+            strength = self.rng.uniform(4, 8) * min(self.scaleX, self.scaleY)
+            steps = self.rng.integers(10, 30)
+            tileRunner(self.grid, int(sx), int(sy), float(strength), int(steps), tileType=-1)
+
+    def _passDirtLayerCaves(self) -> None:
+        """Pass 5: Medium caves in the dirt/transition layer."""
+        count = max(10, int(self.worldWidth * self.worldHeight * 3e-05))
+        for _ in range(count):
+            sx = self.rng.integers(0, self.worldWidth)
+            sy = self.rng.integers(self.worldSurface, self.rockLayer)
+            strength = self.rng.uniform(6, 14) * min(self.scaleX, self.scaleY)
+            steps = self.rng.integers(20, 60)
+            tileRunner(self.grid, int(sx), int(sy), float(strength), int(steps), tileType=-1)
+
+    def _passRockLayerCaves(self) -> None:
+        """Pass 6: Large caves in the rock/cavern layer."""
+        count = max(10, int(self.worldWidth * self.worldHeight * 4e-05))
+        for _ in range(count):
+            sx = self.rng.integers(0, self.worldWidth)
+            sy = self.rng.integers(self.rockLayer, self.hellLayer)
+            strength = self.rng.uniform(10, 22) * min(self.scaleX, self.scaleY)
+            steps = self.rng.integers(30, 100)
+            tileRunner(self.grid, int(sx), int(sy), float(strength), int(steps), tileType=-1)
+
+    def _passSmoothWorld(self) -> None:
+        """Pass 7: Cellular automata smoothing for organic cave edges."""
+        cellularAutomataSmooth(self.grid, iterations=3, birthThreshold=5, deathThreshold=3)
+
+    def _passSnowBiome(self) -> None:
+        """Pass 8: Convert a lateral section to snow/ice biome."""
+        self._dungeonLeft = bool(self.rng.integers(0, 2))
+        if self._dungeonLeft:
+            snowStart = 0
+            snowEnd = max(1, int(self.worldWidth * 0.18))
         else:
-            snow_start = 5 * self.world_width // 6
-            snow_end = self.world_width
-            jungle_start = 0
-            jungle_end = self.world_width // 6
-        
-        # Convert snow biome
-        for x in range(snow_start, snow_end):
-            for y in range(self.world_height):
-                if self.world[y, x] == 1:  # Dirt to snow
-                    self.world[y, x] = 9
-                elif self.world[y, x] == 3:  # Grass to snow
-                    self.world[y, x] = 9
-        
-        # Convert jungle biome
-        for x in range(jungle_start, jungle_end):
-            for y in range(self.surface_level, self.hell_level):
-                if self.world[y, x] == 1:  # Dirt to jungle
-                    self.world[y, x] = 8
-                elif self.world[y, x] == 3:  # Grass to jungle
-                    self.world[y, x] = 8
-        
-        # Evil biome (corruption or crimson)
-        evil_type = np.random.choice([5, 6])  # Corruption or Crimson
-        evil_center = self.world_width // 3 if dungeon_left else 2 * self.world_width // 3
-        evil_width = 200
-        
-        for x in range(max(0, evil_center - evil_width), min(self.world_width, evil_center + evil_width)):
-            for y in range(0, self.cavern_level):
-                if self.world[y, x] in [1, 2, 3]:
-                    if np.random.random() < 0.7:  # 70% conversion rate
-                        self.world[y, x] = evil_type
-        
-        # Carve evil chasms
-        for _ in range(5):
-            chasm_x = np.random.randint(max(0, evil_center - evil_width), 
-                                       min(self.world_width, evil_center + evil_width))
-            self._carve_chasm(chasm_x)
-        
-        self.generation_stages.append(('Biome Placement', self.world.copy()))
-    
-    def _carve_chasm(self, x):
-        """
-        Carve a vertical chasm for corruption/crimson.
-        
-        Args:
-            x: X coordinate for the chasm
-        """
-        # Find surface
-        surface_y = 0
-        for y in range(self.world_height):
-            if self.world[y, x] != 0:
-                surface_y = y
+            snowStart = int(self.worldWidth * 0.82)
+            snowEnd = self.worldWidth
+
+        for x in range(snowStart, snowEnd):
+            surfaceY = self._surfaceHeight(x)
+            for y in range(surfaceY, self.hellLayer):
+                tile = self.grid[y, x]
+                if tile == DIRT:
+                    self.grid[y, x] = SNOW
+                elif tile == STONE and y > self.rockLayer:
+                    self.grid[y, x] = ICE
+
+    def _passJungle(self) -> None:
+        """Pass 9: Convert opposite side to jungle (dirt->mud)."""
+        if self._dungeonLeft:
+            jungleStart = int(self.worldWidth * 0.72)
+            jungleEnd = self.worldWidth
+        else:
+            jungleStart = 0
+            jungleEnd = max(1, int(self.worldWidth * 0.28))
+
+        for x in range(jungleStart, jungleEnd):
+            surfaceY = self._surfaceHeight(x)
+            for y in range(surfaceY, self.hellLayer):
+                if self.grid[y, x] == DIRT:
+                    self.grid[y, x] = MUD
+
+    def _passCorruption(self) -> None:
+        """Pass 10: Evil biome using TileRunner chasms (Corruption)."""
+        # Place evil in the middle-ish area, opposite side from jungle
+        if self._dungeonLeft:
+            self._evilCenter = self.rng.integers(int(self.worldWidth * 0.30), int(self.worldWidth * 0.55))
+        else:
+            self._evilCenter = self.rng.integers(int(self.worldWidth * 0.45), int(self.worldWidth * 0.70))
+
+        evilHalf = max(20, int(100 * self.scaleX))
+
+        # TileRunner conversion passes (replace stone/dirt with ebonstone/corrupt_dirt)
+        conversionRuns = max(5, int(30 * self.areaScale))
+        for _ in range(conversionRuns):
+            sx = self.rng.integers(max(0, self._evilCenter - evilHalf),
+                                   min(self.worldWidth, self._evilCenter + evilHalf))
+            sy = self.rng.integers(self.worldSurface, self.rockLayer)
+            tileRunner(self.grid, int(sx), int(sy), strength=8.0 * min(self.scaleX, self.scaleY),
+                       steps=40, tileType=EBONSTONE, overRide=False)
+
+        # Carve 3-6 vertical chasms via TileRunner
+        chasmCount = self.rng.integers(3, 7)
+        for _ in range(chasmCount):
+            cx = self.rng.integers(max(0, self._evilCenter - evilHalf),
+                                   min(self.worldWidth, self._evilCenter + evilHalf))
+            surfaceY = self._surfaceHeight(cx)
+            tileRunner(self.grid, cx, surfaceY,
+                       strength=6.0 * min(self.scaleX, self.scaleY),
+                       steps=int(80 * self.scaleY),
+                       tileType=-1, speedX=0.0, speedY=1.5)
+
+    def _passFloatingIslands(self) -> None:
+        """Pass 11: Place floating islands above the surface."""
+        count = max(1, int(self.quotas.floatingIslands * self.areaScale))
+        minY = max(5, int(50 * self.scaleY))
+        maxY = max(minY + 5, self.worldSurface - int(30 * self.scaleY))
+        spacing = self.worldWidth // (count + 1)
+
+        for i in range(count):
+            ix = spacing * (i + 1) + self.rng.integers(-spacing // 4, spacing // 4)
+            ix = int(np.clip(ix, self.borderBuffer, self.worldWidth - self.borderBuffer))
+            iy = self.rng.integers(minY, maxY)
+            islandW = max(10, int(self.rng.integers(60, 100) * self.scaleX))
+            islandH = max(4, int(self.rng.integers(15, 25) * self.scaleY))
+
+            rect = Rectangle(ix - islandW // 2, iy, islandW, islandH)
+            if not self.structureMap.canPlace(rect, padding=5):
+                continue
+            self.structureMap.addProtectedStructure(rect, padding=5)
+
+            # Fill island body
+            for dx in range(islandW):
+                for dy in range(islandH):
+                    wx = ix - islandW // 2 + dx
+                    wy = iy + dy
+                    if 0 <= wx < self.worldWidth and 0 <= wy < self.worldHeight:
+                        # Ellipse check for rounded shape
+                        rx = (dx - islandW / 2) / (islandW / 2)
+                        ry = (dy - islandH / 2) / (islandH / 2)
+                        if rx * rx + ry * ry <= 1.0:
+                            self.grid[wy, wx] = DIRT if dy < islandH // 3 else STONE
+
+    def _passUnderworld(self) -> None:
+        """Pass 12: Fill hell layer with ash and lava."""
+        for x in range(self.worldWidth):
+            for y in range(self.hellLayer, self.worldHeight):
+                if self.grid[y, x] == AIR:
+                    # Lava pools in the lower half of hell
+                    if y > self.hellLayer + (self.worldHeight - self.hellLayer) // 2:
+                        self.grid[y, x] = LAVA
+                else:
+                    self.grid[y, x] = ASH
+
+        # Scatter hellstone via TileRunner
+        hellRuns = max(3, int(20 * self.areaScale))
+        hellYMin = self.hellLayer + 2
+        hellYMax = self.worldHeight - 2
+        if hellYMin < hellYMax:
+            for _ in range(hellRuns):
+                sx = self.rng.integers(self.borderBuffer, self.worldWidth - self.borderBuffer)
+                sy = self.rng.integers(hellYMin, hellYMax)
+                tileRunner(self.grid, int(sx), int(sy), strength=5.0, steps=15, tileType=HELLSTONE)
+
+    def _passShinies(self) -> None:
+        """Pass 13: Ore generation using TileRunner (area-proportional density)."""
+        area = self.worldWidth * self.worldHeight
+        loopCount = max(1, int(area * OreConfig.DENSITY_FACTOR))
+
+        oreSpecs = [
+            (COPPER, self.worldSurface, self.rockLayer, 4.0, 15),
+            (IRON, self.worldSurface, self.rockLayer, 3.5, 14),
+            (SILVER, self.rockLayer, self.hellLayer, 3.0, 12),
+            (GOLD, self.rockLayer, self.hellLayer, 2.5, 10),
+        ]
+
+        for oreType, yMin, yMax, strength, steps in oreSpecs:
+            yMax = max(yMin + 1, yMax)
+            runs = max(1, loopCount // 4)
+            for _ in range(runs):
+                sx = self.rng.integers(self.borderBuffer, self.worldWidth - self.borderBuffer)
+                sy = self.rng.integers(yMin, yMax)
+                tileRunner(self.grid, int(sx), int(sy), strength=strength, steps=steps,
+                           tileType=oreType, overRide=False)
+
+    def _passDungeon(self) -> None:
+        """Pass 14: Simple dungeon using digTunnel for rooms/corridors."""
+        if self._dungeonLeft:
+            dungeonX = max(self.borderBuffer + 10, int(80 * self.scaleX))
+        else:
+            dungeonX = min(self.worldWidth - self.borderBuffer - 10,
+                           self.worldWidth - int(80 * self.scaleX))
+
+        surfaceY = self._surfaceHeight(dungeonX)
+        dungeonW = max(15, int(60 * self.scaleX))
+        dungeonH = max(30, int(120 * self.scaleY))
+
+        rect = Rectangle(dungeonX - dungeonW // 2, surfaceY, dungeonW, dungeonH)
+        if not self.structureMap.canPlace(rect, padding=10):
+            # Force-place if nothing else fits
+            pass
+        self.structureMap.addProtectedStructure(rect, padding=10)
+
+        # Fill dungeon shell with dungeon brick
+        x0 = max(0, dungeonX - dungeonW // 2)
+        x1 = min(self.worldWidth, dungeonX + dungeonW // 2)
+        y0 = surfaceY
+        y1 = min(self.worldHeight, surfaceY + dungeonH)
+        self.grid[y0:y1, x0:x1] = _DUNGEON_BRICK
+
+        # Carve rooms using digTunnel (eating algorithm)
+        roomCount = max(3, int(8 * self.areaScale))
+        for _ in range(roomCount):
+            rx = self.rng.integers(x0 + 2, max(x0 + 3, x1 - 2))
+            ry = self.rng.integers(y0 + 2, max(y0 + 3, y1 - 2))
+            digTunnel(self.grid, float(rx), float(ry),
+                      xDir=self.rng.uniform(-0.5, 0.5),
+                      yDir=self.rng.uniform(0.3, 1.0),
+                      steps=max(3, int(15 * self.scaleY)),
+                      size=max(2, int(4 * min(self.scaleX, self.scaleY))))
+
+    def _passSettleLiquids(self) -> None:
+        """Pass 15: Settle water and lava via gravity."""
+        settleLiquids(self.grid, maxPasses=10)
+
+    def _passLifeCrystals(self) -> None:
+        """Pass 16: Scatter life crystals in cavern layer."""
+        maxCrystals = max(1, int(self.quotas.lifeCrystalsMax * self.areaScale))
+        placed = 0
+        attempts = maxCrystals * 10
+        crystalYMin = self.rockLayer
+        crystalYMax = max(self.rockLayer + 1, self.hellLayer)
+        for _ in range(attempts):
+            if placed >= maxCrystals:
                 break
-        
-        # Carve downward
-        current_x = x
-        for y in range(surface_y, min(self.cavern_level, surface_y + 150)):
-            # Add some horizontal variation
-            if np.random.random() < 0.1:
-                current_x += np.random.randint(-2, 3)
-                current_x = np.clip(current_x, 0, self.world_width - 1)
-            
-            # Carve width of 5-8 blocks
-            width = np.random.randint(5, 9)
-            for i in range(-width//2, width//2 + 1):
-                nx = current_x + i
-                if 0 <= nx < self.world_width:
-                    self.world[y, nx] = 0
-    
-    def place_structures(self):
-        """
-        Place major structures like dungeons, temples, etc.
-        Pass 46-60: Structure generation.
-        """
-        print("Placing structures...")
-        
-        # Dungeon (simplified as a rectangular structure)
-        dungeon_x = 100 if np.random.choice([True, False]) else self.world_width - 200
-        dungeon_y = self.surface_level - 50
-        
-        for x in range(dungeon_x, dungeon_x + 100):
-            for y in range(dungeon_y, dungeon_y + 200):
-                if 0 <= x < self.world_width and 0 <= y < self.world_height:
-                    self.world[y, x] = 10
-        
-        # Hell layer
-        for x in range(self.world_width):
-            for y in range(self.hell_level, self.world_height):
-                if self.world[y, x] == 2:  # Stone to hell stone
-                    self.world[y, x] = 11
-        
-        self.generation_stages.append(('Structure Placement', self.world.copy()))
-    
-    def generate_world(self):
-        """
-        Execute the complete world generation process.
-        
-        Returns:
-            List of generation stages for animation
-        """
-        self.generate_surface_terrain()
-        self.carve_caves()
-        self.place_biomes()
-        self.place_structures()
-        
-        return self.generation_stages
+            cx = self.rng.integers(self.borderBuffer, self.worldWidth - self.borderBuffer)
+            cy = self.rng.integers(crystalYMin, crystalYMax)
+            # Place only in air with solid below
+            if (0 <= cy < self.worldHeight - 1
+                    and self.grid[cy, cx] == AIR
+                    and self.grid[cy + 1, cx] not in (AIR, WATER, LAVA)):
+                self.grid[cy, cx] = _LIFE_CRYSTAL
+                placed += 1
 
-def create_world_generation_animation(save_path):
+    def _passGrass(self) -> None:
+        """Pass 17: Convert surface dirt tiles exposed to air into grass."""
+        for x in range(self.worldWidth):
+            for y in range(max(0, self.worldSurface - int(60 * self.scaleY)),
+                           min(self.worldHeight - 1, self.worldSurface + int(80 * self.scaleY))):
+                if self.grid[y, x] != DIRT:
+                    continue
+                # Check if any neighbor is AIR
+                hasAir = False
+                for dy in range(-1, 2):
+                    for dx in range(-1, 2):
+                        ny, nx = y + dy, x + dx
+                        if 0 <= ny < self.worldHeight and 0 <= nx < self.worldWidth:
+                            if self.grid[ny, nx] == AIR:
+                                hasAir = True
+                                break
+                    if hasAir:
+                        break
+                if hasAir:
+                    self.grid[y, x] = GRASS
+
+    def _passBorderBuffer(self) -> None:
+        """Pass 18: Fill border edges with impassable stone."""
+        b = self.borderBuffer
+        self.grid[:, :b] = STONE
+        self.grid[:, -b:] = STONE
+        self.grid[:b, :] = STONE
+        self.grid[-b:, :] = STONE
+
+
+# ======================================================================
+# Visualization
+# ======================================================================
+
+def _savePath(filename: str) -> str:
+    """Return full path under Plots/Code+/, creating directory if needed."""
+    baseDir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "Plots", "Code+")
+    os.makedirs(baseDir, exist_ok=True)
+    return os.path.join(baseDir, filename)
+
+
+def _renderGrid(ax, grid: np.ndarray, title: str, maxId: int) -> None:
+    """Render a grid onto a matplotlib axes."""
+    ax.imshow(grid, cmap=TERRAIN_CMAP, aspect='auto', vmin=0, vmax=maxId, interpolation='nearest')
+    ax.set_title(title, fontsize=12, fontweight='bold')
+    ax.set_xlabel('X (blocks)')
+    ax.set_ylabel('Y (blocks)')
+
+
+def createWorldGenerationAnimation(saveName: str = "world_generation_animation.gif") -> None:
+    """Create a GIF animation stepping through all 19 generation passes.
+
+    Uses 840x240 (1/10 scale of Large) for performance. Labels indicate
+    this is a scaled visualization, not a real Terraria world size.
     """
-    Create an animation showing the step-by-step world generation process.
-    """
-    print("Creating world generation animation...")
-    
-    # Generate world data
-    generator = TerrariaWorldGenerator(world_width=840, world_height=240)  # Scaled down for performance
-    stages = generator.generate_world()
-    
-    # Create figure
-    fig, ax = plt.subplots(figsize=(16, 8))
-    ax.set_title('Terraria World Generation Process', fontsize=16, fontweight='bold')
-    ax.set_xlabel('World X Coordinate (blocks)', fontsize=12)
-    ax.set_ylabel('World Y Coordinate (blocks)', fontsize=12)
-    
-    # Color mapping
-    colors = list(generator.block_colors.values())
-    cmap = LinearSegmentedColormap.from_list('terraria', colors, N=len(colors))
-    
-    def animate(frame):
+    print("Generating world at 1/10 scale for animation...")
+    gen = TerrariaWorldGenerator(worldWidth=840, worldHeight=240, seed=12345)
+    gen.generate()
+    snapshots = gen.snapshots
+
+    maxId = max(TILE_COLORS.keys())
+    fig, ax = plt.subplots(figsize=(16, 5))
+
+    def animate(frame: int):
         ax.clear()
-        stage_name, world_data = stages[frame % len(stages)]
-        
-        # Display world
-        im = ax.imshow(world_data, cmap=cmap, aspect='auto', 
-                      vmin=0, vmax=len(generator.block_types)-1)
-        
-        ax.set_title(f'Terraria World Generation: {stage_name}', 
-                    fontsize=16, fontweight='bold')
-        ax.set_xlabel('World X Coordinate (blocks)', fontsize=12)
-        ax.set_ylabel('World Y Coordinate (blocks)', fontsize=12)
-        
-        # Add generation pass information
-        pass_info = {
-            'Surface Terrain': 'Passes 1-5: Height map generation using multi-octave noise',
-            'Cave Systems': 'Passes 6-25: TileRunner algorithm creates cave networks',
-            'Biome Placement': 'Passes 26-45: Rule-based biome conversion and placement',
-            'Structure Placement': 'Passes 46-60: Dungeon, temple, and hell layer generation'
-        }
-        
-        ax.text(0.02, 0.98, pass_info.get(stage_name, ''), 
-               transform=ax.transAxes, fontsize=10,
-               bbox=dict(boxstyle='round', facecolor='white', alpha=0.8),
-               verticalalignment='top')
-        
-        return [im]
-    
-    # Create animation
-    anim = animation.FuncAnimation(fig, animate, frames=len(stages)*3, 
-                                  interval=2000, repeat=True)
-    
-    # Save animation
-    print(f"Saving world generation animation to {save_path}")
-    anim.save(save_path, writer='pillow', fps=1, dpi=100)
-    plt.close(fig)
+        idx = frame % len(snapshots)
+        name, grid = snapshots[idx]
+        _renderGrid(ax, grid, f"Pass {idx}: {name}  (1/10 scale visualization)", maxId)
 
-def create_generation_comparison_static(save_path):
-    """
-    Create a static comparison showing all generation stages side by side.
-    """
-    print("Creating generation comparison visualization...")
-    
-    # Generate world data
-    generator = TerrariaWorldGenerator(world_width=420, world_height=120)  # Smaller for display
-    stages = generator.generate_world()
-    
-    # Create figure with subplots
-    fig, axes = plt.subplots(2, 2, figsize=(16, 10))
-    fig.suptitle('Terraria World Generation Stages', fontsize=18, fontweight='bold')
-    
-    # Color mapping
-    colors = list(generator.block_colors.values())
-    cmap = LinearSegmentedColormap.from_list('terraria', colors, N=len(colors))
-    
-    # Plot each stage
-    for idx, (stage_name, world_data) in enumerate(stages):
-        row, col = idx // 2, idx % 2
-        ax = axes[row, col]
-        
-        im = ax.imshow(world_data, cmap=cmap, aspect='auto',
-                      vmin=0, vmax=len(generator.block_types)-1)
-        ax.set_title(stage_name, fontsize=14, fontweight='bold')
-        ax.set_xlabel('X Coordinate', fontsize=10)
-        ax.set_ylabel('Y Coordinate', fontsize=10)
-    
-    # Add colorbar
-    cbar = fig.colorbar(im, ax=axes, shrink=0.6, aspect=30)
-    cbar.set_label('Block Type', fontsize=12)
-    
-    # Add legend for block types
-    legend_text = '\n'.join([f'{k}: {v}' for k, v in generator.block_types.items()])
-    fig.text(0.02, 0.02, f'Block Types:\n{legend_text}', 
-             fontsize=8, bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
-    
-    plt.tight_layout()
-    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    anim = animation.FuncAnimation(fig, animate, frames=len(snapshots), interval=1500, repeat=True)
+    path = _savePath(saveName)
+    print(f"Saving animation to {path}")
+    anim.save(path, writer='pillow', fps=1, dpi=100)
     plt.close(fig)
+    print("Animation saved.")
+
+
+def createGenerationStagesPlot(saveName: str = "world_generation_stages.png") -> None:
+    """Static plot showing key generation milestones (4 panels)."""
+    print("Generating world at 1/10 scale for stage plot...")
+    gen = TerrariaWorldGenerator(worldWidth=840, worldHeight=240, seed=12345)
+    gen.generate()
+
+    keyIndices = [1, 7, 10, len(gen.snapshots) - 1]  # Terrain, Smooth, Corruption, Final
+    keyIndices = [min(i, len(gen.snapshots) - 1) for i in keyIndices]
+    maxId = max(TILE_COLORS.keys())
+
+    fig, axes = plt.subplots(2, 2, figsize=(18, 8))
+    fig.suptitle("Terraria World Generation Stages (1/10 scale)", fontsize=16, fontweight='bold')
+
+    for ax, idx in zip(axes.flat, keyIndices):
+        name, grid = gen.snapshots[idx]
+        _renderGrid(ax, grid, f"After: {name}", maxId)
+
+    plt.tight_layout()
+    path = _savePath(saveName)
+    plt.savefig(path, dpi=200, bbox_inches='tight')
+    plt.close(fig)
+    print(f"Stage plot saved to {path}")
+
+
+def createFullPassGrid(saveName: str = "world_generation_all_passes.png") -> None:
+    """Grid showing every pass as a thumbnail."""
+    print("Generating world at 1/10 scale for full pass grid...")
+    gen = TerrariaWorldGenerator(worldWidth=840, worldHeight=240, seed=12345)
+    gen.generate()
+
+    n = len(gen.snapshots)
+    cols = 4
+    rows = (n + cols - 1) // cols
+    maxId = max(TILE_COLORS.keys())
+
+    fig, axes = plt.subplots(rows, cols, figsize=(20, rows * 3))
+    fig.suptitle("All 19 Generation Passes (1/10 scale)", fontsize=16, fontweight='bold')
+
+    for idx, ax in enumerate(axes.flat):
+        if idx < n:
+            name, grid = gen.snapshots[idx]
+            _renderGrid(ax, grid, f"{idx}: {name}", maxId)
+        else:
+            ax.axis('off')
+
+    plt.tight_layout()
+    path = _savePath(saveName)
+    plt.savefig(path, dpi=150, bbox_inches='tight')
+    plt.close(fig)
+    print(f"Full pass grid saved to {path}")
+
 
 if __name__ == "__main__":
-    print("Starting Terraria world generation visualizations...")
-    
-    # Create output directory
-    output_dir = os.path.dirname(os.path.abspath(__file__))
-    
-    # Generate visualizations
-    create_world_generation_animation(os.path.join(output_dir, 'world_generation_process.gif'))
-    create_generation_comparison_static(os.path.join(output_dir, 'world_generation_stages.png'))
-    
-    print("World generation visualizations completed!")
+    createGenerationStagesPlot()
+    createFullPassGrid()
+    createWorldGenerationAnimation()

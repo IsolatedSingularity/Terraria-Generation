@@ -1,404 +1,456 @@
 """
 Terraria Noise Systems Visualization
 
-This script visualizes the core noise algorithms used in Terraria's world generation:
-1. Surface terrain generation using 1D Perlin noise
-2. Cave generation using 2D noise with threshold-based carving
-3. Multi-octave fractal noise for complex terrain features
-4. Biome transition zones using gradient interpolation
+Visualizes the core terrain and cave generation algorithms used in Terraria:
+1. Surface terrain generation via 1D multi-octave wave superposition (numpy)
+2. Cave carving via TileRunner diamond-brush random walks (Engine.algorithms)
+3. Cellular automata cave smoothing (before/after comparison)
+4. Biome tile-type conversion with hard boundaries (no gradient interpolation)
+
+All algorithms reference decompiled WorldGen.cs behavior.
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-import seaborn as sns
+import sys
 import os
 
-# Set seaborn style for beautiful plots
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import numpy as np
+import numpy.typing as npt
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+from matplotlib.patches import Patch
+import seaborn as sns
+
+from Engine.algorithms import tileRunner, cellularAutomataSmooth, AIR, DIRT, STONE, GRASS
+from Engine.algorithms import MUD, SNOW, ICE, SAND, EBONSTONE, CORRUPT_DIRT
+from Engine.algorithms import CRIMSTONE, CRIMSON_DIRT, PEARLSTONE, HALLOW_DIRT
+from Engine.constants import LARGE, LayerDepths
+
+# ---------------------------------------------------------------------------
+# Seaborn publication styling
+# ---------------------------------------------------------------------------
 sns.set_style("whitegrid")
 sns.set_context("paper", font_scale=1.2)
-plt.rcParams['figure.facecolor'] = 'white'
-plt.rcParams['axes.facecolor'] = 'white'
+plt.rcParams["figure.facecolor"] = "white"
+plt.rcParams["axes.facecolor"] = "white"
 
-# Simple noise implementation to replace opensimplex
-class SimpleNoise:
-    def __init__(self, seed=12345):
-        np.random.seed(seed)
-        self.perm = np.random.permutation(256)
-        
-    def noise2d(self, x, y):
-        # Simple noise implementation using sine functions
-        return np.sin(x * 6.283) * np.cos(y * 6.283) * 0.5 + \
-               np.sin(x * 12.566) * np.cos(y * 12.566) * 0.25 + \
-               np.sin(x * 25.132) * np.cos(y * 25.132) * 0.125
+# ---------------------------------------------------------------------------
+# World constants for a Large world
+# ---------------------------------------------------------------------------
+WORLD_WIDTH: int = LARGE.width   # 8400
+WORLD_HEIGHT: int = LARGE.height  # 2400
+LAYERS: LayerDepths = LayerDepths.forLarge()
 
-def perlin_1d(x, frequency=0.01, octaves=4, amplitude=50, persistence=0.5):
-    """
-    Generate 1D Perlin noise for surface terrain
-    
-    Args:
-        x: Input coordinates
-        frequency: Base frequency of the noise
-        octaves: Number of noise layers
-        amplitude: Maximum height variation
-        persistence: Amplitude reduction per octave
-    
+
+# ===================================================================
+# 1. Multi-octave 1D noise for surface terrain
+# ===================================================================
+
+def fractalNoise1D(
+    length: int,
+    octaves: int = 6,
+    baseAmplitude: float = 40.0,
+    persistence: float = 0.45,
+    basePeriod: float = 800.0,
+    seed: int = 42,
+) -> npt.NDArray[np.float64]:
+    """Generate 1D fractal noise via wave superposition (vectorized).
+
+    Each octave doubles frequency and decays amplitude by persistence.
+    Uses random-phase sine waves, which is directionally correct for
+    Terraria's surface height array computation.
+
     Returns:
-        height values for terrain surface
+        1D array of length `length` with noise values centered near 0.
     """
-    noise_gen = SimpleNoise(seed=12345)
-    height = 0
-    current_amplitude = amplitude
-    current_frequency = frequency
-    
-    for _ in range(octaves):
-        height += current_amplitude * noise_gen.noise2d(x * current_frequency, 0)
-        current_amplitude *= persistence
-        current_frequency *= 2
-    
-    return height
+    rng = np.random.default_rng(seed)
+    x = np.arange(length, dtype=np.float64)
+    result = np.zeros(length, dtype=np.float64)
+    amplitude = baseAmplitude
 
-def cave_noise_2d(x, y, frequency=0.05, threshold=0.25):
-    """
-    Generate 2D noise for cave systems
-    
-    Args:
-        x, y: 2D coordinate arrays
-        frequency: Noise frequency
-        threshold: Cave formation threshold
-    
-    Returns:
-        Boolean array where True = cave (air), False = solid
-    """
-    noise_gen = SimpleNoise(seed=67890)
-    noise_values = np.zeros_like(x)
-    
-    for i in range(x.shape[0]):
-        for j in range(x.shape[1]):
-            noise_values[i, j] = noise_gen.noise2d(x[i, j] * frequency, y[i, j] * frequency)
-    
-    return np.abs(noise_values) < threshold
+    for i in range(octaves):
+        period = basePeriod / (2 ** i)
+        phase = rng.uniform(0, 2 * np.pi)
+        result += amplitude * np.sin(2 * np.pi * x / period + phase)
+        amplitude *= persistence
 
-def biome_transition(x, biome1_value, biome2_value, transition_center, transition_width):
-    """
-    Create smooth biome transitions using gradient interpolation
-    
-    Args:
-        x: X coordinates
-        biome1_value, biome2_value: Values for each biome
-        transition_center: Center of transition zone
-        transition_width: Width of transition zone
-    
-    Returns:
-        Interpolated values across transition
-    """
-    noise_gen = SimpleNoise(seed=11111)
-    
-    # Base transition using distance from center
-    distance = np.abs(x - transition_center)
-    base_factor = np.clip(distance / transition_width, 0, 1)
-    
-    # Add noise for natural variation
-    noise_factor = 0.1 * np.array([noise_gen.noise2d(xi * 0.005, 0) for xi in x])
-    
-    # Combine factors
-    blend_factor = np.clip(base_factor + noise_factor, 0, 1)
-    
-    return biome1_value * (1 - blend_factor) + biome2_value * blend_factor
+    return result
 
-def create_surface_terrain_visualization(save_path):
-    """
-    Visualize surface terrain generation using 1D noise for all biome types (Large World)
-    """
-    print("Creating comprehensive surface terrain visualization for large world...")
-    
-    # Generate terrain data for large world (8400 blocks wide)
-    world_width = 8400
-    x = np.linspace(0, world_width, world_width // 4)  # Subsample for performance
-    
-    # Different biome terrain types with distinct characteristics
-    forest_terrain = 100 + np.array([perlin_1d(xi, frequency=0.01, octaves=4, amplitude=30) for xi in x])
-    desert_terrain = 90 + np.array([perlin_1d(xi, frequency=0.008, octaves=3, amplitude=15) for xi in x])
-    jungle_terrain = 95 + np.array([perlin_1d(xi, frequency=0.015, octaves=5, amplitude=45) for xi in x])
-    snow_terrain = 110 + np.array([perlin_1d(xi, frequency=0.012, octaves=4, amplitude=35) for xi in x])
-    corruption_terrain = 105 + np.array([perlin_1d(xi, frequency=0.02, octaves=6, amplitude=40) for xi in x])
-    crimson_terrain = 105 + np.array([perlin_1d(xi, frequency=0.018, octaves=6, amplitude=38) for xi in x])
-    mushroom_terrain = 98 + np.array([perlin_1d(xi, frequency=0.01, octaves=3, amplitude=20) for xi in x])
-    hallow_terrain = 103 + np.array([perlin_1d(xi, frequency=0.025, octaves=5, amplitude=35) for xi in x])
-    
-    # Create beautiful color palette using seaborn
-    palette = sns.color_palette("viridis", 8)
-    biome_colors = {
-        'forest': '#2E8B57',      # Sea Green
-        'desert': '#DEB887',      # Burlywood  
-        'jungle': '#228B22',      # Forest Green
-        'snow': '#E0F6FF',        # Alice Blue
-        'corruption': '#9370DB',   # Medium Purple
-        'crimson': '#DC143C',      # Crimson
-        'mushroom': '#8A2BE2',     # Blue Violet
-        'hallow': '#FFB6C1'        # Light Pink
-    }
-      # Create visualization with better spacing and styling
-    fig, axes = plt.subplots(8, 1, figsize=(18, 16))
-    fig.suptitle('Terraria Surface Terrain Generation - Large World Analysis\nMathematical Noise Models Across All Biomes', 
-                fontsize=20, fontweight='bold', y=0.98)
-    
-    terrains = [
-        (forest_terrain, 'Forest Biome', biome_colors['forest'], '#90EE90'),
-        (desert_terrain, 'Desert Biome', biome_colors['desert'], '#FFFF99'), 
-        (jungle_terrain, 'Jungle Biome', biome_colors['jungle'], '#ADFF2F'),
-        (snow_terrain, 'Snow Biome', biome_colors['snow'], '#F0F8FF'),
-        (corruption_terrain, 'Corruption Biome', biome_colors['corruption'], '#E6E6FA'),
-        (crimson_terrain, 'Crimson Biome', biome_colors['crimson'], '#FFB6C1'),
-        (mushroom_terrain, 'Mushroom Biome', biome_colors['mushroom'], '#DDA0DD'),
-        (hallow_terrain, 'Hallow Biome', biome_colors['hallow'], '#FFF0F5')
+
+def createSurfaceTerrainVisualization(savePath: str) -> None:
+    """Visualize 1D multi-octave surface terrain for all major biome types."""
+    print("Creating surface terrain visualization (multi-octave wave superposition)...")
+
+    worldWidth = WORLD_WIDTH
+    x = np.arange(worldWidth)
+
+    # Each biome has distinct noise parameters (octaves, amplitude, period)
+    biomeConfigs = [
+        ("Forest",     dict(octaves=5, baseAmplitude=25, persistence=0.50, basePeriod=900,  seed=10), "#2E8B57", "#90EE90"),
+        ("Desert",     dict(octaves=3, baseAmplitude=12, persistence=0.40, basePeriod=1200, seed=20), "#DEB887", "#FFFF99"),
+        ("Jungle",     dict(octaves=6, baseAmplitude=40, persistence=0.48, basePeriod=700,  seed=30), "#228B22", "#ADFF2F"),
+        ("Snow",       dict(octaves=5, baseAmplitude=30, persistence=0.45, basePeriod=850,  seed=40), "#87CEEB", "#F0F8FF"),
+        ("Corruption", dict(octaves=6, baseAmplitude=35, persistence=0.52, basePeriod=500,  seed=50), "#9370DB", "#E6E6FA"),
+        ("Crimson",    dict(octaves=6, baseAmplitude=33, persistence=0.50, basePeriod=550,  seed=60), "#DC143C", "#FFB6C1"),
+        ("Mushroom",   dict(octaves=3, baseAmplitude=18, persistence=0.40, basePeriod=1000, seed=70), "#8A2BE2", "#DDA0DD"),
+        ("Hallow",     dict(octaves=5, baseAmplitude=30, persistence=0.47, basePeriod=650,  seed=80), "#FFB6C1", "#FFF0F5"),
     ]
-    
-    for i, (terrain, title, base_color, surface_color) in enumerate(terrains):
-        axes[i].fill_between(x, 0, terrain, color=base_color, alpha=0.8, label='Base Terrain')
-        axes[i].fill_between(x, terrain, terrain + 8, color=surface_color, alpha=0.7, label='Surface Layer')
-        axes[i].set_title(title, fontsize=14, fontweight='bold', pad=10)
-        axes[i].set_ylabel('Height (blocks)', fontsize=11, fontweight='bold')
-        axes[i].legend(loc='upper right', frameon=True, fancybox=True, shadow=True)
-        axes[i].grid(True, alpha=0.3, linestyle='--')
-        axes[i].set_xlim(0, world_width)
-        
-        # Add subtle background gradient
-        axes[i].set_facecolor('#FAFAFA')
-    
-    axes[-1].set_xlabel('World Position (blocks)', fontsize=12, fontweight='bold')
-    
-    # Add mathematical formula with better positioning
-    fig.text(0.02, 0.02, 
-             r'$height(x) = base + \sum_{i=0}^{octaves} amplitude \cdot persistence^i \cdot noise(x \cdot frequency \cdot 2^i)$',
-             fontsize=13, ha='left', va='bottom', 
-             bbox=dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.9, edgecolor='gray'))
-    
-    plt.tight_layout(rect=[0, 0.05, 1, 0.96])
-    plt.savefig(save_path, dpi=300, bbox_inches='tight', facecolor='white')
-    plt.close()
-    print(f"Enhanced surface terrain visualization saved to {save_path}")
 
-def create_cave_system_visualization(save_path):
-    """
-    Visualize cave generation using 2D noise for large world
-    """
-    print("Creating cave system visualization for large world...")
-    
-    # Generate cave data for large world cross-section
-    width, height = 500, 300
-    x = np.linspace(0, width, width)
-    y = np.linspace(0, height, height)
-    X, Y = np.meshgrid(x, y)
-    
-    # Different cave densities with seaborn color palette
-    palette = sns.color_palette("mako_r", 4)
-    sparse_caves = cave_noise_2d(X, Y, frequency=0.03, threshold=0.15)
-    normal_caves = cave_noise_2d(X, Y, frequency=0.05, threshold=0.25)
-    dense_caves = cave_noise_2d(X, Y, frequency=0.08, threshold=0.35)
-    hell_caves = cave_noise_2d(X, Y, frequency=0.12, threshold=0.45)  # New: Hell layer caves
-    
-    # Create visualization with seaborn styling
-    fig, axes = plt.subplots(2, 2, figsize=(20, 12))
-    fig.suptitle('Terraria Cave System Generation - Large World Cross-Section\nNoise-Based Cave Carving Algorithms', 
-                fontsize=18, fontweight='bold', y=0.98)
-    
-    # Color maps: True (cave/air) = black, False (solid) = earth tones
-    cave_colors = sns.blend_palette(['#8B4513', '#000000'], as_cmap=True)
-    
-    # Sparse caves (Surface/Underground)
-    axes[0,0].imshow(sparse_caves, cmap=cave_colors, origin='upper', extent=[0, width, height, 0])
-    axes[0,0].set_title('Surface & Underground Caves\n(freq=0.03, threshold=0.15)', fontsize=14, fontweight='bold')
-    axes[0,0].set_xlabel('X Coordinate (blocks)', fontweight='bold')
-    axes[0,0].set_ylabel('Depth (blocks)', fontweight='bold')
-    
-    # Normal caves (Cavern layer)
-    axes[0,1].imshow(normal_caves, cmap=cave_colors, origin='upper', extent=[0, width, height, 0])
-    axes[0,1].set_title('Cavern Layer Caves\n(freq=0.05, threshold=0.25)', fontsize=14, fontweight='bold')
-    axes[0,1].set_xlabel('X Coordinate (blocks)', fontweight='bold')
-    
-    # Dense caves (Deep underground)
-    axes[1,0].imshow(dense_caves, cmap=cave_colors, origin='upper', extent=[0, width, height, 0])
-    axes[1,0].set_title('Deep Underground Caves\n(freq=0.08, threshold=0.35)', fontsize=14, fontweight='bold')
-    axes[1,0].set_xlabel('X Coordinate (blocks)', fontweight='bold')
-    axes[1,0].set_ylabel('Depth (blocks)', fontweight='bold')
-    
-    # Hell layer caves
-    hell_cmap = sns.blend_palette(['#8B0000', '#FF4500', '#000000'], as_cmap=True)
-    axes[1,1].imshow(hell_caves, cmap=hell_cmap, origin='upper', extent=[0, width, height, 0])
-    axes[1,1].set_title('Hell Layer Caves\n(freq=0.12, threshold=0.45)', fontsize=14, fontweight='bold')
-    axes[1,1].set_xlabel('X Coordinate (blocks)', fontweight='bold')
-    
-    # Add styling to all subplots
-    for ax in axes.flat:
-        ax.grid(True, alpha=0.3, color='white', linestyle='--')
-        ax.set_facecolor('#2F2F2F')
-    
-    # Add legend
-    from matplotlib.patches import Patch
-    legend_elements = [
-        Patch(facecolor='#8B4513', label='Solid Block'),
-        Patch(facecolor='#000000', label='Cave (Air)'),
-        Patch(facecolor='#FF4500', label='Lava/Hell')
-    ]
-    fig.legend(handles=legend_elements, loc='center', ncol=3, 
-               bbox_to_anchor=(0.5, 0.02), fontsize=12, frameon=True, 
-               fancybox=True, shadow=True)
-    
-    # Add mathematical formula
-    fig.text(0.02, 0.95, 
-             r'$cave(x,y) = |noise_{2D}(x \cdot freq, y \cdot freq)| < threshold$' + '\n' +
-             r'$density \propto frequency \times threshold$',
-             fontsize=14, ha='left', va='top', color='white',
-             bbox=dict(boxstyle='round,pad=0.5', facecolor='black', alpha=0.8, edgecolor='gray'))
-    
-    plt.tight_layout(rect=[0, 0.08, 1, 0.94])
-    plt.savefig(save_path, dpi=300, bbox_inches='tight', facecolor='white')
-    plt.close()
-    print(f"Enhanced cave system visualization saved to {save_path}")
+    # Subsample for plotting performance
+    step = 4
+    xPlot = x[::step]
 
-def create_biome_transition_visualization(save_path):
-    """
-    Visualize biome transitions using gradient interpolation for large world
-    """
-    print("Creating biome transition visualization for large world...")
-    
-    # Generate biome transition data for large world
-    world_width = 8400  # Large world width
-    x = np.linspace(0, world_width, world_width // 4)  # Subsample for performance
-    
-    # Define multiple biome transition zones across large world
-    forest_to_desert = biome_transition(x, 1.0, 0.0, 1000, 200)    # Forest (1) to Desert (0)
-    desert_to_jungle = biome_transition(x, 0.0, 2.0, 2500, 300)    # Desert (0) to Jungle (2)
-    jungle_to_corruption = biome_transition(x, 2.0, 3.0, 4200, 250)  # Jungle (2) to Corruption (3)
-    corruption_to_snow = biome_transition(x, 3.0, 4.0, 6000, 400)   # Corruption (3) to Snow (4)
-    snow_to_hallow = biome_transition(x, 4.0, 5.0, 7500, 350)      # Snow (4) to Hallow (5)
-    
-    # Create enhanced color palette using seaborn
-    biome_palette = sns.color_palette("Set2", 8)
-    
-    # Create visualization with enhanced styling
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(20, 12))
-    fig.suptitle('Terraria Biome Transitions - Large World Analysis\nMathematical Gradient Interpolation Models', 
-                fontsize=20, fontweight='bold', y=0.98)
-    
-    # Top plot: Biome values with transitions
-    transition_colors = sns.color_palette("husl", 5)
-    ax1.plot(x, forest_to_desert, color=transition_colors[0], linewidth=3, label='Forest → Desert', alpha=0.8)
-    ax1.plot(x, desert_to_jungle, color=transition_colors[1], linewidth=3, label='Desert → Jungle', alpha=0.8) 
-    ax1.plot(x, jungle_to_corruption, color=transition_colors[2], linewidth=3, label='Jungle → Corruption', alpha=0.8)
-    ax1.plot(x, corruption_to_snow, color=transition_colors[3], linewidth=3, label='Corruption → Snow', alpha=0.8)
-    ax1.plot(x, snow_to_hallow, color=transition_colors[4], linewidth=3, label='Snow → Hallow', alpha=0.8)
-    
-    ax1.set_title('Biome Transition Functions - Large World Scale', fontsize=16, fontweight='bold')
-    ax1.set_ylabel('Biome Blend Factor', fontsize=14, fontweight='bold')
-    ax1.legend(loc='upper right', fontsize=12, frameon=True, fancybox=True, shadow=True)
-    ax1.grid(True, alpha=0.4, linestyle='--')
-    ax1.set_facecolor('#FAFAFA')
-    
-    # Bottom plot: Enhanced visual biome map
-    biome_map = np.zeros((100, len(x), 3))  # RGB image with more height
-    
-    for i, xi in enumerate(x):
-        # Determine dominant biome at each position with smooth transitions
-        if xi < 800:
-            # Forest region
-            color = np.array([34/255, 139/255, 34/255])  # Forest Green
-        elif xi < 1200:
-            # Forest to Desert transition
-            blend = (xi - 800) / 400
-            forest_color = np.array([34/255, 139/255, 34/255])
-            desert_color = np.array([244/255, 164/255, 96/255])
-            color = forest_color * (1 - blend) + desert_color * blend
-        elif xi < 2200:
-            # Desert region  
-            color = np.array([244/255, 164/255, 96/255])  # Sandy Brown
-        elif xi < 2800:
-            # Desert to Jungle transition
-            blend = (xi - 2200) / 600
-            desert_color = np.array([244/255, 164/255, 96/255])
-            jungle_color = np.array([139/255, 69/255, 19/255])
-            color = desert_color * (1 - blend) + jungle_color * blend
-        elif xi < 3950:
-            # Jungle region
-            color = np.array([139/255, 69/255, 19/255])  # Saddle Brown
-        elif xi < 4450:
-            # Jungle to Corruption transition
-            blend = (xi - 3950) / 500
-            jungle_color = np.array([139/255, 69/255, 19/255])
-            corruption_color = np.array([138/255, 43/255, 226/255])
-            color = jungle_color * (1 - blend) + corruption_color * blend
-        elif xi < 5600:
-            # Corruption region
-            color = np.array([138/255, 43/255, 226/255])  # Blue Violet
-        elif xi < 6400:
-            # Corruption to Snow transition
-            blend = (xi - 5600) / 800
-            corruption_color = np.array([138/255, 43/255, 226/255])
-            snow_color = np.array([224/255, 224/255, 224/255])
-            color = corruption_color * (1 - blend) + snow_color * blend
-        elif xi < 7150:
-            # Snow region
-            color = np.array([224/255, 224/255, 224/255])  # Light Gray
-        elif xi < 7850:
-            # Snow to Hallow transition
-            blend = (xi - 7150) / 700
-            snow_color = np.array([224/255, 224/255, 224/255])
-            hallow_color = np.array([255/255, 182/255, 193/255])
-            color = snow_color * (1 - blend) + hallow_color * blend
-        else:
-            # Hallow region
-            color = np.array([255/255, 182/255, 193/255])  # Light Pink
-            
-        biome_map[:, i, :] = color
-    
-    ax2.imshow(biome_map, extent=[0, world_width, 0, 100], aspect='auto')
-    ax2.set_title('Large World Biome Distribution with Smooth Transitions', fontsize=16, fontweight='bold')
-    ax2.set_xlabel('X Coordinate (blocks)', fontsize=14, fontweight='bold')
-    ax2.set_ylabel('Surface Layer', fontsize=14, fontweight='bold')
-    
-    # Add biome labels with better positioning
-    label_positions = [400, 1600, 3100, 4800, 6300, 7500]
-    labels = ['Forest', 'Desert', 'Jungle', 'Corruption', 'Snow', 'Hallow']
-    text_colors = ['white', 'black', 'white', 'white', 'black', 'black']
-    
-    for pos, label, color in zip(label_positions, labels, text_colors):
-        ax2.text(pos, 50, label, ha='center', va='center', fontweight='bold', 
-                color=color, fontsize=12, 
-                bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.7))
-    
-    # Add mathematical formula with enhanced styling
-    formula_text = (
-        r'$blend(x) = biome_1 \cdot (1-t) + biome_2 \cdot t$' + '\n' +
-        r'where $t = \text{sigmoid}(\frac{distance - center}{width}) + noise(x)$'
+    fig, axes = plt.subplots(len(biomeConfigs), 1, figsize=(18, 16))
+    fig.suptitle(
+        "Terraria Surface Terrain Generation, Large World (8400 wide)\n"
+        "1D Multi-Octave Wave Superposition per Biome",
+        fontsize=18, fontweight="bold", y=0.98,
     )
-    fig.text(0.02, 0.96, formula_text, fontsize=14, ha='left', va='top',
-             bbox=dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.9, 
-                      edgecolor='gray', linewidth=2))
-    
-    plt.tight_layout(rect=[0, 0.02, 1, 0.94])
-    plt.savefig(save_path, dpi=300, bbox_inches='tight', facecolor='white')
+
+    for i, (name, params, baseColor, surfColor) in enumerate(biomeConfigs):
+        noise = fractalNoise1D(worldWidth, **params)
+        baseSurface = LAYERS.worldSurface
+        terrain = baseSurface + noise
+        terrainPlot = terrain[::step]
+
+        axes[i].fill_between(xPlot, 0, terrainPlot, color=baseColor, alpha=0.8, label="Base Terrain")
+        axes[i].fill_between(xPlot, terrainPlot, terrainPlot + 6, color=surfColor, alpha=0.7, label="Surface Layer")
+        axes[i].set_title(f"{name} Biome", fontsize=13, fontweight="bold", pad=8)
+        axes[i].set_ylabel("Depth (tiles)", fontsize=10, fontweight="bold")
+        axes[i].legend(loc="upper right", frameon=True, fancybox=True, shadow=True, fontsize=8)
+        axes[i].grid(True, alpha=0.3, linestyle="--")
+        axes[i].set_xlim(0, worldWidth)
+        axes[i].set_facecolor("#FAFAFA")
+        axes[i].invert_yaxis()
+
+    axes[-1].set_xlabel("World X Position (tiles)", fontsize=11, fontweight="bold")
+
+    fig.text(
+        0.02, 0.02,
+        r"$h(x) = \mathrm{worldSurface} + \sum_{i=0}^{N} A \cdot p^i \cdot \sin\left(\frac{2\pi x}{P / 2^i} + \phi_i\right)$",
+        fontsize=12, ha="left", va="bottom",
+        bbox=dict(boxstyle="round,pad=0.5", facecolor="white", alpha=0.9, edgecolor="gray"),
+    )
+
+    plt.tight_layout(rect=[0, 0.05, 1, 0.96])
+    plt.savefig(savePath, dpi=300, bbox_inches="tight", facecolor="white")
     plt.close()
-    print(f"Enhanced biome transition visualization saved to {save_path}")
+    print(f"Surface terrain visualization saved to {savePath}")
+
+
+# ===================================================================
+# 2. Cave generation via TileRunner random walks
+# ===================================================================
+
+def buildBaseGrid(width: int, height: int) -> npt.NDArray[np.int32]:
+    """Create a solid tile grid with dirt above rockLayer and stone below."""
+    grid = np.full((height, width), STONE, dtype=np.int32)
+    surfaceY = int(LAYERS.worldSurface)
+
+    # Sky is air
+    grid[:surfaceY, :] = AIR
+    # Dirt layer between surface and rockLayer
+    rockY = int(LAYERS.rockLayer)
+    grid[surfaceY:rockY, :] = DIRT
+
+    return grid
+
+
+def createCaveSystemVisualization(savePath: str) -> None:
+    """Visualize TileRunner diamond-brush random walks at different depths.
+
+    Shows three depth zones: Surface Caves, Dirt Layer Caves, Rock Layer Caves.
+    Also shows before/after cellular automata smoothing.
+    """
+    print("Creating TileRunner cave system visualization...")
+
+    # Use a smaller slice for visualization clarity
+    sliceWidth = 600
+    sliceHeight = 500
+    rng = np.random.default_rng(seed=777)
+
+    # Build a solid grid (all stone, simulating a vertical cross-section)
+    grid = np.full((sliceHeight, sliceWidth), STONE, dtype=np.int32)
+    surfaceRow = 50
+    dirtBoundary = 180
+    grid[:surfaceRow, :] = AIR
+    grid[surfaceRow:dirtBoundary, :] = DIRT
+
+    # --- Surface Caves (small strength, shallow) ---
+    numSurfaceCaves = 25
+    for _ in range(numSurfaceCaves):
+        sx = rng.integers(20, sliceWidth - 20)
+        sy = rng.integers(surfaceRow + 5, dirtBoundary - 10)
+        strength = rng.uniform(3.0, 7.0)
+        steps = rng.integers(15, 50)
+        tileRunner(grid, sx, sy, strength, steps, tileType=-1, noYChange=True)
+
+    # --- Dirt Layer Caves (medium strength) ---
+    numDirtCaves = 30
+    for _ in range(numDirtCaves):
+        sx = rng.integers(20, sliceWidth - 20)
+        sy = rng.integers(dirtBoundary - 30, dirtBoundary + 60)
+        strength = rng.uniform(5.0, 12.0)
+        steps = rng.integers(30, 80)
+        tileRunner(grid, sx, sy, strength, steps, tileType=-1)
+
+    # --- Rock Layer Caves (large strength, deep) ---
+    numRockCaves = 40
+    for _ in range(numRockCaves):
+        sx = rng.integers(20, sliceWidth - 20)
+        sy = rng.integers(dirtBoundary + 40, sliceHeight - 40)
+        strength = rng.uniform(8.0, 18.0)
+        steps = rng.integers(40, 120)
+        speedX = rng.uniform(-1.0, 1.0)
+        speedY = rng.uniform(-0.5, 1.5)
+        tileRunner(grid, sx, sy, strength, steps, tileType=-1,
+                   speedX=speedX, speedY=speedY)
+
+    # Snapshot before smoothing
+    gridBeforeSmooth = grid.copy()
+
+    # Apply cellular automata smoothing
+    cellularAutomataSmooth(grid, iterations=3, birthThreshold=5, deathThreshold=3)
+    gridAfterSmooth = grid
+
+    # --- Color maps ---
+    tileColors = {
+        AIR: np.array([0.05, 0.05, 0.08]),
+        DIRT: np.array([0.55, 0.35, 0.17]),
+        STONE: np.array([0.50, 0.50, 0.52]),
+    }
+
+    def gridToRGB(g: npt.NDArray[np.int32]) -> npt.NDArray[np.float64]:
+        rgb = np.zeros((*g.shape, 3), dtype=np.float64)
+        for tileID, color in tileColors.items():
+            mask = g == tileID
+            rgb[mask] = color
+        return rgb
+
+    imgBefore = gridToRGB(gridBeforeSmooth)
+    imgAfter = gridToRGB(gridAfterSmooth)
+
+    # --- Plot ---
+    fig, axes = plt.subplots(1, 2, figsize=(20, 10))
+    fig.suptitle(
+        "Terraria Cave Carving: TileRunner Diamond-Brush Random Walks\n"
+        "Left: Raw TileRunner output | Right: After Cellular Automata Smoothing",
+        fontsize=16, fontweight="bold", y=0.98,
+    )
+
+    axes[0].imshow(imgBefore, origin="upper", aspect="auto")
+    axes[0].set_title("Before Smoothing (raw TileRunner)", fontsize=14, fontweight="bold")
+    axes[0].set_xlabel("X (tiles)", fontweight="bold")
+    axes[0].set_ylabel("Depth (tiles)", fontweight="bold")
+
+    # Annotate depth zones
+    axes[0].axhline(surfaceRow, color="cyan", linewidth=1, linestyle="--", alpha=0.7)
+    axes[0].axhline(dirtBoundary, color="orange", linewidth=1, linestyle="--", alpha=0.7)
+    axes[0].text(10, surfaceRow + 8, "Surface Caves", color="cyan", fontsize=9, fontweight="bold")
+    axes[0].text(10, dirtBoundary + 12, "Rock Layer Caves", color="orange", fontsize=9, fontweight="bold")
+    axes[0].text(10, (surfaceRow + dirtBoundary) // 2, "Dirt Layer Caves", color="white", fontsize=9, fontweight="bold")
+
+    axes[1].imshow(imgAfter, origin="upper", aspect="auto")
+    axes[1].set_title("After Cellular Automata Smoothing (3 iterations)", fontsize=14, fontweight="bold")
+    axes[1].set_xlabel("X (tiles)", fontweight="bold")
+    axes[1].axhline(surfaceRow, color="cyan", linewidth=1, linestyle="--", alpha=0.7)
+    axes[1].axhline(dirtBoundary, color="orange", linewidth=1, linestyle="--", alpha=0.7)
+
+    # Legend
+    legendElements = [
+        Patch(facecolor=tileColors[AIR], label="Air (carved)"),
+        Patch(facecolor=tileColors[DIRT], label="Dirt"),
+        Patch(facecolor=tileColors[STONE], label="Stone"),
+    ]
+    fig.legend(
+        handles=legendElements, loc="lower center", ncol=3,
+        fontsize=12, frameon=True, fancybox=True, shadow=True,
+        bbox_to_anchor=(0.5, 0.01),
+    )
+
+    # Algorithm description
+    fig.text(
+        0.02, 0.95,
+        "TileRunner: diamond brush (manhattan dist), strength decay per step,\n"
+        "drunkard's walk drift vectors, clamped speed [-2, 2]",
+        fontsize=11, ha="left", va="top",
+        bbox=dict(boxstyle="round,pad=0.4", facecolor="white", alpha=0.9, edgecolor="gray"),
+    )
+
+    plt.tight_layout(rect=[0, 0.05, 1, 0.93])
+    plt.savefig(savePath, dpi=300, bbox_inches="tight", facecolor="white")
+    plt.close()
+    print(f"Cave system visualization saved to {savePath}")
+
+
+# ===================================================================
+# 3. Biome tile-type conversion (hard boundaries, no gradients)
+# ===================================================================
+
+# Display colors per tile type for the biome visualization
+TILE_DISPLAY_COLORS: dict[int, tuple[float, float, float]] = {
+    AIR:           (0.53, 0.81, 0.92),  # sky blue
+    GRASS:         (0.13, 0.55, 0.13),  # dark green
+    DIRT:          (0.55, 0.35, 0.17),  # brown
+    STONE:         (0.50, 0.50, 0.52),  # gray
+    MUD:           (0.30, 0.20, 0.10),  # dark brown
+    SNOW:          (0.90, 0.93, 0.96),  # near white
+    ICE:           (0.68, 0.85, 0.90),  # light blue
+    SAND:          (0.86, 0.80, 0.55),  # tan
+    EBONSTONE:     (0.33, 0.17, 0.50),  # dark purple
+    CORRUPT_DIRT:  (0.40, 0.25, 0.55),  # purple-brown
+    CRIMSTONE:     (0.60, 0.10, 0.10),  # dark red
+    CRIMSON_DIRT:  (0.55, 0.15, 0.15),  # red-brown
+    PEARLSTONE:    (0.85, 0.75, 0.90),  # light lavender
+    HALLOW_DIRT:   (0.80, 0.70, 0.85),  # pastel purple
+}
+
+
+def convertBiomeTiles(
+    grid: npt.NDArray[np.int32],
+    xStart: int,
+    xEnd: int,
+    conversions: dict[int, int],
+) -> None:
+    """Apply hard tile-type conversion within a horizontal range.
+
+    This is how Terraria defines biomes: Dirt becomes Mud (Jungle),
+    Dirt becomes Snow Block (Snow), Stone becomes Ebonstone (Corruption), etc.
+    There is NO gradient or blending; tile types switch at the boundary.
+    """
+    region = grid[:, xStart:xEnd]
+    for srcTile, dstTile in conversions.items():
+        mask = region == srcTile
+        region[mask] = dstTile
+
+
+def createBiomeTileConversionVisualization(savePath: str) -> None:
+    """Visualize hard-boundary biome tile-type conversion across a world slice."""
+    print("Creating biome tile-type conversion visualization...")
+
+    sliceWidth = 800
+    sliceHeight = 300
+    rng = np.random.default_rng(seed=999)
+
+    # Build base terrain: air, grass surface, dirt, stone
+    grid = np.full((sliceHeight, sliceWidth), STONE, dtype=np.int32)
+    surfaceRow = 40
+    dirtBottom = 120
+    grid[:surfaceRow, :] = AIR
+    grid[surfaceRow, :] = GRASS
+    grid[surfaceRow + 1:dirtBottom, :] = DIRT
+
+    # Carve some caves so the conversion is visible on varied terrain
+    for _ in range(30):
+        sx = rng.integers(10, sliceWidth - 10)
+        sy = rng.integers(surfaceRow + 10, sliceHeight - 20)
+        tileRunner(grid, sx, sy, rng.uniform(4.0, 10.0), rng.integers(20, 60), tileType=-1)
+
+    # Snapshot: before biome conversion
+    gridBefore = grid.copy()
+
+    # --- Apply biome conversions at hard boundaries ---
+    # Forest: columns 0-130 (unchanged, already dirt/stone)
+    # Jungle: columns 130-260
+    convertBiomeTiles(grid, 130, 260, {DIRT: MUD, GRASS: MUD})
+    # Snow: columns 260-390
+    convertBiomeTiles(grid, 260, 390, {DIRT: SNOW, STONE: ICE, GRASS: SNOW})
+    # Desert: columns 390-520
+    convertBiomeTiles(grid, 390, 520, {DIRT: SAND, GRASS: SAND})
+    # Corruption: columns 520-660
+    convertBiomeTiles(grid, 520, 660, {DIRT: CORRUPT_DIRT, STONE: EBONSTONE, GRASS: CORRUPT_DIRT})
+    # Crimson: columns 660-800
+    convertBiomeTiles(grid, 660, 800, {DIRT: CRIMSON_DIRT, STONE: CRIMSTONE, GRASS: CRIMSON_DIRT})
+
+    gridAfter = grid
+
+    # --- Render ---
+    def gridToRGB(g: npt.NDArray[np.int32]) -> npt.NDArray[np.float64]:
+        rgb = np.zeros((*g.shape, 3), dtype=np.float64)
+        for tileID, color in TILE_DISPLAY_COLORS.items():
+            mask = g == tileID
+            rgb[mask] = color
+        # Fallback for unmapped tiles
+        unmapped = np.all(rgb == 0, axis=-1) & (g != AIR)
+        rgb[unmapped] = (0.4, 0.4, 0.4)
+        return rgb
+
+    imgBefore = gridToRGB(gridBefore)
+    imgAfter = gridToRGB(gridAfter)
+
+    fig, axes = plt.subplots(2, 1, figsize=(20, 12))
+    fig.suptitle(
+        "Terraria Biome Tile-Type Conversion (Hard Boundaries)\n"
+        "No gradient interpolation: tile types switch instantly at biome edges",
+        fontsize=16, fontweight="bold", y=0.98,
+    )
+
+    axes[0].imshow(imgBefore, origin="upper", aspect="auto")
+    axes[0].set_title("Before Biome Conversion (base terrain: Dirt / Stone)", fontsize=14, fontweight="bold")
+    axes[0].set_ylabel("Depth (tiles)", fontweight="bold")
+    axes[0].set_facecolor("#2F2F2F")
+
+    axes[1].imshow(imgAfter, origin="upper", aspect="auto")
+    axes[1].set_title("After Biome Conversion (hard tile-type replacement)", fontsize=14, fontweight="bold")
+    axes[1].set_xlabel("X (tiles)", fontweight="bold")
+    axes[1].set_ylabel("Depth (tiles)", fontweight="bold")
+    axes[1].set_facecolor("#2F2F2F")
+
+    # Biome boundary lines and labels
+    boundaries = [130, 260, 390, 520, 660]
+    biomeLabels = ["Forest", "Jungle", "Snow", "Desert", "Corruption", "Crimson"]
+    biomeMidpoints = [65, 195, 325, 455, 590, 730]
+    labelColors = ["#2E8B57", "#228B22", "#87CEEB", "#DEB887", "#9370DB", "#DC143C"]
+
+    for bx in boundaries:
+        for ax in axes:
+            ax.axvline(bx, color="white", linewidth=1.5, linestyle="--", alpha=0.8)
+
+    for mid, label, lc in zip(biomeMidpoints, biomeLabels, labelColors):
+        axes[1].text(
+            mid, 15, label, ha="center", va="center", fontweight="bold",
+            fontsize=10, color="white",
+            bbox=dict(boxstyle="round,pad=0.3", facecolor=lc, alpha=0.85),
+        )
+
+    # Conversion rules text
+    rulesText = (
+        "Conversion rules (from WorldGen.cs):\n"
+        "  Jungle: Dirt -> Mud, Grass -> Mud\n"
+        "  Snow: Dirt -> Snow Block, Stone -> Ice, Grass -> Snow Block\n"
+        "  Desert: Dirt -> Sand, Grass -> Sand\n"
+        "  Corruption: Dirt -> Corrupt Dirt, Stone -> Ebonstone\n"
+        "  Crimson: Dirt -> Crimson Dirt, Stone -> Crimstone"
+    )
+    fig.text(
+        0.02, 0.02, rulesText, fontsize=10, ha="left", va="bottom",
+        family="monospace",
+        bbox=dict(boxstyle="round,pad=0.5", facecolor="white", alpha=0.9, edgecolor="gray"),
+    )
+
+    plt.tight_layout(rect=[0, 0.10, 1, 0.95])
+    plt.savefig(savePath, dpi=300, bbox_inches="tight", facecolor="white")
+    plt.close()
+    print(f"Biome tile-type conversion visualization saved to {savePath}")
+
+
+# ===================================================================
+# Main
+# ===================================================================
 
 if __name__ == "__main__":
     print("Starting Terraria noise systems visualization generation")
-    
-    # Create output directory
-    output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'Plots')
-    os.makedirs(output_dir, exist_ok=True)
-    
+
+    outputDir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "Plots")
+    os.makedirs(outputDir, exist_ok=True)
+
     try:
-        # Generate surface terrain visualization
-        create_surface_terrain_visualization(os.path.join(output_dir, 'terraria_surface_terrain.png'))
-        
-        # Generate cave system visualization  
-        create_cave_system_visualization(os.path.join(output_dir, 'terraria_cave_systems.png'))
-        
-        # Generate biome transition visualization
-        create_biome_transition_visualization(os.path.join(output_dir, 'terraria_biome_transitions.png'))
-        
+        createSurfaceTerrainVisualization(os.path.join(outputDir, "terraria_surface_terrain.png"))
+        createCaveSystemVisualization(os.path.join(outputDir, "terraria_cave_systems.png"))
+        createBiomeTileConversionVisualization(os.path.join(outputDir, "terraria_biome_tile_conversion.png"))
         print("All noise system visualizations completed successfully")
-        
+
     except Exception as e:
         print(f"Error in noise systems visualization generation: {e}")
+        raise
