@@ -14,10 +14,7 @@ cellularAutomataSmooth). Ore counts use int(area * 6E-05) formula.
 Infection spread uses tile update cycle rates with 4-tile air gap blocking.
 """
 
-import sys
 import os
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -29,19 +26,17 @@ from Engine.algorithms import (
     COBALT, PALLADIUM, MYTHRIL, ORICHALCUM,
     ADAMANTITE, TITANIUM, CHLOROPHYTE,
     EBONSTONE, CRIMSTONE, CORRUPT_DIRT, CRIMSON_DIRT,
+    PEARLSTONE, HALLOW_DIRT,
     COPPER, TIN, IRON, LEAD, SILVER, TUNGSTEN, GOLD, PLATINUM,
 )
 from Engine.constants import (
     LARGE, LayerDepths, StructureQuotas, OreConfig,
     INFECTION_GAP_TILES, SURFACE_UPDATE_RATE, UNDERGROUND_UPDATE_RATE,
+    INFECTION_SPREAD_RADIUS, LIFE_CRYSTAL,
 )
+from Engine.theme import applyDarkTheme, COLORS
 
-# ---------------------------------------------------------------------------
-# Local tile IDs not in Engine import
-# ---------------------------------------------------------------------------
-PEARLSTONE = 117
-HALLOW_DIRT = 118
-LIFE_CRYSTAL = 200
+applyDarkTheme()
 
 # ---------------------------------------------------------------------------
 # RGB color table for rendering sparse tile IDs to an image
@@ -402,10 +397,10 @@ class TerrariaCompleteWorldEvolution:
     def simulateSpread(self, steps: int = 15) -> List[np.ndarray]:
         """Tile update cycle infection spread with air gap blocking.
 
-        Surface tiles spread at ~1/SURFACE_UPDATE_RATE per second;
-        underground at ~1/UNDERGROUND_UPDATE_RATE. Spread is tile-to-tile
-        through solid material only; a contiguous air gap of
-        INFECTION_GAP_TILES (4) blocks all propagation.
+        Each step, infected tiles pick a random neighbor within
+        INFECTION_SPREAD_RADIUS and convert it if the target is
+        convertible and no air gap of INFECTION_GAP_TILES blocks the path.
+        Surface tiles spread faster than underground tiles.
         """
         h, w = self.worldHeight, self.worldWidth
         snapshots: List[np.ndarray] = []
@@ -428,31 +423,78 @@ class TerrariaCompleteWorldEvolution:
         probGrid = np.full((h, w), undergroundProb, dtype=np.float64)
         probGrid[: self.rockLayer, :] = surfaceProb
 
-        # Carve a 4-tile quarantine trench to demonstrate air gap blocking
+        # Carve a quarantine trench to demonstrate air gap blocking
         trenchX = self.worldWidth // 3
         for col in range(trenchX, trenchX + INFECTION_GAP_TILES):
             self.grid[self.worldSurface - 5 : self.hellLayer, col] = AIR
 
-        directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+        allInfTiles = frozenset().union(*[g[0] for g in infectionGroups])
+        convertible = frozenset().union(*[frozenset(g[1].keys()) for g in infectionGroups])
+        radius = INFECTION_SPREAD_RADIUS
 
         for step in range(steps):
             newGrid = self.grid.copy()
-            padded = np.pad(self.grid, 1, mode="constant", constant_values=AIR)
 
-            for infTiles, convertMap in infectionGroups:
-                # Infection source mask in padded coordinates
-                infMask = np.zeros_like(padded, dtype=bool)
-                for tid in infTiles:
-                    infMask |= padded == tid
+            # Find all infected positions
+            infMask = np.isin(self.grid, list(allInfTiles))
+            infPos = np.argwhere(infMask)
+            if len(infPos) == 0:
+                if step == steps // 3 or step == steps - 1:
+                    snapshots.append(self.grid.copy())
+                continue
 
-                for dy, dx in directions:
-                    neighborInf = infMask[1 + dy : 1 + dy + h, 1 + dx : 1 + dx + w]
-                    for fromTile, toTile in convertMap.items():
-                        candidates = neighborInf & (self.grid == fromTile)
-                        if not np.any(candidates):
-                            continue
-                        roll = self.rng.random((h, w))
-                        newGrid[candidates & (roll < probGrid)] = toTile
+            # Sample a subset of infected tiles to update
+            nUpdates = min(len(infPos), max(500, len(infPos) // 3))
+            chosen = self.rng.choice(len(infPos), size=nUpdates, replace=False)
+
+            for idx in chosen:
+                sy, sx = int(infPos[idx, 0]), int(infPos[idx, 1])
+                srcTile = self.grid[sy, sx]
+
+                # Determine which infection group this source belongs to
+                convertMap = None
+                for infTiles, cMap in infectionGroups:
+                    if srcTile in infTiles:
+                        convertMap = cMap
+                        break
+                if convertMap is None:
+                    continue
+
+                # Probability check (surface vs underground rate)
+                if self.rng.random() > probGrid[sy, sx]:
+                    continue
+
+                # Pick random neighbor within INFECTION_SPREAD_RADIUS
+                dy = int(self.rng.integers(-radius, radius + 1))
+                dx = int(self.rng.integers(-radius, radius + 1))
+                if dy == 0 and dx == 0:
+                    continue
+                ny, nx = sy + dy, sx + dx
+                if not (0 <= nx < w and 0 <= ny < h):
+                    continue
+
+                target = self.grid[ny, nx]
+                if target not in convertMap:
+                    continue
+
+                # Air gap check along path
+                dist = max(abs(dy), abs(dx))
+                blocked = False
+                if dist > 1:
+                    consecutive = 0
+                    for i in range(1, dist):
+                        t = i / dist
+                        cx = int(sx + dx * t)
+                        cy = int(sy + dy * t)
+                        if 0 <= cx < w and 0 <= cy < h and self.grid[cy, cx] == AIR:
+                            consecutive += 1
+                            if consecutive >= INFECTION_GAP_TILES:
+                                blocked = True
+                                break
+                        else:
+                            consecutive = 0
+                if not blocked:
+                    newGrid[ny, nx] = convertMap[target]
 
             self.grid = newGrid
 

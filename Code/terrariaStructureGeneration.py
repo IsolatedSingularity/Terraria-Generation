@@ -9,7 +9,6 @@ replicates the actual C# WorldGen logic.
 Author: Terraria Generation Project
 """
 
-import sys
 import os
 import random
 from typing import Dict, List, Tuple, Optional
@@ -18,20 +17,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import seaborn as sns
-import warnings
-
-warnings.filterwarnings("ignore")
 
 # Engine imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from Engine.constants import LARGE, LayerDepths, StructureQuotas
 from Engine.structureMap import StructureMap, Rectangle
+from Engine.theme import applyDarkTheme, COLORS
 
-# Plot styling
-sns.set_style("whitegrid")
-sns.set_context("paper", font_scale=1.2)
-plt.rcParams["figure.facecolor"] = "white"
-plt.rcParams["axes.facecolor"] = "white"
+applyDarkTheme()
 
 
 class TerrariaStructureGenerator:
@@ -286,8 +278,8 @@ class TerrariaStructureGenerator:
         # World background
         worldRect = patches.Rectangle(
             (0, 0), self.worldWidth, self.worldHeight,
-            linewidth=2, edgecolor="black",
-            facecolor="#F0F8FF", alpha=0.3,
+            linewidth=2, edgecolor=COLORS["edge"],
+            facecolor=COLORS["axes"], alpha=0.3,
         )
         axMap.add_patch(worldRect)
 
@@ -410,10 +402,10 @@ class TerrariaStructureGenerator:
         cellColors = []
         for i, row in enumerate(tableData):
             if i == 0:
-                cellColors.append(["#4472C4"] * 4)
+                cellColors.append([COLORS["accent"]] * 4)
             else:
-                matchColor = "#C6EFCE" if row[3] == "YES" else "#FFC7CE"
-                cellColors.append(["#F2F2F2", "#F2F2F2", "#F2F2F2", matchColor])
+                matchColor = "#2d6a4f" if row[3] == "YES" else "#6b2020"
+                cellColors.append([COLORS["grid"], COLORS["grid"], COLORS["grid"], matchColor])
 
         table = axStats.table(
             cellText=tableData,
@@ -427,7 +419,7 @@ class TerrariaStructureGenerator:
         for (r, c), cell in table.get_celld().items():
             if r == 0:
                 cell.set_text_props(color="white", fontweight="bold")
-            cell.set_edgecolor("#CCCCCC")
+            cell.set_edgecolor(COLORS["edge"])
 
         # Layer depth summary below table
         depthText = (
@@ -441,14 +433,14 @@ class TerrariaStructureGenerator:
         axStats.text(
             0.5, 0.18, depthText, transform=axStats.transAxes,
             fontsize=11, va="top", ha="center", family="monospace",
-            bbox=dict(boxstyle="round,pad=0.4", facecolor="white",
-                      edgecolor="gray", alpha=0.9),
+            bbox=dict(boxstyle="round,pad=0.4", facecolor=COLORS["legend_bg"],
+                      edgecolor=COLORS["edge"], alpha=0.9),
         )
 
         plt.tight_layout()
         if savePath:
             os.makedirs(os.path.dirname(savePath), exist_ok=True)
-            plt.savefig(savePath, dpi=300, bbox_inches="tight", facecolor="white")
+            plt.savefig(savePath, dpi=300, bbox_inches="tight")
             plt.close()
             print(f"Saved: {savePath}")
         else:

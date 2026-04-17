@@ -6,20 +6,13 @@ TileRunner, and tile update cycle biome spread with air gap infection blocking.
 All tile conversion rules match decompiled WorldGen.cs behavior.
 """
 
-import sys
 import os
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import seaborn as sns
 from typing import Optional
-import warnings
-
-warnings.filterwarnings("ignore")
-
 from Engine.algorithms import (
     tileRunner,
     AIR, DIRT, STONE, SAND, ICE, MUD, GRASS, SNOW,
@@ -30,10 +23,11 @@ from Engine.algorithms import (
 from Engine.constants import (
     LARGE, LayerDepths, INFECTION_GAP_TILES,
     SURFACE_UPDATE_RATE, UNDERGROUND_UPDATE_RATE,
+    INFECTION_SPREAD_RADIUS,
 )
+from Engine.theme import applyDarkTheme, COLORS
 
-plt.style.use("dark_background")
-sns.set_palette("mako")
+applyDarkTheme()
 
 
 # ---------------------------------------------------------------------------
@@ -383,9 +377,9 @@ class TerrariaCorruptionEvolution:
             else:
                 continue
 
-            # Pick one random neighbor within radius 3
-            dy = int(self.rng.integers(-3, 4))
-            dx = int(self.rng.integers(-3, 4))
+            # Pick one random neighbor within INFECTION_SPREAD_RADIUS
+            dy = int(self.rng.integers(-INFECTION_SPREAD_RADIUS, INFECTION_SPREAD_RADIUS + 1))
+            dx = int(self.rng.integers(-INFECTION_SPREAD_RADIUS, INFECTION_SPREAD_RADIUS + 1))
             if dy == 0 and dx == 0:
                 continue
             ny, nx = sy + dy, sx + dx

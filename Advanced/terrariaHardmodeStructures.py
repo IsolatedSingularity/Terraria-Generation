@@ -12,7 +12,6 @@ All algorithms match decompiled WorldGen.cs behavior:
 - Chlorophyte restricted to jungle cavern layer
 """
 
-import sys
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -20,18 +19,14 @@ import matplotlib.patches as mpatches
 from matplotlib.colors import ListedColormap, BoundaryNorm
 from typing import List, Tuple, Optional
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from Engine.algorithms import (tileRunner, AIR, STONE, DIRT, MUD, GRASS,
                                 COBALT, PALLADIUM, MYTHRIL, ORICHALCUM,
                                 ADAMANTITE, TITANIUM, CHLOROPHYTE,
                                 EBONSTONE, CRIMSTONE, CORRUPT_DIRT, CRIMSON_DIRT)
-from Engine.constants import LARGE, LayerDepths, StructureQuotas, OreConfig
+from Engine.constants import LARGE, LayerDepths, StructureQuotas, OreConfig, LIFE_CRYSTAL, ALTAR
+from Engine.theme import applyDarkTheme, COLORS
 
-plt.style.use("dark_background")
-
-# Local tile IDs not in Engine (structure markers)
-LIFE_CRYSTAL = 200
-ALTAR = 201
+applyDarkTheme()
 
 
 # ---------------------------------------------------------------------------
@@ -465,9 +460,6 @@ def _remapGrid(grid: np.ndarray, knownIds: List[int]) -> np.ndarray:
 
 def visualize(sim: TerrariaHardmodeTransformation,
               savePath: Optional[str] = None) -> None:
-    if savePath is None:
-        savePath = os.path.join(os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__))), "Plots", "Advanced")
     """Create multi-panel hardmode transformation visualization.
 
     Panels:
@@ -477,6 +469,9 @@ def visualize(sim: TerrariaHardmodeTransformation,
       4. Statistics panel with correct quotas
     Saves to savePath as PNG.
     """
+    if savePath is None:
+        savePath = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))), "Plots", "Advanced")
     os.makedirs(savePath, exist_ok=True)
 
     if not sim.history:

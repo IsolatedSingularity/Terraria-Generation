@@ -210,6 +210,7 @@ BOULDER_TRAP: int = 142
 PYRAMID_BRICK: int = 143
 HIVE: int = 144
 HONEY_BLOCK: int = 145
+HALLOW_GRASS: int = 146
 
 # ---------------------------------------------------------------------------
 # Wall IDs (parallel wall array)
@@ -238,21 +239,6 @@ WALL_CRIMSON: int = 19
 FRAME_IMPORTANT_TILES: frozenset = frozenset({
     LIFE_CRYSTAL, CHEST, POT, DART_TRAP, BOULDER_TRAP,
     ALTAR, SUNFLOWER, FALLEN_LOG, MINECART_TRACK,
-})
-
-# ---------------------------------------------------------------------------
-# Full immune tile set for Cavinator (CanBeClearedDuringGeneration = False)
-# ---------------------------------------------------------------------------
-IMMUNE_TILES_FULL: frozenset = frozenset({
-    5,    # ASH
-    6,    # HELLSTONE
-    7,    # MUD
-    DUNGEON_BRICK,
-    LIHZAHRD_BRICK,
-    GRANITE_BLOCK,
-    HARDENED_SAND,
-    SANDSTONE,
-    116,  # CHLOROPHYTE
 })
 
 # ---------------------------------------------------------------------------

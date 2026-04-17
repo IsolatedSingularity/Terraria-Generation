@@ -12,10 +12,7 @@ Depth bounds derived from LayerDepths constants (worldSurface, rockLayer, hellLa
 Hardmode ores unlocked by breaking Demon/Crimson Altars in a 3-tier cycle.
 """
 
-import sys
 import os
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -30,19 +27,12 @@ from Engine.algorithms import (
     CHLOROPHYTE, HELLSTONE,
 )
 from Engine.constants import LARGE, LayerDepths, OreConfig
+from Engine.theme import applyDarkTheme, COLORS, ORE_COLORS
 
 # ---------------------------------------------------------------------------
 # Plot style
 # ---------------------------------------------------------------------------
-sns.set_style("darkgrid")
-plt.rcParams.update({
-    "figure.facecolor": "#1a1a2e",
-    "axes.facecolor": "#16213e",
-    "text.color": "white",
-    "axes.labelcolor": "white",
-    "xtick.color": "white",
-    "ytick.color": "white",
-})
+applyDarkTheme()
 
 # ---------------------------------------------------------------------------
 # Ore metadata: tileID -> (displayName, hexColor, strengthRange, stepsRange)

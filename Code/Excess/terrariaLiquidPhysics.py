@@ -14,12 +14,7 @@ Uses Engine.algorithms.settleLiquids for the correct bottom-up scan.
 Author: Terraria Generation Project
 """
 
-import sys
 import os
-
-sys.path.insert(
-    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-)
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -37,6 +32,9 @@ from Engine.algorithms import (
     OBSIDIAN,
     CRISPY_HONEY_BLOCK,
 )
+from Engine.theme import applyDarkTheme, COLORS
+
+applyDarkTheme()
 
 
 # ---------------------------------------------------------------------------

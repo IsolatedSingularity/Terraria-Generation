@@ -14,11 +14,10 @@ Biome placement rules (from decompiled WorldGen.cs):
 - 45-tile border buffer from all edges
 """
 
-import sys
 import os
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from Engine.constants import LARGE, LayerDepths, StructureQuotas
+from Engine.theme import applyDarkTheme, COLORS, BIOME_COLORS
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -26,11 +25,7 @@ import matplotlib.patches as patches
 from matplotlib.patches import Rectangle, Circle, Ellipse
 import seaborn as sns
 
-# Publication-quality seaborn styling
-sns.set_style("whitegrid")
-sns.set_context("paper", font_scale=1.2)
-plt.rcParams["figure.facecolor"] = "white"
-plt.rcParams["axes.facecolor"] = "white"
+applyDarkTheme()
 
 
 def generateWorldLayout(seed: int = 12345) -> dict:
@@ -130,6 +125,7 @@ def generateWorldLayout(seed: int = 12345) -> dict:
     # Avoid overlap with jungle
     while abs(mushroomX - jungleX) < 600:
         mushroomX = rng.randint(buffer + 500, width - buffer - 500)
+    mushroomY = int(layers.rockLayer + rng.randint(50, 200))
 
     return {
         "dimensions": (width, height),
@@ -156,6 +152,7 @@ def generateWorldLayout(seed: int = 12345) -> dict:
         "marbleCaves": marblePositions,
         "graniteCaves": granitePositions,
         "mushroom": mushroomX,
+        "mushroomY": mushroomY,
         "numMarble": numMarble,
         "numGranite": numGranite,
     }
@@ -326,17 +323,19 @@ def createBiomeLayoutVisualization(savePath: str) -> None:
             ha="center", va="center", fontweight="bold", color="black", fontsize=7,
         )
 
-        # Mushroom biome (surface patch)
+        # Mushroom biome (underground, cavern layer)
         mx = layout["mushroom"]
+        my = layout["mushroomY"]
         mushW = 200
+        mushH = 120
         ax.add_patch(
-            Rectangle(
-                (mx - mushW // 2, worldSurface - 20), mushW, 120,
+            Ellipse(
+                (mx, my), mushW, mushH,
                 facecolor=colors["mushroom"], alpha=0.7,
             )
         )
         ax.text(
-            mx, worldSurface + 30, "Mush",
+            mx, my, "Mushroom",
             ha="center", va="center", fontweight="bold", color="white", fontsize=7,
         )
 
@@ -410,7 +409,7 @@ def createBiomeLayoutVisualization(savePath: str) -> None:
         ax.set_xlabel("X (tiles)", fontsize=11, fontweight="bold")
         ax.set_ylabel("Y (tiles)", fontsize=11, fontweight="bold")
         ax.grid(True, alpha=0.2, linestyle="--")
-        ax.set_facecolor("#F8F8FF")
+        ax.set_facecolor(COLORS["axes"])
 
         # Rules text on first subplot only
         if i == 0:
@@ -424,7 +423,7 @@ def createBiomeLayoutVisualization(savePath: str) -> None:
                 "  1 surface Desert + 1 Underground Desert\n"
                 "  6 Floating Islands in sky layer\n"
                 "  Marble caves: 16-32, Granite: similar\n"
-                "  Surface Mushroom biome\n"
+                "  Underground Mushroom biome (cavern)\n"
                 "  45-tile border buffer on all edges"
             )
             ax.text(
@@ -432,7 +431,7 @@ def createBiomeLayoutVisualization(savePath: str) -> None:
                 fontsize=9, va="top", ha="left", fontweight="bold",
                 fontfamily="monospace",
                 bbox=dict(
-                    boxstyle="round,pad=0.5", facecolor="white",
+                    boxstyle="round,pad=0.5", facecolor=COLORS["legend_bg"],
                     alpha=0.92, edgecolor="navy", linewidth=2,
                 ),
             )
@@ -564,7 +563,7 @@ def createBiomeStatisticsVisualization(savePath: str) -> None:
     ax1.set_xticks(range(1, 5))
     ax1.set_xticklabels(labels)
     ax1.grid(True, alpha=0.3)
-    ax1.set_facecolor("#FAFAFA")
+    ax1.set_facecolor(COLORS["axes"])
 
     # Row 1 col 0: Island count (should be all 6)
     ax2 = fig.add_subplot(gs[1, 0])
@@ -681,13 +680,13 @@ def createBiomeStatisticsVisualization(savePath: str) -> None:
         0.02, 0.13, summaryText, fontsize=10, ha="left", va="top",
         fontfamily="monospace",
         bbox=dict(
-            boxstyle="round,pad=0.5", facecolor="lightblue",
+            boxstyle="round,pad=0.5", facecolor=COLORS["legend_bg"],
             alpha=0.8, edgecolor="navy", linewidth=2,
         ),
     )
 
     plt.tight_layout(rect=[0, 0.18, 1, 0.96])
-    plt.savefig(savePath, dpi=300, bbox_inches="tight", facecolor="white")
+    plt.savefig(savePath, dpi=300, bbox_inches="tight")
     plt.close()
     print(f"Biome statistics visualization saved to {savePath}")
 

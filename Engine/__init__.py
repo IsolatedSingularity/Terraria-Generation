@@ -9,6 +9,7 @@ derived from decompiled C# source analysis.
 from Engine.constants import WorldSize, LayerDepths, StructureQuotas, OreConfig
 from Engine.constants import (
     DungeonConfig, TempleConfig, PyramidConfig, LivingTreeConfig, ShimmerConfig,
+    LIFE_CRYSTAL, ALTAR, HALLOW_GRASS,
 )
 from Engine.algorithms import tileRunner, digTunnel, cavinator, cellularAutomataSmooth
 from Engine.algorithms import settleLiquids

@@ -17,6 +17,9 @@ import numpy.typing as npt
 from Engine.algorithms import (
     AIR, DIRT, STONE, GRASS, SAND, ASH, HELLSTONE, MUD, SNOW, ICE,
     WATER, LAVA, HONEY, OBSIDIAN, tileRunner, digTunnel,
+    CORRUPT_DIRT, EBONSTONE, CRIMSON_DIRT, CRIMSTONE,
+    PEARLSTONE, PEARLSAND, HALLOW_DIRT,
+    CORRUPT_ICE, CRIMSON_ICE, HALLOW_ICE,
 )
 from Engine.constants import (
     DUNGEON_BRICK, LIHZAHRD_BRICK, MARBLE_BLOCK, GRANITE_BLOCK,
@@ -28,7 +31,7 @@ from Engine.constants import (
     WALL_LIHZAHRD, WALL_SPIDER, WALL_MARBLE, WALL_GRANITE,
     WALL_SANDSTONE, WALL_MUSHROOM, WALL_DIRT, WALL_STONE,
     DungeonConfig, TempleConfig, PyramidConfig, LivingTreeConfig, ShimmerConfig,
-    FRAME_IMPORTANT_TILES, IMMUNE_TILES_FULL,
+    FRAME_IMPORTANT_TILES,
 )
 from Engine.structureMap import StructureMap, Rectangle
 
@@ -999,43 +1002,43 @@ def dropMeteor(
 
 # Convertible tile mapping for purification
 PURIFICATION_MAP = {
-    60: DIRT,     # CORRUPT_DIRT -> DIRT
-    61: STONE,    # EBONSTONE -> STONE
-    62: DIRT,     # CRIMSON_DIRT -> DIRT
-    63: STONE,    # CRIMSTONE -> STONE
-    64: STONE,    # PEARLSTONE -> STONE
-    65: SAND,     # PEARLSAND -> SAND
-    66: DIRT,     # HALLOW_DIRT -> DIRT
-    67: ICE,      # CORRUPT_ICE -> ICE
-    68: ICE,      # CRIMSON_ICE -> ICE
-    69: ICE,      # HALLOW_ICE -> ICE
+    CORRUPT_DIRT: DIRT,
+    EBONSTONE: STONE,
+    CRIMSON_DIRT: DIRT,
+    CRIMSTONE: STONE,
+    PEARLSTONE: STONE,
+    PEARLSAND: SAND,
+    HALLOW_DIRT: DIRT,
+    CORRUPT_ICE: ICE,
+    CRIMSON_ICE: ICE,
+    HALLOW_ICE: ICE,
 }
 
 # Corruption conversion map
 CORRUPTION_MAP = {
-    DIRT: 60,     # CORRUPT_DIRT
-    STONE: 61,    # EBONSTONE
-    GRASS: 60,    # CORRUPT_DIRT
-    SAND: 61,     # via EBONSTONE (approximate)
-    ICE: 67,      # CORRUPT_ICE
+    DIRT: CORRUPT_DIRT,
+    STONE: EBONSTONE,
+    GRASS: CORRUPT_DIRT,
+    SAND: EBONSTONE,
+    ICE: CORRUPT_ICE,
 }
 
 # Crimson conversion map
 CRIMSON_MAP = {
-    DIRT: 62,     # CRIMSON_DIRT
-    STONE: 63,    # CRIMSTONE
-    GRASS: 62,    # CRIMSON_DIRT
-    SAND: 63,     # via CRIMSTONE (approximate)
-    ICE: 68,      # CRIMSON_ICE
+    DIRT: CRIMSON_DIRT,
+    STONE: CRIMSTONE,
+    GRASS: CRIMSON_DIRT,
+    SAND: CRIMSTONE,
+    ICE: CRIMSON_ICE,
 }
 
 # Hallow conversion map
 HALLOW_MAP = {
-    DIRT: 66,     # HALLOW_DIRT
-    STONE: 64,    # PEARLSTONE
-    GRASS: 66,    # HALLOW_DIRT
-    SAND: 65,     # PEARLSAND
-    ICE: 69,      # HALLOW_ICE
+    DIRT: HALLOW_DIRT,
+    STONE: PEARLSTONE,
+    GRASS: HALLOW_DIRT,
+    SAND: PEARLSAND,
+    ICE: HALLOW_ICE,
 }
 
 
@@ -1164,23 +1167,28 @@ def spreadGrass(
     """Spread grass to all dirt tiles adjacent to air at any depth.
 
     Game does this as a post-generation pass, not just at the surface.
+    Uses vectorized 8-neighbor air detection via shifted boolean arrays.
 
     Returns:
         The modified grid.
     """
-    maxY, maxX = grid.shape
+    dirtMask = grid == DIRT
+    airMask = grid == AIR
 
-    for y in range(1, maxY - 1):
-        for x in range(1, maxX - 1):
-            if grid[y, x] != DIRT:
+    # Check all 8 neighbors for air via shifted arrays
+    hasAirNeighbor = np.zeros_like(dirtMask)
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            if dy == 0 and dx == 0:
                 continue
-            # Check if any neighbor is air
-            for dy in [-1, 0, 1]:
-                for dx in [-1, 0, 1]:
-                    if dy == 0 and dx == 0:
-                        continue
-                    if grid[y + dy, x + dx] == AIR:
-                        grid[y, x] = GRASS
-                        break
+            shifted = np.roll(np.roll(airMask, -dy, axis=0), -dx, axis=1)
+            hasAirNeighbor |= shifted
 
+    # Zero out the border to avoid wrap-around artifacts from np.roll
+    hasAirNeighbor[0, :] = False
+    hasAirNeighbor[-1, :] = False
+    hasAirNeighbor[:, 0] = False
+    hasAirNeighbor[:, -1] = False
+
+    grid[dirtMask & hasAirNeighbor] = GRASS
     return grid

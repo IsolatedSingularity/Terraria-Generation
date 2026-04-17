@@ -14,34 +14,27 @@ Frame sequence:
   7-21     Infection spread simulation (tile update cycle)
 """
 
-import sys
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
 from typing import List, Tuple, Optional
-import warnings
 
-warnings.filterwarnings("ignore")
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from Engine.algorithms import (
     tileRunner, AIR, STONE, DIRT, MUD, GRASS, SAND, HELLSTONE,
     COBALT, PALLADIUM, MYTHRIL, ORICHALCUM,
     ADAMANTITE, TITANIUM, CHLOROPHYTE,
     EBONSTONE, CRIMSTONE, CORRUPT_DIRT, CRIMSON_DIRT,
+    PEARLSTONE, HALLOW_DIRT,
 )
 from Engine.constants import (
     LARGE, LayerDepths, OreConfig,
     INFECTION_GAP_TILES, SURFACE_UPDATE_RATE, UNDERGROUND_UPDATE_RATE,
+    HALLOW_GRASS,
 )
+from Engine.theme import applyDarkTheme, COLORS
 
-# Hallow tile IDs (local; not yet exported by Engine)
-PEARLSTONE = 117
-HALLOW_DIRT = 118
-HALLOW_GRASS = 119
-
-plt.style.use("dark_background")
+applyDarkTheme()
 
 # Tile ID -> RGB colour (0-255)
 TILE_COLORS: dict[int, tuple[int, int, int]] = {

@@ -10,10 +10,7 @@ Visualizes the core terrain and cave generation algorithms used in Terraria:
 All algorithms reference decompiled WorldGen.cs behavior.
 """
 
-import sys
 import os
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 import numpy.typing as npt
@@ -26,14 +23,9 @@ from Engine.algorithms import tileRunner, cellularAutomataSmooth, AIR, DIRT, STO
 from Engine.algorithms import MUD, SNOW, ICE, SAND, EBONSTONE, CORRUPT_DIRT
 from Engine.algorithms import CRIMSTONE, CRIMSON_DIRT, PEARLSTONE, HALLOW_DIRT
 from Engine.constants import LARGE, LayerDepths
+from Engine.theme import applyDarkTheme, COLORS, TILE_COLORS as ENGINE_TILE_COLORS
 
-# ---------------------------------------------------------------------------
-# Seaborn publication styling
-# ---------------------------------------------------------------------------
-sns.set_style("whitegrid")
-sns.set_context("paper", font_scale=1.2)
-plt.rcParams["figure.facecolor"] = "white"
-plt.rcParams["axes.facecolor"] = "white"
+applyDarkTheme()
 
 # ---------------------------------------------------------------------------
 # World constants for a Large world
@@ -130,11 +122,11 @@ def createSurfaceTerrainVisualization(savePath: str) -> None:
         0.02, 0.02,
         r"$h(x) = \mathrm{worldSurface} + \sum_{i=0}^{N} A \cdot p^i \cdot \sin\left(\frac{2\pi x}{P / 2^i} + \phi_i\right)$",
         fontsize=12, ha="left", va="bottom",
-        bbox=dict(boxstyle="round,pad=0.5", facecolor="white", alpha=0.9, edgecolor="gray"),
+        bbox=dict(boxstyle="round,pad=0.5", facecolor=COLORS["legend_bg"], alpha=0.9, edgecolor=COLORS["edge"]),
     )
 
     plt.tight_layout(rect=[0, 0.05, 1, 0.96])
-    plt.savefig(savePath, dpi=300, bbox_inches="tight", facecolor="white")
+    plt.savefig(savePath, dpi=300, bbox_inches="tight")
     plt.close()
     print(f"Surface terrain visualization saved to {savePath}")
 
@@ -275,11 +267,11 @@ def createCaveSystemVisualization(savePath: str) -> None:
         "TileRunner: diamond brush (manhattan dist), strength decay per step,\n"
         "drunkard's walk drift vectors, clamped speed [-2, 2]",
         fontsize=11, ha="left", va="top",
-        bbox=dict(boxstyle="round,pad=0.4", facecolor="white", alpha=0.9, edgecolor="gray"),
+        bbox=dict(boxstyle="round,pad=0.4", facecolor=COLORS["legend_bg"], alpha=0.9, edgecolor=COLORS["edge"]),
     )
 
     plt.tight_layout(rect=[0, 0.05, 1, 0.93])
-    plt.savefig(savePath, dpi=300, bbox_inches="tight", facecolor="white")
+    plt.savefig(savePath, dpi=300, bbox_inches="tight")
     plt.close()
     print(f"Cave system visualization saved to {savePath}")
 
@@ -426,11 +418,11 @@ def createBiomeTileConversionVisualization(savePath: str) -> None:
     fig.text(
         0.02, 0.02, rulesText, fontsize=10, ha="left", va="bottom",
         family="monospace",
-        bbox=dict(boxstyle="round,pad=0.5", facecolor="white", alpha=0.9, edgecolor="gray"),
+        bbox=dict(boxstyle="round,pad=0.5", facecolor=COLORS["legend_bg"], alpha=0.9, edgecolor=COLORS["edge"]),
     )
 
     plt.tight_layout(rect=[0, 0.10, 1, 0.95])
-    plt.savefig(savePath, dpi=300, bbox_inches="tight", facecolor="white")
+    plt.savefig(savePath, dpi=300, bbox_inches="tight")
     plt.close()
     print(f"Biome tile-type conversion visualization saved to {savePath}")
 

@@ -23,20 +23,13 @@ Animation Sequence (10 phases, ~26 frames):
 10. Final Hardmode State
 """
 
-import sys
 import os
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.animation import FuncAnimation, PillowWriter
 from typing import List, Tuple, Dict, Optional
-import warnings
-
-warnings.filterwarnings("ignore")
 
 from Engine.algorithms import (
     tileRunner, AIR, STONE, DIRT, MUD, GRASS, SAND, ASH, HELLSTONE,
@@ -45,33 +38,24 @@ from Engine.algorithms import (
     ADAMANTITE, TITANIUM, CHLOROPHYTE,
     EBONSTONE, CRIMSTONE, CORRUPT_DIRT, CRIMSON_DIRT,
     PEARLSTONE, HALLOW_DIRT, PEARLSAND,
-    CORRUPT_ICE, CRIMSON_ICE, HALLOW_ICE,
+    CORRUPT_ICE, CRIMSON_ICE, HALLOW_ICE, DUNGEON_BRICK,
 )
 from Engine.constants import (
     LARGE, LayerDepths, StructureQuotas, OreConfig,
     INFECTION_GAP_TILES, SURFACE_UPDATE_RATE, UNDERGROUND_UPDATE_RATE,
+    LIFE_CRYSTAL, ALTAR,
 )
+from Engine.theme import applyDarkTheme, COLORS, TILE_COLORS as ENGINE_TILE_COLORS
 
 from terrariaWorldGeneration import TerrariaWorldGenerator
 from terrariaCorruptionEvolution import TerrariaCorruptionEvolution
 from terrariaHardmodeStructures import TerrariaHardmodeTransformation
 
-plt.style.use("dark_background")
+applyDarkTheme()
 
 
 # ---------------------------------------------------------------------------
-# Local tile IDs (not in Engine, visualization markers only)
-# ---------------------------------------------------------------------------
-LIFE_CRYSTAL = 200
-ALTAR = 201
-
-# worldgen uses these local IDs (different mapping than ours)
-_WG_DUNGEON_BRICK = 200
-_WG_LIFE_CRYSTAL = 201
-
-
-# ---------------------------------------------------------------------------
-# Unified color palette (Engine tile IDs + local markers)
+# Unified color palette (Engine tile IDs)
 # ---------------------------------------------------------------------------
 TILE_COLORS: dict[int, tuple[float, float, float]] = {
     AIR: (0.05, 0.05, 0.10),
@@ -107,6 +91,7 @@ TILE_COLORS: dict[int, tuple[float, float, float]] = {
     ADAMANTITE: (0.85, 0.15, 0.15),
     TITANIUM: (0.55, 0.55, 0.60),
     CHLOROPHYTE: (0.10, 0.95, 0.20),
+    DUNGEON_BRICK: (0.30, 0.20, 0.35),
     LIFE_CRYSTAL: (1.00, 0.20, 0.70),
     ALTAR: (0.60, 0.10, 0.10),
 }
@@ -151,21 +136,6 @@ def _tileStats(grid: np.ndarray, tileIds: List[int]) -> str:
             name = TILE_NAMES.get(tid, f"T{tid}")
             parts.append(f"{name}: {count:,}")
     return "  |  ".join(parts) if parts else ""
-
-
-def _remapWorldgenGrid(grid: np.ndarray) -> np.ndarray:
-    """Remap worldgen local tile IDs to master conventions.
-
-    worldgen: 200=dungeon brick, 201=life crystal
-    master:   200=life crystal,  201=altar (none yet in worldgen output)
-    """
-    out = grid.copy()
-    dungeonMask = grid == _WG_DUNGEON_BRICK
-    crystalMask = grid == _WG_LIFE_CRYSTAL
-    # Two-pass to avoid overwrite conflicts
-    out[dungeonMask] = STONE
-    out[crystalMask] = LIFE_CRYSTAL
-    return out
 
 
 # ---------------------------------------------------------------------------
@@ -238,7 +208,7 @@ class TerrariaWorldEvolutionMaster:
         print("Phases 1-4: Running 19-pass world generation...")
         self.worldGen.generate()
         snapDict: Dict[str, np.ndarray] = {
-            name: _remapWorldgenGrid(grid)
+            name: grid.copy()
             for name, grid in self.worldGen.snapshots
         }
 
@@ -247,7 +217,7 @@ class TerrariaWorldEvolutionMaster:
                 if passName in snapDict:
                     self.frames.append((phase, snapDict[passName]))
 
-        grid = _remapWorldgenGrid(self.worldGen.grid)
+        grid = self.worldGen.grid.copy()
 
         # -- Phase 5: corruption/crimson initial state -------------------
         print("Phase 5: Corruption/Crimson initial state...")

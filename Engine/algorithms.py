@@ -66,6 +66,8 @@ GRANITE_BLOCK = 123
 HARDENED_SAND = 124
 SANDSTONE_BLOCK = 125
 
+HONEY_BLOCK = 145
+
 IMMUNE_TILES = frozenset({
     ASH, HELLSTONE, MUD,  # Biome shells
     DUNGEON_BRICK, LIHZAHRD_BRICK,  # Structure bricks
@@ -316,7 +318,7 @@ def cellularAutomataSmooth(
     - If a solid tile has fewer than deathThreshold solid neighbors, destroy it.
     - If an air tile has more than birthThreshold solid neighbors, fill it.
 
-    The game applies CA only to specific tile types per pass context.
+    Uses vectorized 8-neighbor counting via shifted arrays for performance.
 
     Args:
         grid: 2D tile array, modified in place.
@@ -333,35 +335,38 @@ def cellularAutomataSmooth(
     maxY, maxX = grid.shape
 
     for _ in range(iterations):
-        # Create a snapshot to read from while writing to grid
         snapshot = grid.copy()
+        solidMap = (snapshot != AIR).astype(np.int8)
 
-        for y in range(1, maxY - 1):
-            for x in range(1, maxX - 1):
-                currentTile = snapshot[y, x]
+        # Count 8-connected solid neighbors via shifted sums
+        neighborCount = np.zeros((maxY, maxX), dtype=np.int8)
+        for dy in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                if dy == 0 and dx == 0:
+                    continue
+                neighborCount[1:-1, 1:-1] += solidMap[
+                    1 + dy : maxY - 1 + dy,
+                    1 + dx : maxX - 1 + dx,
+                ]
 
-                # Skip tiles not in the affected set (if specified)
-                if affectedTiles is not None:
-                    if currentTile != AIR and currentTile not in affectedTiles:
-                        continue
+        airMask = snapshot == AIR
+        solidMask = ~airMask
 
-                # Count solid neighbors (8-connected)
-                solidCount = 0
-                for dy in range(-1, 2):
-                    for dx in range(-1, 2):
-                        if dy == 0 and dx == 0:
-                            continue
-                        if snapshot[y + dy, x + dx] != AIR:
-                            solidCount += 1
+        # Build the eligible mask for affected tiles
+        if affectedTiles is not None:
+            eligible = np.isin(snapshot, list(affectedTiles))
+            solidMask = solidMask & eligible
 
-                if currentTile != AIR:
-                    # Solid tile: destroy if too few solid neighbors
-                    if solidCount < deathThreshold:
-                        grid[y, x] = AIR
-                else:
-                    # Air tile: fill if too many solid neighbors
-                    if solidCount > birthThreshold:
-                        grid[y, x] = fillTile
+        # Solid tiles with too few neighbors become air
+        deathMask = solidMask & (neighborCount < deathThreshold)
+        # Air tiles with too many solid neighbors become fill
+        birthMask = airMask & (neighborCount > birthThreshold)
+
+        # Only apply within the interior (skip border)
+        interior = np.zeros((maxY, maxX), dtype=bool)
+        interior[1:-1, 1:-1] = True
+        grid[deathMask & interior] = AIR
+        grid[birthMask & interior] = fillTile
 
     return grid
 
@@ -369,6 +374,7 @@ def cellularAutomataSmooth(
 def settleLiquids(
     grid: npt.NDArray[np.int32],
     maxPasses: int = 50,
+    seed: int | None = None,
 ) -> npt.NDArray[np.int32]:
     """SettleLiquids: bottom-up gravity scan for liquid settling.
 
@@ -383,12 +389,14 @@ def settleLiquids(
     Args:
         grid: 2D tile array, modified in place.
         maxPasses: Maximum settling iterations.
+        seed: Random seed for reproducibility.
 
     Returns:
         The modified grid.
     """
     maxY, maxX = grid.shape
     liquidTypes = {WATER, LAVA, HONEY}
+    rng = np.random.default_rng(seed)
 
     for _ in range(maxPasses):
         moved = False
@@ -425,11 +433,11 @@ def settleLiquids(
                     moved = True
                 elif currentTile == HONEY and below == WATER:
                     # Honey + Water = HoneyBlock
-                    grid[y + 1, x] = 145  # HONEY_BLOCK
+                    grid[y + 1, x] = HONEY_BLOCK
                     grid[y, x] = AIR
                     moved = True
                 elif currentTile == WATER and below == HONEY:
-                    grid[y + 1, x] = 145  # HONEY_BLOCK
+                    grid[y + 1, x] = HONEY_BLOCK
                     grid[y, x] = AIR
                     moved = True
                 elif below in liquidTypes or below != AIR:
@@ -439,7 +447,7 @@ def settleLiquids(
 
                     if leftOpen and rightOpen:
                         # Spread to both sides (alternate to prevent bias)
-                        if np.random.random() < 0.5:
+                        if rng.random() < 0.5:
                             grid[y, x - 1] = currentTile
                         else:
                             grid[y, x + 1] = currentTile

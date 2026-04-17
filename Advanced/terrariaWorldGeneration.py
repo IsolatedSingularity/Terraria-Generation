@@ -1,43 +1,35 @@
 """
-Terraria World Generation - 19-Pass Pipeline
+Terraria World Generation - 23-Pass Pipeline
 =============================================
 
 Implements a faithful subset of Terraria's 103-pass world generation system
 using diamond-brush TileRunner, cellular automata smoothing, and proper
 layer depth calculations derived from decompiled WorldGen.cs.
 
-All algorithms imported from Engine.algorithms; constants from Engine.constants.
+All algorithms imported from Engine.algorithms and Engine.structures;
+constants from Engine.constants.
 """
 
-import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import seaborn as sns
 from matplotlib.colors import ListedColormap
-import warnings
-warnings.filterwarnings('ignore')
 
 from Engine.algorithms import (
     tileRunner, digTunnel, cellularAutomataSmooth, settleLiquids,
     AIR, DIRT, STONE, GRASS, SAND, ASH, MUD, SNOW, ICE,
     HELLSTONE, LAVA, WATER, COPPER, IRON, SILVER, GOLD,
-    EBONSTONE, CORRUPT_DIRT,
+    EBONSTONE, CORRUPT_DIRT, DUNGEON_BRICK,
 )
-from Engine.constants import LARGE, LayerDepths, StructureQuotas, OreConfig
+from Engine.constants import LARGE, LayerDepths, StructureQuotas, OreConfig, LIFE_CRYSTAL
 from Engine.structureMap import StructureMap, Rectangle
+from Engine.structures import rocksInDirt, dirtInRocks, placeClay, placeSilt
+from Engine.theme import applyDarkTheme, COLORS, TILE_COLORS as ENGINE_TILE_COLORS
 
-sns.set_style("whitegrid")
-sns.set_context("paper", font_scale=1.2)
-plt.rcParams['figure.facecolor'] = 'white'
-plt.rcParams['axes.facecolor'] = 'white'
-
-# Tile IDs not in Engine (used locally for visualization grouping)
-_DUNGEON_BRICK = 200
-_LIFE_CRYSTAL = 201
+applyDarkTheme()
 
 # Ordered color map: index = tile ID -> hex color
 TILE_COLORS = {
@@ -59,8 +51,8 @@ TILE_COLORS = {
     GOLD: '#FFD700',
     EBONSTONE: '#9370DB',
     CORRUPT_DIRT: '#7B68AE',
-    _DUNGEON_BRICK: '#2F4F4F',
-    _LIFE_CRYSTAL: '#FF69B4',
+    DUNGEON_BRICK: '#2F4F4F',
+    LIFE_CRYSTAL: '#FF69B4',
 }
 
 
@@ -79,7 +71,7 @@ TERRAIN_CMAP = _buildColormap()
 
 
 class TerrariaWorldGenerator:
-    """Simulates Terraria's world generation using a 19-pass pipeline.
+    """Simulates Terraria's world generation using a 23-pass pipeline.
 
     Supports full-size (8400x2400) and reduced-resolution modes.
     Layer depths, cave counts, and ore density scale proportionally.
@@ -90,6 +82,10 @@ class TerrariaWorldGenerator:
         "Terrain",
         "Stone Layer",
         "Sand Patches",
+        "Rocks In Dirt",
+        "Dirt In Rocks",
+        "Clay",
+        "Silt",
         "Surface Caves",
         "Dirt Layer Caves",
         "Rock Layer Caves",
@@ -160,6 +156,10 @@ class TerrariaWorldGenerator:
             ("Terrain", self._passTerrain),
             ("Stone Layer", self._passStoneLayer),
             ("Sand Patches", self._passSandPatches),
+            ("Rocks In Dirt", self._passRocksInDirt),
+            ("Dirt In Rocks", self._passDirtInRocks),
+            ("Clay", self._passClay),
+            ("Silt", self._passSilt),
             ("Surface Caves", self._passSurfaceCaves),
             ("Dirt Layer Caves", self._passDirtLayerCaves),
             ("Rock Layer Caves", self._passRockLayerCaves),
@@ -186,8 +186,10 @@ class TerrariaWorldGenerator:
     # Backward-compatible API for terraria_master_evolution.py
     # ------------------------------------------------------------------
     def generate_surface_terrain(self) -> None:
-        """Legacy: run Reset + Terrain + Stone Layer + Sand Patches."""
-        for fn in [self._passReset, self._passTerrain, self._passStoneLayer, self._passSandPatches]:
+        """Legacy: run Reset + Terrain + Stone Layer + Sand Patches + material mixing."""
+        for fn in [self._passReset, self._passTerrain, self._passStoneLayer,
+                    self._passSandPatches, self._passRocksInDirt, self._passDirtInRocks,
+                    self._passClay, self._passSilt]:
             fn()
 
     def carve_caves(self) -> None:
@@ -266,6 +268,30 @@ class TerrariaWorldGenerator:
             yEnd = min(surfaceY + desertDepth, self.worldHeight)
             mask = self.grid[surfaceY:yEnd, x] != AIR
             self.grid[surfaceY:yEnd, x][mask] = SAND
+
+    def _passRocksInDirt(self) -> None:
+        """Pass 4: Stone pockets in the dirt layer (Engine.structures.rocksInDirt)."""
+        count = max(5, int(40 * self.areaScale))
+        rocksInDirt(self.grid, count, self.worldSurface, self.rockLayer,
+                    seed=self.seed + 100)
+
+    def _passDirtInRocks(self) -> None:
+        """Pass 5: Dirt pockets in the rock/cavern layer (Engine.structures.dirtInRocks)."""
+        count = max(5, int(40 * self.areaScale))
+        dirtInRocks(self.grid, count, self.rockLayer, self.hellLayer,
+                    seed=self.seed + 200)
+
+    def _passClay(self) -> None:
+        """Pass 6: Clay deposits near the surface (Engine.structures.placeClay)."""
+        count = max(3, int(25 * self.areaScale))
+        placeClay(self.grid, count, self.worldSurface, self.rockLayer,
+                  seed=self.seed + 300)
+
+    def _passSilt(self) -> None:
+        """Pass 7: Silt deposits in the cavern layer (Engine.structures.placeSilt)."""
+        count = max(3, int(25 * self.areaScale))
+        placeSilt(self.grid, count, self.rockLayer, self.hellLayer,
+                  seed=self.seed + 400)
 
     def _passSurfaceCaves(self) -> None:
         """Pass 4: Small caves near the surface using TileRunner."""
@@ -461,7 +487,7 @@ class TerrariaWorldGenerator:
         x1 = min(self.worldWidth, dungeonX + dungeonW // 2)
         y0 = surfaceY
         y1 = min(self.worldHeight, surfaceY + dungeonH)
-        self.grid[y0:y1, x0:x1] = _DUNGEON_BRICK
+        self.grid[y0:y1, x0:x1] = DUNGEON_BRICK
 
         # Carve rooms using digTunnel (eating algorithm)
         roomCount = max(3, int(8 * self.areaScale))
@@ -494,7 +520,7 @@ class TerrariaWorldGenerator:
             if (0 <= cy < self.worldHeight - 1
                     and self.grid[cy, cx] == AIR
                     and self.grid[cy + 1, cx] not in (AIR, WATER, LAVA)):
-                self.grid[cy, cx] = _LIFE_CRYSTAL
+                self.grid[cy, cx] = LIFE_CRYSTAL
                 placed += 1
 
     def _passGrass(self) -> None:
@@ -547,7 +573,7 @@ def _renderGrid(ax, grid: np.ndarray, title: str, maxId: int) -> None:
 
 
 def createWorldGenerationAnimation(saveName: str = "world_generation_animation.gif") -> None:
-    """Create a GIF animation stepping through all 19 generation passes.
+    """Create a GIF animation stepping through all 23 generation passes.
 
     Uses 840x240 (1/10 scale of Large) for performance. Labels indicate
     this is a scaled visualization, not a real Terraria world size.
@@ -610,7 +636,7 @@ def createFullPassGrid(saveName: str = "world_generation_all_passes.png") -> Non
     maxId = max(TILE_COLORS.keys())
 
     fig, axes = plt.subplots(rows, cols, figsize=(20, rows * 3))
-    fig.suptitle("All 19 Generation Passes (1/10 scale)", fontsize=16, fontweight='bold')
+    fig.suptitle("All 23 Generation Passes (1/10 scale)", fontsize=16, fontweight='bold')
 
     for idx, ax in enumerate(axes.flat):
         if idx < n:
