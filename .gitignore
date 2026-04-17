@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Jenova agent system (symlinked, never push)
+Jenova/
+
+# Research files (local reference only)
+References/worldgen-research.md
+
+.env
+audit-*.md
+
+.env
+audit-*.md

@@ -231,8 +231,8 @@ from matplotlib.animation import FuncAnimation
 ### Installation
 
 ```bash
-git clone https://github.com/your-repo/terraria-generation
-cd terraria-generation
+git clone https://github.com/IsolatedSingularity/Terraria-Generation
+cd Terraria-Generation
 pip install -r requirements.txt
 ```
 
