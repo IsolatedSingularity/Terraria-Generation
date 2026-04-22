@@ -38,3 +38,5 @@ audit/
 .ruff_cache/
 *.log
 .ipynb_checkpoints/
+
+Jenova/
