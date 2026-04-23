@@ -2,11 +2,11 @@
 
 ![Master Evolution](Plots/Advanced/terraria_master_evolution.gif)
 
-[![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
-[![Matplotlib](https://img.shields.io/badge/matplotlib-3.10-orange.svg)](https://matplotlib.org/)
-[![NumPy](https://img.shields.io/badge/numpy-2.2-green.svg)](https://numpy.org/)
-[![Seaborn](https://img.shields.io/badge/seaborn-0.13-lightblue.svg)](https://seaborn.pydata.org/)
-[![SciPy](https://img.shields.io/badge/scipy-1.15-red.svg)](https://scipy.org/)
+[![Python](https://img.shields.io/badge/python-3.11%2B-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![NumPy](https://img.shields.io/badge/numpy-2.2-013243.svg?style=for-the-badge&logo=numpy&logoColor=white)](https://numpy.org/)
+[![SciPy](https://img.shields.io/badge/scipy-1.15-8CAAE6.svg?style=for-the-badge&logo=scipy&logoColor=white)](https://scipy.org/)
+[![Matplotlib](https://img.shields.io/badge/matplotlib-3.10-11557C.svg?style=for-the-badge&logo=plotly&logoColor=white)](https://matplotlib.org/)
+[![Seaborn](https://img.shields.io/badge/seaborn-0.13-4C72B0.svg?style=for-the-badge&logo=seaborn&logoColor=white)](https://seaborn.pydata.org/)
 
 ## Overview
 
@@ -49,9 +49,9 @@ Large world biome placement following game rules:
 - Underground Mushroom biome in the cavern layer
 - 45-tile border buffer on all edges
 
-![Biome Statistics](Plots/terraria_biome_statistics.png)
+![Biome Transition Detail](Plots/terraria_biome_transition_detail.png)
 
-Statistical analysis of 200 generated worlds showing distance distributions, side independence, and correlation matrices.
+DETAIL_PLOT (600x400) sprite render of a 3-biome surface transition (Forest -> Jungle -> Desert) showing how Terraria's biome converters swap base materials (Dirt -> Mud / Sand, Stone -> Ebonstone) across hard boundaries while preserving topography.
 
 ### Biome Tile Conversion
 
@@ -61,23 +61,23 @@ Side-by-side tile-grid visualization of biome conversion rules: Snow (dirt to sn
 
 ### Ore Distribution
 
-![Ore Cross Section](Plots/ore_cross_section.png)
+![Ore Distribution](Plots/ore_distribution.png)
 
-Depth-based ore placement using the game's `int(area * 6E-05)` vein count formula. Pre-hardmode ores use alternating pair selection (Copper/Tin, Iron/Lead, Silver/Tungsten, Gold/Platinum). Each vein is placed by TileRunner with `overRide=False`.
+Three-panel detail at FEATURE_PLOT scale (500x300): pre-Hardmode veins, post-altar Hardmode tier, and a 200x120 vein-detail crop with white luster scatter. Ore counts use the game's `int(area * 6E-05)` vein formula. Pre-Hardmode picks alternating pairs (Copper/Tin, Iron/Lead, Silver/Tungsten, Gold/Platinum); Hardmode altar smashing follows the 3-cycle Cobalt/Palladium, Mythril/Orichalcum, Adamantite/Titanium tiers.
 
 ![Ore Density](Plots/ore_depth_density.png)
 
-Depth-density profiles showing tile counts per row, with layer boundary markers.
-
-![Pre-HM vs Hardmode](Plots/ore_prehardmode_vs_hardmode.png)
-
-Hardmode ore generation via the 3-cycle altar-smashing system (Cobalt/Palladium, Mythril/Orichalcum, Adamantite/Titanium).
+Depth-density profiles showing tile counts per row, with Tokyo Night layer boundary markers.
 
 ### Structure Placement
 
-![Structure Placement](Plots/terraria_structure_placement_large.png)
+![Structure Density](Plots/terraria_structure_density.png)
 
-Game-accurate structure quotas with StructureMap exclusion zones: 6 Floating Islands, 140-160 Underground Cabins, up to 403 Life Crystals, 42 Surface Chests, 1 Dungeon, 1 Jungle Temple. Includes statistics table comparing placed counts to game quotas.
+Macro-scale (LARGE 8400x2400) scatter of game-accurate structure quotas with StructureMap exclusion zones: 6 Floating Islands, 140-160 Underground Cabins, up to 403 Life Crystals, 42 Surface Chests, 1 Dungeon, 1 Jungle Temple.
+
+![Structure Detail](Plots/terraria_structure_detail.png)
+
+Four-panel sprite render of representative structures rendered at tile scale via the `Engine.spriteRenderer` module: Dungeon (4 interlocking rooms with doors and torches), Underground Cabin (door + chest + platforms + torch), Floating Island (lens-shaped grass island with embedded chest), and Pyramid (sandstone-brick triangle silhouette).
 
 ### Liquid Physics
 
@@ -89,11 +89,9 @@ Gravity-based liquid settling simulation showing water, lava, and honey behavior
 
 ### 23-Pass World Generation Pipeline
 
-![World Generation Stages](Plots/Advanced/world_generation_stages.png)
-
-Key milestones from the 23-pass pipeline at 1/10 scale (840x240). Passes include: Reset, Terrain, Stone Layer, Sand Patches, Rocks In Dirt, Dirt In Rocks, Clay, Silt, Surface Caves, Dirt Layer Caves, Rock Layer Caves, Smooth World, Snow Biome, Jungle, Corruption, Floating Islands, Underworld, Shinies, Dungeon, Settle Liquids, Life Crystals, Grass, Border Buffer.
-
 ![All Passes](Plots/Advanced/world_generation_all_passes.png)
+
+Every pass of the 23-step pipeline rendered at 1/10 scale (840x240): Reset, Terrain, Stone Layer, Sand Patches, Rocks In Dirt, Dirt In Rocks, Clay, Silt, Surface Caves, Dirt Layer Caves, Rock Layer Caves, Smooth World, Snow Biome, Jungle, Corruption, Floating Islands, Underworld, Shinies, Dungeon, Settle Liquids, Life Crystals, Grass, Border Buffer.
 
 ![World Generation Animation](Plots/Advanced/world_generation_animation.gif)
 
@@ -130,29 +128,31 @@ Complete 26-frame animation covering all 10 phases: world generation (23 passes)
 ```
 Engine/                              # Core library
     __init__.py
-    algorithms.py                    # tileRunner, digTunnel, cavinator, cellularAutomataSmooth (vectorized), settleLiquids (seeded RNG)
-    constants.py                     # WorldSize, LayerDepths, StructureQuotas, OreConfig, unified tile/wall IDs
+    algorithms.py                    # tileRunner, digTunnel, cavinator (all accept seed=), cellularAutomataSmooth, settleLiquids
+    constants.py                     # WorldSize (SMALL/MEDIUM/LARGE/FEATURE_PLOT/DETAIL_PLOT), LayerDepths, StructureQuotas, OreConfig, tile/wall IDs
     structures.py                    # 12 structure generators + 8 placement passes, vectorized spreadGrass
     structureMap.py                  # Rectangle + StructureMap exclusion zones
-    theme.py                         # Unified dark theme, COLORS, BIOME_COLORS, TILE_COLORS, ORE_COLORS, seqCmap/divCmap/lightCmap
-Code/                                # Visualization scripts
-    terrariaBiomeAnalysis.py         # Biome layout + statistics (200-sample analysis)
-    terrariaNoiseSystems.py          # Surface terrain + cave systems + tile conversion
-    terrariaOreDistribution.py       # Ore cross-section + density + HM comparison
-    terrariaStructureGeneration.py   # StructureMap placement + quota validation
+    spriteRenderer.py                # Crisp pixel-tile rendering + structure composers (drawDungeon/drawCabin/drawFloatingIsland/drawPyramid/...)
+    theme.py                         # Tokyo Night Storm PALETTE, COLORS, BIOME_COLORS, TILE_COLORS, ORE_COLORS, buildTileColormap, applyTokyoNight
+Code/                                # Visualization scripts (FEATURE_PLOT and DETAIL_PLOT scale)
+    terrariaBiomeAnalysis.py         # LARGE biome layout + DETAIL_PLOT sprite-rendered biome transition
+    terrariaNoiseSystems.py          # Surface terrain (4 biomes) + cave systems + tile conversion
+    terrariaOreDistribution.py       # 3-panel ore distribution with vein-detail luster crop + depth density
+    terrariaStructureGeneration.py   # Macro density scatter + 4-panel sprite detail
     Excess/
         terrariaLiquidPhysics.py     # Liquid settling simulation
 Advanced/                            # Full-scale simulations
-    terrariaWorldGeneration.py       # 23-pass pipeline with animation
+    __init__.py
+    terrariaWorldGeneration.py       # 23-pass pipeline thumbnail grid + animation
     terrariaCompleteWorldEvolution.py # 7-phase lifecycle (840x240)
     terrariaCorruptionEvolution.py   # Infection spread + air gap demo
     terrariaHardmodeStructures.py    # HM ore + Chlorophyte
     terrariaHardmodeDetailedAnimation.py # HM animation
     terrariaMasterEvolution.py       # 26-frame master GIF
-Plots/                               # Generated output (19 files)
-    Advanced/                        # Advanced simulation outputs
-    Excess/                          # Liquid physics output
-References/                          # Research documentation
+Plots/                               # Generated output (tracked so README renders on GitHub)
+    Advanced/
+    Excess/
+References/                          # Research documentation (gitignored)
 ```
 
 ## Setup
@@ -163,7 +163,7 @@ cd Terraria-Generation
 pip install -e .          # editable install (Engine becomes importable)
 ```
 
-> `pip install -e .` uses the `[build-system]` in `pyproject.toml` to expose the `Engine/` package. If you only need the dependencies, `pip install -r requirements.txt` works too.
+> `pip install -e .` uses the `[build-system]` in `pyproject.toml` to expose the `Engine/` package.
 
 ### Generate All Plots
 

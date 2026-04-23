@@ -39,5 +39,5 @@ audit/
 *.log
 .ipynb_checkpoints/
 
-# Generated plot outputs (regenerate via scripts/regenerateAll.ps1)
-Plots/
+# Generated plot outputs are tracked so the README renders on GitHub.
+# Regenerate them locally with the scripts in Code/ and Advanced/.
