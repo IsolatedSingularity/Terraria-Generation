@@ -88,6 +88,7 @@ def tileRunner(
     speedY: float = 0.0,
     noYChange: bool = False,
     overRide: bool = True,
+    seed: int | None = None,
 ) -> npt.NDArray[np.int32]:
     """WorldGen.TileRunner: diamond-brush random walk algorithm.
 
@@ -112,7 +113,10 @@ def tileRunner(
         The modified grid (same reference as input).
     """
     maxY, maxX = grid.shape
-    rng = np.random.default_rng()
+    rng = np.random.default_rng(seed)
+
+    # Pre-compute hell threshold (used inside hot loop for tileType == -2).
+    hellThreshold = max(maxY - 200, int(maxY * 0.917))
 
     # Initialize drift vectors if not provided
     if speedX == 0.0 and speedY == 0.0:
@@ -152,7 +156,6 @@ def tileRunner(
                 elif tileType == -2:
                     # Carve + lava mode (use hellLayer = maxY - 200 for full grids)
                     if grid[ty, tx] not in IMMUNE_TILES:
-                        hellThreshold = max(maxY - 200, int(maxY * 0.917))
                         grid[ty, tx] = LAVA if ty >= hellThreshold else AIR
                 else:
                     # Place mode
@@ -192,6 +195,7 @@ def digTunnel(
     steps: int,
     size: int,
     wet: bool = False,
+    seed: int | None = None,
 ) -> npt.NDArray[np.int32]:
     """WorldGen.digTunnel: sphere-cutter for smooth shafts.
 
@@ -211,7 +215,7 @@ def digTunnel(
     """
     maxY, maxX = grid.shape
     cx, cy = x, y
-    rng = np.random.default_rng()
+    rng = np.random.default_rng(seed)
     fillType = WATER if wet else AIR
 
     for _ in range(steps):
@@ -244,6 +248,7 @@ def cavinator(
     strength: float,
     steps: int,
     immuneTiles: frozenset[int] | None = None,
+    seed: int | None = None,
 ) -> npt.NDArray[np.int32]:
     """WorldGen.Cavinator: macro cave carver with immune-tile checks.
 
@@ -266,7 +271,7 @@ def cavinator(
         immuneTiles = IMMUNE_TILES
 
     maxY, maxX = grid.shape
-    rng = np.random.default_rng()
+    rng = np.random.default_rng(seed)
     cx, cy = float(x), float(y)
     currentStrength = strength
     speedX = rng.uniform(-1.0, 1.0)

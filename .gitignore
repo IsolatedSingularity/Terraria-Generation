@@ -39,4 +39,5 @@ audit/
 *.log
 .ipynb_checkpoints/
 
-Jenova/
+# Generated plot outputs (regenerate via scripts/regenerateAll.ps1)
+Plots/

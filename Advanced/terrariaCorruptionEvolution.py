@@ -12,7 +12,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import seaborn as sns
-from typing import Optional
 from Engine.algorithms import (
     tileRunner,
     AIR, DIRT, STONE, SAND, ICE, MUD, GRASS, SNOW,
@@ -25,9 +24,9 @@ from Engine.constants import (
     SURFACE_UPDATE_RATE, UNDERGROUND_UPDATE_RATE,
     INFECTION_SPREAD_RADIUS,
 )
-from Engine.theme import applyDarkTheme, COLORS
+from Engine.theme import applyTokyoNight, COLORS
 
-applyDarkTheme()
+applyTokyoNight()
 
 
 # ---------------------------------------------------------------------------
@@ -506,7 +505,7 @@ def _buildAirGapDemo() -> np.ndarray:
 # ---------------------------------------------------------------------------
 # Public figure builders
 # ---------------------------------------------------------------------------
-def createEvolutionFigure(savePath: Optional[str] = None) -> plt.Figure:
+def createEvolutionFigure(savePath: str | None = None) -> plt.Figure:
     """2x3 panel figure: evil pockets, V-pattern, spread frames, air gap, timeline."""
     if savePath is None:
         savePath = os.path.join(
@@ -591,7 +590,7 @@ def createEvolutionFigure(savePath: Optional[str] = None) -> plt.Figure:
     return fig
 
 
-def createSpreadAnimation(savePath: Optional[str] = None) -> None:
+def createSpreadAnimation(savePath: str | None = None) -> None:
     """Animated GIF showing corruption spread at reduced resolution (840x240)."""
     from matplotlib.animation import FuncAnimation
 

@@ -16,16 +16,19 @@ Biome placement rules (from decompiled WorldGen.cs):
 
 import os
 
-from Engine.constants import LARGE, LayerDepths, StructureQuotas
-from Engine.theme import applyDarkTheme, COLORS, BIOME_COLORS
-
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from matplotlib.patches import Rectangle, Circle, Ellipse
-import seaborn as sns
+from matplotlib.patches import Circle, Ellipse, Rectangle
 
-applyDarkTheme()
+from Engine.algorithms import (
+    AIR, DIRT, EBONSTONE, GRASS, MUD, SAND, STONE,
+)
+from Engine.constants import DETAIL_PLOT, LARGE, LayerDepths, StructureQuotas
+from Engine.spriteRenderer import drawTileGrid
+from Engine.theme import applyTokyoNight, COLORS, PALETTE
+
+applyTokyoNight()
 
 
 def generateWorldLayout(seed: int = 12345) -> dict:
@@ -45,7 +48,7 @@ def generateWorldLayout(seed: int = 12345) -> dict:
     Returns:
         Dict of biome positions, types, and world metadata.
     """
-    rng = np.random.RandomState(seed)
+    rng = np.random.default_rng(seed)
 
     width = LARGE.width
     height = LARGE.height
@@ -54,78 +57,75 @@ def generateWorldLayout(seed: int = 12345) -> dict:
     quotas = StructureQuotas.forLarge()
 
     # Spawn near world center
-    spawnX = width // 2 + rng.randint(-100, 100)
+    spawnX = width // 2 + int(rng.integers(-100, 100))
 
     # Dungeon side (50/50)
-    dungeonSide = rng.choice(["left", "right"])
+    dungeonSide = str(rng.choice(["left", "right"]))
 
     # Dungeon, Jungle, Snow placement based on dungeonX polarity
     if dungeonSide == "left":
-        dungeonX = rng.randint(buffer, width // 4)
-        jungleX = rng.randint(3 * width // 4, width - buffer)
-        snowX = rng.randint(buffer, width // 3)
+        dungeonX = int(rng.integers(buffer, width // 4))
+        jungleX = int(rng.integers(3 * width // 4, width - buffer))
+        snowX = int(rng.integers(buffer, width // 3))
     else:
-        dungeonX = rng.randint(3 * width // 4, width - buffer)
-        jungleX = rng.randint(buffer, width // 4)
-        snowX = rng.randint(2 * width // 3, width - buffer)
+        dungeonX = int(rng.integers(3 * width // 4, width - buffer))
+        jungleX = int(rng.integers(buffer, width // 4))
+        snowX = int(rng.integers(2 * width // 3, width - buffer))
 
     # Evil biome: placed independently of dungeon side
-    evilType = rng.choice(["corruption", "crimson"])
-    evilX = rng.randint(buffer + 200, width - buffer - 200)
+    evilType = str(rng.choice(["corruption", "crimson"]))
+    evilX = int(rng.integers(buffer + 200, width - buffer - 200))
 
     # 1 surface desert (not 3)
-    desertX = rng.randint(buffer + 300, width - buffer - 300)
-    # Avoid overlapping with spawn area
+    desertX = int(rng.integers(buffer + 300, width - buffer - 300))
     while abs(desertX - spawnX) < 400:
-        desertX = rng.randint(buffer + 300, width - buffer - 300)
+        desertX = int(rng.integers(buffer + 300, width - buffer - 300))
 
     # 1 Underground Desert (circular ant-hive beneath surface desert)
     undergroundDesertCenter = (desertX, int(layers.rockLayer + 100))
-    undergroundDesertRadius = rng.randint(150, 250)
+    undergroundDesertRadius = int(rng.integers(150, 250))
 
-    # Oceans at edges (within buffer region)
+    # Oceans at edges
     oceanLeftX = 0
     oceanRightX = width
 
     # Floating islands: exactly 6 for large world
-    numIslands = quotas.floatingIslands  # 6
+    numIslands = quotas.floatingIslands
     islandPositions = []
-    usedIslandX = set()
+    usedIslandX: set[int] = set()
     for _ in range(numIslands):
         attempts = 0
         while attempts < 100:
-            ix = rng.randint(buffer + 200, width - buffer - 200)
-            # Ensure minimum spacing between islands
+            ix = int(rng.integers(buffer + 200, width - buffer - 200))
             tooClose = any(abs(ix - ux) < 300 for ux in usedIslandX)
             if not tooClose:
                 break
             attempts += 1
-        iy = rng.randint(100, int(layers.worldSurface * 0.4))
+        iy = int(rng.integers(100, int(layers.worldSurface * 0.4)))
         islandPositions.append((ix, iy))
         usedIslandX.add(ix)
 
     # Marble caves: 16-32 for large world
-    numMarble = rng.randint(quotas.marbleCavesMin, quotas.marbleCavesMax + 1)
+    numMarble = int(rng.integers(quotas.marbleCavesMin, quotas.marbleCavesMax + 1))
     marblePositions = []
     for _ in range(numMarble):
-        mx = rng.randint(buffer, width - buffer)
-        my = rng.randint(int(layers.rockLayer), int(layers.hellLayer - 50))
+        mx = int(rng.integers(buffer, width - buffer))
+        my = int(rng.integers(int(layers.rockLayer), int(layers.hellLayer - 50)))
         marblePositions.append((mx, my))
 
-    # Granite caves: similar count to marble (game uses comparable formula)
-    numGranite = rng.randint(quotas.marbleCavesMin, quotas.marbleCavesMax + 1)
+    # Granite caves: similar count to marble
+    numGranite = int(rng.integers(quotas.marbleCavesMin, quotas.marbleCavesMax + 1))
     granitePositions = []
     for _ in range(numGranite):
-        gx = rng.randint(buffer, width - buffer)
-        gy = rng.randint(int(layers.rockLayer), int(layers.hellLayer - 50))
+        gx = int(rng.integers(buffer, width - buffer))
+        gy = int(rng.integers(int(layers.rockLayer), int(layers.hellLayer - 50)))
         granitePositions.append((gx, gy))
 
-    # Surface Mushroom biome (placed in cavern layer, surfaces at mud patches)
-    mushroomX = rng.randint(buffer + 500, width - buffer - 500)
-    # Avoid overlap with jungle
+    # Surface Mushroom biome
+    mushroomX = int(rng.integers(buffer + 500, width - buffer - 500))
     while abs(mushroomX - jungleX) < 600:
-        mushroomX = rng.randint(buffer + 500, width - buffer - 500)
-    mushroomY = int(layers.rockLayer + rng.randint(50, 200))
+        mushroomX = int(rng.integers(buffer + 500, width - buffer - 500))
+    mushroomY = int(layers.rockLayer + int(rng.integers(50, 200)))
 
     return {
         "dimensions": (width, height),
@@ -466,229 +466,85 @@ def createBiomeLayoutVisualization(savePath: str) -> None:
     print(f"Biome layout visualization saved to {savePath}")
 
 
-def createBiomeStatisticsVisualization(savePath: str) -> None:
-    """Create statistical analysis of biome distributions from many large-world samples."""
-    print("Creating biome statistics visualization for large worlds...")
+# ===================================================================
+# Detail panel: sprite-rendered biome transition (Forest -> Jungle -> Desert)
+# ===================================================================
+def createBiomeTransitionDetail(savePath: str) -> None:
+    """DETAIL_PLOT (600x400) sprite render of a 3-biome surface transition.
 
-    numSamples = 200
-    quotas = StructureQuotas.forLarge()
+    Replaces the cut 200-world statistics figure with a tile-scale view of
+    how Terraria biome converters swap base materials (Dirt -> Mud / Sand)
+    while preserving topography across hard boundaries.
+    """
+    print("Creating biome transition detail (sprite render)...")
+    width = DETAIL_PLOT.width   # 600
+    height = DETAIL_PLOT.height  # 400
+    rng = np.random.default_rng(seed=20250423)
 
-    stats = {
-        "jungleDistances": [],
-        "dungeonDistances": [],
-        "evilDistances": [],
-        "snowDistances": [],
-        "desertCounts": [],
-        "islandCounts": [],
-        "marbleCounts": [],
-        "graniteCounts": [],
-        "dungeonSides": {"left": 0, "right": 0},
-        "evilTypes": {"corruption": 0, "crimson": 0},
-        "biomeSpacings": [],
-        "worldBalanceScores": [],
-        "evilOnDungeonSide": 0,
-    }
+    grid = np.full((height, width), STONE, dtype=np.int32)
+    surfaceY = int(height * 0.18)
+    dirtBottom = int(height * 0.42)
 
-    for i in range(numSamples):
-        layout = generateWorldLayout(seed=i * 37)
-        width = layout["dimensions"][0]
-        spawnX = layout["spawn"][0]
-        center = width // 2
+    # Wavy surface for visual interest.
+    xs = np.arange(width)
+    surfaceWave = surfaceY + (4 * np.sin(xs / 18.0) + 2 * np.cos(xs / 7.0)).astype(int)
+    for x in range(width):
+        ys = int(surfaceWave[x])
+        grid[:ys, x] = AIR
+        grid[ys, x] = GRASS
+        grid[ys + 1:dirtBottom, x] = DIRT
 
-        # Normalized distances from spawn
-        stats["jungleDistances"].append(abs(layout["jungle"][0] - spawnX) / width)
-        stats["dungeonDistances"].append(abs(layout["dungeon"][0] - spawnX) / width)
-        stats["evilDistances"].append(abs(layout["evil"][0] - spawnX) / width)
-        stats["snowDistances"].append(abs(layout["snow"][0] - spawnX) / width)
+    # A handful of caves so the conversion is visible underground.
+    from Engine.algorithms import tileRunner
+    for _ in range(40):
+        sx = int(rng.integers(10, width - 10))
+        sy = int(rng.integers(surfaceY + 12, height - 20))
+        tileRunner(grid, sx, sy, float(rng.uniform(4.0, 9.0)),
+                   int(rng.integers(20, 60)), tileType=-1)
 
-        # Counts (fixed: 1 desert, 6 islands)
-        stats["desertCounts"].append(1)
-        stats["islandCounts"].append(len(layout["floatingIslands"]))
-        stats["marbleCounts"].append(layout["numMarble"])
-        stats["graniteCounts"].append(layout["numGranite"])
+    # Three biome bands with hard tile-type conversion boundaries.
+    b1, b2 = width // 3, 2 * width // 3
+    # Jungle middle band: Dirt -> Mud, Grass -> Mud.
+    for j in range(height):
+        for i in range(b1, b2):
+            if grid[j, i] == DIRT or grid[j, i] == GRASS:
+                grid[j, i] = MUD
+    # Desert right band: Dirt -> Sand, Grass -> Sand, Stone -> EBONSTONE for contrast.
+    for j in range(height):
+        for i in range(b2, width):
+            if grid[j, i] == DIRT or grid[j, i] == GRASS:
+                grid[j, i] = SAND
+            elif grid[j, i] == STONE and j > dirtBottom + 20:
+                grid[j, i] = EBONSTONE
 
-        stats["dungeonSides"][layout["dungeonSide"]] += 1
-        stats["evilTypes"][layout["evilType"]] += 1
+    fig, ax = plt.subplots(figsize=(12, 6))
+    drawTileGrid(ax, grid)
 
-        # Track whether evil ended up on dungeon side (should be ~50/50)
-        evilSide = "left" if layout["evil"][0] < center else "right"
-        if evilSide == layout["dungeonSide"]:
-            stats["evilOnDungeonSide"] += 1
+    for bx in (b1, b2):
+        ax.axvline(bx, color=PALETTE["fg"], linestyle="--",
+                   linewidth=1.0, alpha=0.7)
 
-        # Average spacing between major biomes
-        majorBiomes = [
-            layout["jungle"][0], layout["dungeon"][0],
-            layout["evil"][0], layout["snow"][0],
-        ]
-        spacings = []
-        for j in range(len(majorBiomes)):
-            for k in range(j + 1, len(majorBiomes)):
-                spacings.append(abs(majorBiomes[j] - majorBiomes[k]) / width)
-        stats["biomeSpacings"].append(np.mean(spacings))
+    for mid, label, color in [
+        (b1 // 2, "Forest", PALETTE["green"]),
+        ((b1 + b2) // 2, "Jungle", "#73daca"),
+        ((b2 + width) // 2, "Desert", PALETTE["yellow"]),
+    ]:
+        ax.text(mid, surfaceY * 0.45, label, ha="center", va="center",
+                fontweight="bold", fontsize=10, color=PALETTE["bg"],
+                bbox=dict(boxstyle="round,pad=0.3",
+                          facecolor=color, alpha=0.9))
 
-        # Balance score
-        positions = sorted(majorBiomes)
-        expectedSpacing = width / 5
-        actualSpacings = [positions[m + 1] - positions[m] for m in range(len(positions) - 1)]
-        balanceScore = 1 - np.std(actualSpacings) / expectedSpacing
-        stats["worldBalanceScores"].append(max(0.0, balanceScore))
-
-    # ---- Visualization ----
-    fig = plt.figure(figsize=(20, 18))
-    fig.suptitle(
-        "Terraria Large World Biome Statistics\n"
-        f"Distribution Patterns from {numSamples} Generated Worlds",
-        fontsize=18, fontweight="bold", y=0.98,
-    )
-
-    gs = fig.add_gridspec(4, 3, hspace=0.4, wspace=0.3)
-    palette = sns.color_palette("husl", 8)
-
-    # Row 0: Violin plot of biome distances
-    ax1 = fig.add_subplot(gs[0, :])
-    distances = [
-        stats["jungleDistances"], stats["dungeonDistances"],
-        stats["evilDistances"], stats["snowDistances"],
-    ]
-    labels = ["Jungle", "Dungeon", "Evil Biome", "Snow"]
-    violinColors = [palette[0], palette[1], palette[2], palette[3]]
-
-    parts = ax1.violinplot(distances, positions=range(1, 5), showmeans=True, showmedians=True)
-    for idx, pc in enumerate(parts["bodies"]):
-        pc.set_facecolor(violinColors[idx])
-        pc.set_alpha(0.7)
-    ax1.set_xlabel("Biome Type", fontsize=12, fontweight="bold")
-    ax1.set_ylabel("Distance from Spawn (normalized)", fontsize=12, fontweight="bold")
-    ax1.set_title("Biome Distance Distributions from Spawn Point", fontsize=14, fontweight="bold")
-    ax1.set_xticks(range(1, 5))
-    ax1.set_xticklabels(labels)
-    ax1.grid(True, alpha=0.3)
-    ax1.set_facecolor(COLORS["axes"])
-
-    # Row 1 col 0: Island count (should be all 6)
-    ax2 = fig.add_subplot(gs[1, 0])
-    islandArr = np.array(stats["islandCounts"])
-    islandBins = np.bincount(islandArr, minlength=8)
-    ax2.bar(range(len(islandBins)), islandBins, color=palette[5], alpha=0.8)
-    ax2.set_title(f"Floating Island Count (always {quotas.floatingIslands})", fontsize=12, fontweight="bold")
-    ax2.set_xlabel("Number of Islands")
-    ax2.set_ylabel("Frequency")
-    ax2.grid(True, alpha=0.3)
-
-    # Row 1 col 1: Marble cave count distribution
-    ax3 = fig.add_subplot(gs[1, 1])
-    ax3.hist(stats["marbleCounts"], bins=range(
-        quotas.marbleCavesMin, quotas.marbleCavesMax + 2),
-        color="#F5F5F5", edgecolor="gray", alpha=0.9,
-    )
-    ax3.set_title(f"Marble Cave Count ({quotas.marbleCavesMin}-{quotas.marbleCavesMax})", fontsize=12, fontweight="bold")
-    ax3.set_xlabel("Count")
-    ax3.set_ylabel("Frequency")
-    ax3.grid(True, alpha=0.3)
-
-    # Row 1 col 2: Granite cave count distribution
-    ax4 = fig.add_subplot(gs[1, 2])
-    ax4.hist(stats["graniteCounts"], bins=range(
-        quotas.marbleCavesMin, quotas.marbleCavesMax + 2),
-        color="#2F4F4F", edgecolor="gray", alpha=0.7,
-    )
-    ax4.set_title("Granite Cave Count", fontsize=12, fontweight="bold")
-    ax4.set_xlabel("Count")
-    ax4.set_ylabel("Frequency")
-    ax4.grid(True, alpha=0.3)
-
-    # Row 2 col 0: Dungeon side distribution
-    ax5 = fig.add_subplot(gs[2, 0])
-    dungeonData = list(stats["dungeonSides"].values())
-    ax5.pie(
-        dungeonData, labels=["Left", "Right"], autopct="%1.1f%%",
-        colors=[palette[6], palette[7]], startangle=90,
-    )
-    ax5.set_title("Dungeon Side Distribution", fontsize=12, fontweight="bold")
-
-    # Row 2 col 1: Evil biome type
-    ax6 = fig.add_subplot(gs[2, 1])
-    evilData = list(stats["evilTypes"].values())
-    ax6.pie(
-        evilData, labels=["Corruption", "Crimson"], autopct="%1.1f%%",
-        colors=["#9370DB", "#DC143C"], startangle=90,
-    )
-    ax6.set_title("Evil Biome Type Distribution", fontsize=12, fontweight="bold")
-
-    # Row 2 col 2: Evil biome side independence
-    ax7 = fig.add_subplot(gs[2, 2])
-    evilDungeonPct = stats["evilOnDungeonSide"] / numSamples * 100
-    evilOppositePct = 100 - evilDungeonPct
-    ax7.bar(
-        ["Same as Dungeon", "Opposite"],
-        [evilDungeonPct, evilOppositePct],
-        color=[palette[2], palette[4]], alpha=0.8,
-    )
-    ax7.set_title("Evil vs Dungeon Side (independent)", fontsize=12, fontweight="bold")
-    ax7.set_ylabel("Percentage")
-    ax7.set_ylim(0, 100)
-    ax7.axhline(y=50, color="red", linestyle="--", alpha=0.5, label="50% (expected)")
-    ax7.legend()
-    ax7.grid(True, alpha=0.3)
-
-    # Row 3: Correlation matrix
-    ax8 = fig.add_subplot(gs[3, :])
-    corrData = np.array([
-        stats["jungleDistances"],
-        stats["dungeonDistances"],
-        stats["evilDistances"],
-        stats["snowDistances"],
-        stats["biomeSpacings"],
-        stats["worldBalanceScores"],
-    ])
-    corrMatrix = np.corrcoef(corrData)
-    corrLabels = [
-        "Jungle Dist", "Dungeon Dist", "Evil Dist",
-        "Snow Dist", "Avg Spacing", "Balance",
-    ]
-
-    im = ax8.imshow(corrMatrix, cmap="RdBu_r", vmin=-1, vmax=1)
-    ax8.set_xticks(range(len(corrLabels)))
-    ax8.set_yticks(range(len(corrLabels)))
-    ax8.set_xticklabels(corrLabels, rotation=45, ha="right")
-    ax8.set_yticklabels(corrLabels)
-    ax8.set_title("Biome Parameter Correlation Matrix", fontsize=14, fontweight="bold")
-
-    for ci in range(len(corrLabels)):
-        for cj in range(len(corrLabels)):
-            textColor = "black" if abs(corrMatrix[ci, cj]) < 0.5 else "white"
-            ax8.text(
-                cj, ci, f"{corrMatrix[ci, cj]:.2f}",
-                ha="center", va="center", color=textColor,
-            )
-
-    cbar = fig.colorbar(im, ax=ax8, orientation="horizontal", pad=0.12, shrink=0.8)
-    cbar.set_label("Correlation Coefficient", fontsize=12)
-
-    # Summary text
-    summaryText = (
-        f"Statistical Summary (n={numSamples}):\n"
-        f"  Jungle dist: {np.mean(stats['jungleDistances']):.3f} +/- {np.std(stats['jungleDistances']):.3f}\n"
-        f"  Dungeon dist: {np.mean(stats['dungeonDistances']):.3f} +/- {np.std(stats['dungeonDistances']):.3f}\n"
-        f"  Desert count: always 1 (+ 1 Underground Desert)\n"
-        f"  Island count: always {quotas.floatingIslands}\n"
-        f"  Marble caves: {np.mean(stats['marbleCounts']):.1f} +/- {np.std(stats['marbleCounts']):.1f}\n"
-        f"  Evil on dungeon side: {evilDungeonPct:.1f}% (independent)\n"
-        f"  Dungeon side: L={stats['dungeonSides']['left']}, R={stats['dungeonSides']['right']}"
-    )
-    fig.text(
-        0.02, 0.13, summaryText, fontsize=10, ha="left", va="top",
-        fontfamily="monospace",
-        bbox=dict(
-            boxstyle="round,pad=0.5", facecolor=COLORS["legend_bg"],
-            alpha=0.8, edgecolor="navy", linewidth=2,
-        ),
-    )
-
-    plt.tight_layout(rect=[0, 0.18, 1, 0.96])
-    plt.savefig(savePath, dpi=300, bbox_inches="tight")
+    ax.set_xlim(0, width)
+    ax.set_ylim(height, 0)
+    ax.set_xlabel("X (tiles)", fontweight="bold")
+    ax.set_ylabel("Depth (tiles)", fontweight="bold")
+    ax.set_title("Biome Transition Detail (DETAIL_PLOT sprite render)",
+                 fontsize=13, fontweight="bold")
+    plt.tight_layout()
+    plt.savefig(savePath, dpi=200, bbox_inches="tight",
+                facecolor=COLORS["bg"])
     plt.close()
-    print(f"Biome statistics visualization saved to {savePath}")
+    print(f"Biome transition detail saved to {savePath}")
 
 
 if __name__ == "__main__":
@@ -703,8 +559,8 @@ if __name__ == "__main__":
         createBiomeLayoutVisualization(
             os.path.join(outputDir, "terraria_biome_layouts.png")
         )
-        createBiomeStatisticsVisualization(
-            os.path.join(outputDir, "terraria_biome_statistics.png")
+        createBiomeTransitionDetail(
+            os.path.join(outputDir, "terraria_biome_transition_detail.png")
         )
         print("All biome analysis visualizations complete.")
     except Exception as e:

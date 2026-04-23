@@ -18,7 +18,6 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
-from typing import List, Tuple, Optional
 
 from Engine.algorithms import (
     tileRunner, AIR, STONE, DIRT, MUD, GRASS, SAND, HELLSTONE,
@@ -32,9 +31,9 @@ from Engine.constants import (
     INFECTION_GAP_TILES, SURFACE_UPDATE_RATE, UNDERGROUND_UPDATE_RATE,
     HALLOW_GRASS,
 )
-from Engine.theme import applyDarkTheme, COLORS
+from Engine.theme import applyTokyoNight, COLORS
 
-applyDarkTheme()
+applyTokyoNight()
 
 # Tile ID -> RGB colour (0-255)
 TILE_COLORS: dict[int, tuple[int, int, int]] = {
@@ -342,9 +341,9 @@ class TerrariaHardmodeAnimation:
     # ------------------------------------------------------------------
     # Frame generation
     # ------------------------------------------------------------------
-    def generateFrames(self, spreadSteps: int = 15) -> List[Tuple[str, np.ndarray]]:
+    def generateFrames(self, spreadSteps: int = 15) -> list[tuple[str, np.ndarray]]:
         """Produce all (label, gridCopy) pairs for the animation."""
-        frames: List[Tuple[str, np.ndarray]] = []
+        frames: list[tuple[str, np.ndarray]] = []
 
         # Frame 0: pre-hardmode
         self.initializeWorld()
@@ -400,7 +399,7 @@ class TerrariaHardmodeAnimation:
                 image[mask] = rgb
         return image
 
-    def animate(self, savePath: Optional[str] = None) -> None:
+    def animate(self, savePath: str | None = None) -> None:
         """Render FuncAnimation and save as .gif (~400 ms/frame)."""
         frames = self.generateFrames()
         totalFrames = len(frames)

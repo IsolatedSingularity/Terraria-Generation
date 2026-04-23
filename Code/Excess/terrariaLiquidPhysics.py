@@ -32,9 +32,9 @@ from Engine.algorithms import (
     OBSIDIAN,
     CRISPY_HONEY_BLOCK,
 )
-from Engine.theme import applyDarkTheme, COLORS
+from Engine.theme import applyTokyoNight, COLORS
 
-applyDarkTheme()
+applyTokyoNight()
 
 
 # ---------------------------------------------------------------------------

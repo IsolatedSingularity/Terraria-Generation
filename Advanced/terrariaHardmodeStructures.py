@@ -17,16 +17,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.colors import ListedColormap, BoundaryNorm
-from typing import List, Tuple, Optional
 
 from Engine.algorithms import (tileRunner, AIR, STONE, DIRT, MUD, GRASS,
                                 COBALT, PALLADIUM, MYTHRIL, ORICHALCUM,
                                 ADAMANTITE, TITANIUM, CHLOROPHYTE,
                                 EBONSTONE, CRIMSTONE, CORRUPT_DIRT, CRIMSON_DIRT)
 from Engine.constants import LARGE, LayerDepths, StructureQuotas, OreConfig, LIFE_CRYSTAL, ALTAR
-from Engine.theme import applyDarkTheme, COLORS
+from Engine.theme import applyTokyoNight, COLORS
 
-applyDarkTheme()
+applyTokyoNight()
 
 
 # ---------------------------------------------------------------------------
@@ -53,28 +52,12 @@ def _tileName(tileId: int) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Color palette
+# Color palette (delegated to Engine.theme — single source of truth).
+# Local _TILE_COLORS retained as a hex-keyed view used by legend builders.
 # ---------------------------------------------------------------------------
-_TILE_COLORS = {
-    AIR: (0.05, 0.05, 0.1),
-    DIRT: (0.45, 0.32, 0.18),
-    STONE: (0.50, 0.50, 0.50),
-    MUD: (0.35, 0.28, 0.40),
-    GRASS: (0.20, 0.60, 0.20),
-    CORRUPT_DIRT: (0.35, 0.10, 0.45),
-    EBONSTONE: (0.30, 0.05, 0.50),
-    CRIMSON_DIRT: (0.55, 0.08, 0.15),
-    CRIMSTONE: (0.70, 0.05, 0.20),
-    COBALT: (0.00, 0.35, 0.85),
-    PALLADIUM: (0.90, 0.45, 0.15),
-    MYTHRIL: (0.20, 0.80, 0.30),
-    ORICHALCUM: (0.85, 0.40, 0.65),
-    ADAMANTITE: (0.85, 0.15, 0.15),
-    TITANIUM: (0.55, 0.55, 0.60),
-    CHLOROPHYTE: (0.10, 0.95, 0.20),
-    LIFE_CRYSTAL: (1.00, 0.20, 0.70),
-    ALTAR: (0.60, 0.10, 0.10),
-}
+from Engine.theme import TILE_COLORS as _ENGINE_TILE_COLORS, DEFAULT_TILE_COLOR
+
+_TILE_COLORS = dict(_ENGINE_TILE_COLORS)
 
 
 # ---------------------------------------------------------------------------
@@ -111,7 +94,7 @@ class TerrariaHardmodeTransformation:
         self._areaScale = (worldWidth * worldHeight) / LARGE.area
 
         self.altarsSmashed = 0
-        self.hardmodeOreTiers: List[int] = []
+        self.hardmodeOreTiers: list[int] = []
 
         # Pick one from each hardmode alternating pair (per-world seed choice)
         self.orePairs = [
@@ -135,7 +118,7 @@ class TerrariaHardmodeTransformation:
         self.jungleXMax = int(worldWidth * 0.85)
 
         # History snapshots for visualization
-        self.history: List[Tuple[str, np.ndarray]] = []
+        self.history: list[tuple[str, np.ndarray]] = []
 
     # ------------------------------------------------------------------
     # Pre-hardmode setup
@@ -201,7 +184,7 @@ class TerrariaHardmodeTransformation:
         placed = 0
         attempts = 0
         minSpacing = max(20, int(80 * (self.worldWidth / LARGE.width)))
-        positions: List[Tuple[int, int]] = []
+        positions: list[tuple[int, int]] = []
         evilStone = EBONSTONE if self.isCorruption else CRIMSTONE
 
         while placed < numAltars and attempts < 3000:
@@ -222,7 +205,7 @@ class TerrariaHardmodeTransformation:
     # ------------------------------------------------------------------
     # Altar breaking and ore generation
     # ------------------------------------------------------------------
-    def smashAltar(self) -> Optional[int]:
+    def smashAltar(self) -> int | None:
         """Break one altar: generate a hardmode ore tier, with 66% chance
         to convert a random stone tile to evil stone.
 
@@ -449,7 +432,7 @@ class TerrariaHardmodeTransformation:
 # ---------------------------------------------------------------------------
 # Visualization
 # ---------------------------------------------------------------------------
-def _remapGrid(grid: np.ndarray, knownIds: List[int]) -> np.ndarray:
+def _remapGrid(grid: np.ndarray, knownIds: list[int]) -> np.ndarray:
     """Remap tile IDs to sequential 0..N indices for colormap display."""
     idToIdx = {tid: i for i, tid in enumerate(knownIds)}
     out = np.zeros_like(grid, dtype=np.int32)
@@ -459,7 +442,7 @@ def _remapGrid(grid: np.ndarray, knownIds: List[int]) -> np.ndarray:
 
 
 def visualize(sim: TerrariaHardmodeTransformation,
-              savePath: Optional[str] = None) -> None:
+              savePath: str | None = None) -> None:
     """Create multi-panel hardmode transformation visualization.
 
     Panels:
@@ -485,7 +468,7 @@ def visualize(sim: TerrariaHardmodeTransformation,
         for v in np.unique(snap)
     })
 
-    colors = [_TILE_COLORS.get(tid, (1, 1, 1)) for tid in allIds]
+    colors = [_TILE_COLORS.get(tid, DEFAULT_TILE_COLOR) for tid in allIds]
     cmap = ListedColormap(colors)
 
     fig, axes = plt.subplots(2, 2, figsize=(22, 12))

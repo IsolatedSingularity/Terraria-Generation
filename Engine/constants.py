@@ -26,6 +26,12 @@ SMALL = WorldSize(width=4200, height=1200, area=4200 * 1200)
 MEDIUM = WorldSize(width=6400, height=1800, area=6400 * 1800)
 LARGE = WorldSize(width=8400, height=2400, area=8400 * 2400)
 
+# Feature-focused plot canvases. Used by Code/ scripts so individual tiles
+# (4-tile ore veins, 12-tile cabins, doors, chests) render at visible scale.
+# Macro evolution outputs in Advanced/ continue to use SMALL/MEDIUM/LARGE.
+FEATURE_PLOT = WorldSize(width=500, height=300, area=500 * 300)
+DETAIL_PLOT = WorldSize(width=600, height=400, area=600 * 400)
+
 
 @dataclass(frozen=True)
 class LayerDepths:

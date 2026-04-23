@@ -8,14 +8,18 @@ derived from decompiled C# source analysis.
 
 from Engine.constants import WorldSize, LayerDepths, StructureQuotas, OreConfig
 from Engine.constants import (
+    SMALL, MEDIUM, LARGE, FEATURE_PLOT, DETAIL_PLOT,
     DungeonConfig, TempleConfig, PyramidConfig, LivingTreeConfig, ShimmerConfig,
     LIFE_CRYSTAL, ALTAR, HALLOW_GRASS,
 )
 from Engine.algorithms import tileRunner, digTunnel, cavinator, cellularAutomataSmooth
 from Engine.algorithms import settleLiquids
 from Engine.structureMap import StructureMap
-from Engine.theme import applyDarkTheme, COLORS, BIOME_COLORS, TILE_COLORS, ORE_COLORS
-from Engine.theme import seqCmap, divCmap, lightCmap
+from Engine.theme import (
+    applyTokyoNight, COLORS, PALETTE, BIOME_COLORS, TILE_COLORS, ORE_COLORS,
+    DEFAULT_TILE_COLOR, buildTileColormap, seqCmap, divCmap, lightCmap,
+)
+from Engine import spriteRenderer
 from Engine.structures import (
     generateDungeon, generateJungleTemple, generateLivingTree,
     generatePyramid, generateSpiderCave, generateGemCave,
@@ -28,13 +32,16 @@ from Engine.structures import (
 
 __all__ = [
     "WorldSize", "LayerDepths", "StructureQuotas", "OreConfig",
+    "SMALL", "MEDIUM", "LARGE", "FEATURE_PLOT", "DETAIL_PLOT",
     "DungeonConfig", "TempleConfig", "PyramidConfig", "LivingTreeConfig",
     "ShimmerConfig",
     "tileRunner", "digTunnel", "cavinator", "cellularAutomataSmooth",
     "settleLiquids",
     "StructureMap",
-    "applyDarkTheme", "COLORS", "BIOME_COLORS", "TILE_COLORS", "ORE_COLORS",
+    "applyTokyoNight", "COLORS", "PALETTE", "BIOME_COLORS", "TILE_COLORS",
+    "ORE_COLORS", "DEFAULT_TILE_COLOR", "buildTileColormap",
     "seqCmap", "divCmap", "lightCmap",
+    "spriteRenderer",
     "generateDungeon", "generateJungleTemple", "generateLivingTree",
     "generatePyramid", "generateSpiderCave", "generateGemCave",
     "generateUndergroundDesert", "generateMarbleCave", "generateGraniteCave",

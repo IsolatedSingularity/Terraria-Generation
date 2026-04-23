@@ -15,24 +15,31 @@ import os
 import numpy as np
 import numpy.typing as npt
 import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
 from matplotlib.patches import Patch
-import seaborn as sns
 
 from Engine.algorithms import tileRunner, cellularAutomataSmooth, AIR, DIRT, STONE, GRASS
 from Engine.algorithms import MUD, SNOW, ICE, SAND, EBONSTONE, CORRUPT_DIRT
-from Engine.algorithms import CRIMSTONE, CRIMSON_DIRT, PEARLSTONE, HALLOW_DIRT
-from Engine.constants import LARGE, LayerDepths
-from Engine.theme import applyDarkTheme, COLORS, TILE_COLORS as ENGINE_TILE_COLORS
+from Engine.algorithms import CRIMSTONE, CRIMSON_DIRT
+from Engine.constants import DETAIL_PLOT, FEATURE_PLOT, LayerDepths
+from Engine.spriteRenderer import drawTileGrid
+from Engine.theme import applyTokyoNight, COLORS, PALETTE, TILE_COLORS as ENGINE_TILE_COLORS
 
-applyDarkTheme()
+applyTokyoNight()
 
 # ---------------------------------------------------------------------------
-# World constants for a Large world
+# World constants -- FEATURE_PLOT canvas keeps features visible at pixel scale.
+# Layer depths scale proportionally from the Large reference world.
 # ---------------------------------------------------------------------------
-WORLD_WIDTH: int = LARGE.width   # 8400
-WORLD_HEIGHT: int = LARGE.height  # 2400
-LAYERS: LayerDepths = LayerDepths.forLarge()
+WORLD_WIDTH: int = FEATURE_PLOT.width   # 500
+WORLD_HEIGHT: int = FEATURE_PLOT.height  # 300
+_REF = LayerDepths.forLarge()
+_Y_SCALE = WORLD_HEIGHT / _REF.maxTilesY
+LAYERS: LayerDepths = LayerDepths(
+    worldSurface=_REF.worldSurface * _Y_SCALE,
+    rockLayer=_REF.rockLayer * _Y_SCALE,
+    hellLayer=int(_REF.hellLayer * _Y_SCALE),
+    maxTilesY=WORLD_HEIGHT,
+)
 
 
 # ===================================================================
@@ -77,43 +84,37 @@ def createSurfaceTerrainVisualization(savePath: str) -> None:
     worldWidth = WORLD_WIDTH
     x = np.arange(worldWidth)
 
-    # Each biome has distinct noise parameters (octaves, amplitude, period)
+    # Four representative biomes (was 8); amplitudes/periods rescaled for
+    # the FEATURE_PLOT canvas so the wave structure is visible.
     biomeConfigs = [
-        ("Forest",     dict(octaves=5, baseAmplitude=25, persistence=0.50, basePeriod=900,  seed=10), "#2E8B57", "#90EE90"),
-        ("Desert",     dict(octaves=3, baseAmplitude=12, persistence=0.40, basePeriod=1200, seed=20), "#DEB887", "#FFFF99"),
-        ("Jungle",     dict(octaves=6, baseAmplitude=40, persistence=0.48, basePeriod=700,  seed=30), "#228B22", "#ADFF2F"),
-        ("Snow",       dict(octaves=5, baseAmplitude=30, persistence=0.45, basePeriod=850,  seed=40), "#87CEEB", "#F0F8FF"),
-        ("Corruption", dict(octaves=6, baseAmplitude=35, persistence=0.52, basePeriod=500,  seed=50), "#9370DB", "#E6E6FA"),
-        ("Crimson",    dict(octaves=6, baseAmplitude=33, persistence=0.50, basePeriod=550,  seed=60), "#DC143C", "#FFB6C1"),
-        ("Mushroom",   dict(octaves=3, baseAmplitude=18, persistence=0.40, basePeriod=1000, seed=70), "#8A2BE2", "#DDA0DD"),
-        ("Hallow",     dict(octaves=5, baseAmplitude=30, persistence=0.47, basePeriod=650,  seed=80), "#FFB6C1", "#FFF0F5"),
+        ("Forest", dict(octaves=5, baseAmplitude=12, persistence=0.50, basePeriod=120, seed=10), PALETTE["green"],  "#9ece6a"),
+        ("Jungle", dict(octaves=6, baseAmplitude=18, persistence=0.48, basePeriod=90,  seed=30), "#73daca",          "#9ece6a"),
+        ("Desert", dict(octaves=3, baseAmplitude=6,  persistence=0.40, basePeriod=160, seed=20), PALETTE["yellow"], "#ff9e64"),
+        ("Snow",   dict(octaves=5, baseAmplitude=14, persistence=0.45, basePeriod=110, seed=40), PALETTE["cyan"],   "#c0caf5"),
     ]
 
-    # Subsample for plotting performance
-    step = 4
-    xPlot = x[::step]
+    xPlot = x  # FEATURE_PLOT is already small; no subsample needed.
 
-    fig, axes = plt.subplots(len(biomeConfigs), 1, figsize=(18, 16))
+    fig, axes = plt.subplots(len(biomeConfigs), 1, figsize=(12, 9))
     fig.suptitle(
-        "Terraria Surface Terrain Generation, Large World (8400 wide)\n"
+        f"Surface Terrain (FEATURE_PLOT {worldWidth} wide)\n"
         "1D Multi-Octave Wave Superposition per Biome",
-        fontsize=18, fontweight="bold", y=0.98,
+        fontsize=14, fontweight="bold", y=0.98,
     )
 
     for i, (name, params, baseColor, surfColor) in enumerate(biomeConfigs):
         noise = fractalNoise1D(worldWidth, **params)
         baseSurface = LAYERS.worldSurface
         terrain = baseSurface + noise
-        terrainPlot = terrain[::step]
+        terrainPlot = terrain
 
-        axes[i].fill_between(xPlot, 0, terrainPlot, color=baseColor, alpha=0.8, label="Base Terrain")
-        axes[i].fill_between(xPlot, terrainPlot, terrainPlot + 6, color=surfColor, alpha=0.7, label="Surface Layer")
-        axes[i].set_title(f"{name} Biome", fontsize=13, fontweight="bold", pad=8)
-        axes[i].set_ylabel("Depth (tiles)", fontsize=10, fontweight="bold")
-        axes[i].legend(loc="upper right", frameon=True, fancybox=True, shadow=True, fontsize=8)
-        axes[i].grid(True, alpha=0.3, linestyle="--")
+        axes[i].fill_between(xPlot, 0, terrainPlot, color=baseColor, alpha=0.85, label="Base Terrain")
+        axes[i].fill_between(xPlot, terrainPlot, terrainPlot + 4, color=surfColor, alpha=0.85, label="Surface Layer")
+        axes[i].set_title(f"{name} Biome", fontsize=11, fontweight="bold", pad=6)
+        axes[i].set_ylabel("Depth (tiles)", fontsize=9, fontweight="bold")
+        axes[i].legend(loc="upper right", frameon=True, fontsize=7)
+        axes[i].grid(True, alpha=0.25, linestyle="--")
         axes[i].set_xlim(0, worldWidth)
-        axes[i].set_facecolor("#FAFAFA")
         axes[i].invert_yaxis()
 
     axes[-1].set_xlabel("World X Position (tiles)", fontsize=11, fontweight="bold")
@@ -126,7 +127,7 @@ def createSurfaceTerrainVisualization(savePath: str) -> None:
     )
 
     plt.tight_layout(rect=[0, 0.05, 1, 0.96])
-    plt.savefig(savePath, dpi=300, bbox_inches="tight")
+    plt.savefig(savePath, dpi=200, bbox_inches="tight", facecolor=COLORS["bg"])
     plt.close()
     print(f"Surface terrain visualization saved to {savePath}")
 
@@ -157,121 +158,79 @@ def createCaveSystemVisualization(savePath: str) -> None:
     """
     print("Creating TileRunner cave system visualization...")
 
-    # Use a smaller slice for visualization clarity
-    sliceWidth = 600
-    sliceHeight = 500
+    # Use DETAIL_PLOT (600x400) so vein-scale features are visible.
+    sliceWidth = DETAIL_PLOT.width
+    sliceHeight = DETAIL_PLOT.height
     rng = np.random.default_rng(seed=777)
 
-    # Build a solid grid (all stone, simulating a vertical cross-section)
     grid = np.full((sliceHeight, sliceWidth), STONE, dtype=np.int32)
-    surfaceRow = 50
-    dirtBoundary = 180
+    surfaceRow = int(sliceHeight * 0.10)
+    dirtBoundary = int(sliceHeight * 0.36)
     grid[:surfaceRow, :] = AIR
     grid[surfaceRow:dirtBoundary, :] = DIRT
 
-    # --- Surface Caves (small strength, shallow) ---
-    numSurfaceCaves = 25
-    for _ in range(numSurfaceCaves):
+    # --- Surface Caves ---
+    for _ in range(25):
         sx = rng.integers(20, sliceWidth - 20)
         sy = rng.integers(surfaceRow + 5, dirtBoundary - 10)
-        strength = rng.uniform(3.0, 7.0)
-        steps = rng.integers(15, 50)
-        tileRunner(grid, sx, sy, strength, steps, tileType=-1, noYChange=True)
+        tileRunner(grid, sx, sy, rng.uniform(3.0, 7.0),
+                   rng.integers(15, 50), tileType=-1, noYChange=True)
 
-    # --- Dirt Layer Caves (medium strength) ---
-    numDirtCaves = 30
-    for _ in range(numDirtCaves):
+    # --- Dirt Layer Caves ---
+    for _ in range(30):
         sx = rng.integers(20, sliceWidth - 20)
         sy = rng.integers(dirtBoundary - 30, dirtBoundary + 60)
-        strength = rng.uniform(5.0, 12.0)
-        steps = rng.integers(30, 80)
-        tileRunner(grid, sx, sy, strength, steps, tileType=-1)
+        tileRunner(grid, sx, sy, rng.uniform(5.0, 12.0),
+                   rng.integers(30, 80), tileType=-1)
 
-    # --- Rock Layer Caves (large strength, deep) ---
-    numRockCaves = 40
-    for _ in range(numRockCaves):
+    # --- Rock Layer Caves ---
+    for _ in range(40):
         sx = rng.integers(20, sliceWidth - 20)
         sy = rng.integers(dirtBoundary + 40, sliceHeight - 40)
-        strength = rng.uniform(8.0, 18.0)
-        steps = rng.integers(40, 120)
-        speedX = rng.uniform(-1.0, 1.0)
-        speedY = rng.uniform(-0.5, 1.5)
-        tileRunner(grid, sx, sy, strength, steps, tileType=-1,
-                   speedX=speedX, speedY=speedY)
+        tileRunner(grid, sx, sy, rng.uniform(8.0, 18.0),
+                   rng.integers(40, 120), tileType=-1,
+                   speedX=rng.uniform(-1.0, 1.0),
+                   speedY=rng.uniform(-0.5, 1.5))
 
-    # Snapshot before smoothing
     gridBeforeSmooth = grid.copy()
-
-    # Apply cellular automata smoothing
     cellularAutomataSmooth(grid, iterations=3, birthThreshold=5, deathThreshold=3)
     gridAfterSmooth = grid
 
-    # --- Color maps ---
-    tileColors = {
-        AIR: np.array([0.05, 0.05, 0.08]),
-        DIRT: np.array([0.55, 0.35, 0.17]),
-        STONE: np.array([0.50, 0.50, 0.52]),
-    }
-
-    def gridToRGB(g: npt.NDArray[np.int32]) -> npt.NDArray[np.float64]:
-        rgb = np.zeros((*g.shape, 3), dtype=np.float64)
-        for tileID, color in tileColors.items():
-            mask = g == tileID
-            rgb[mask] = color
-        return rgb
-
-    imgBefore = gridToRGB(gridBeforeSmooth)
-    imgAfter = gridToRGB(gridAfterSmooth)
-
-    # --- Plot ---
-    fig, axes = plt.subplots(1, 2, figsize=(20, 10))
+    fig, axes = plt.subplots(1, 2, figsize=(16, 7))
     fig.suptitle(
-        "Terraria Cave Carving: TileRunner Diamond-Brush Random Walks\n"
-        "Left: Raw TileRunner output | Right: After Cellular Automata Smoothing",
-        fontsize=16, fontweight="bold", y=0.98,
+        "Cave Carving: TileRunner Diamond-Brush + Cellular Automata Smoothing",
+        fontsize=13, fontweight="bold", y=0.98,
     )
 
-    axes[0].imshow(imgBefore, origin="upper", aspect="auto")
-    axes[0].set_title("Before Smoothing (raw TileRunner)", fontsize=14, fontweight="bold")
+    drawTileGrid(axes[0], gridBeforeSmooth)
+    axes[0].set_title("Before Smoothing (raw TileRunner)", fontsize=11, fontweight="bold")
     axes[0].set_xlabel("X (tiles)", fontweight="bold")
     axes[0].set_ylabel("Depth (tiles)", fontweight="bold")
+    axes[0].axhline(surfaceRow, color=PALETTE["cyan"], linewidth=1, linestyle="--", alpha=0.7)
+    axes[0].axhline(dirtBoundary, color=PALETTE["orange"], linewidth=1, linestyle="--", alpha=0.7)
+    axes[0].text(8, surfaceRow + 8, "Surface", color=PALETTE["cyan"], fontsize=8, fontweight="bold")
+    axes[0].text(8, dirtBoundary + 12, "Rock Layer", color=PALETTE["orange"], fontsize=8, fontweight="bold")
+    axes[0].set_xlim(0, sliceWidth)
+    axes[0].set_ylim(sliceHeight, 0)
 
-    # Annotate depth zones
-    axes[0].axhline(surfaceRow, color="cyan", linewidth=1, linestyle="--", alpha=0.7)
-    axes[0].axhline(dirtBoundary, color="orange", linewidth=1, linestyle="--", alpha=0.7)
-    axes[0].text(10, surfaceRow + 8, "Surface Caves", color="cyan", fontsize=9, fontweight="bold")
-    axes[0].text(10, dirtBoundary + 12, "Rock Layer Caves", color="orange", fontsize=9, fontweight="bold")
-    axes[0].text(10, (surfaceRow + dirtBoundary) // 2, "Dirt Layer Caves", color="white", fontsize=9, fontweight="bold")
-
-    axes[1].imshow(imgAfter, origin="upper", aspect="auto")
-    axes[1].set_title("After Cellular Automata Smoothing (3 iterations)", fontsize=14, fontweight="bold")
+    drawTileGrid(axes[1], gridAfterSmooth)
+    axes[1].set_title("After Smoothing (3 iterations)", fontsize=11, fontweight="bold")
     axes[1].set_xlabel("X (tiles)", fontweight="bold")
-    axes[1].axhline(surfaceRow, color="cyan", linewidth=1, linestyle="--", alpha=0.7)
-    axes[1].axhline(dirtBoundary, color="orange", linewidth=1, linestyle="--", alpha=0.7)
+    axes[1].axhline(surfaceRow, color=PALETTE["cyan"], linewidth=1, linestyle="--", alpha=0.7)
+    axes[1].axhline(dirtBoundary, color=PALETTE["orange"], linewidth=1, linestyle="--", alpha=0.7)
+    axes[1].set_xlim(0, sliceWidth)
+    axes[1].set_ylim(sliceHeight, 0)
 
-    # Legend
     legendElements = [
-        Patch(facecolor=tileColors[AIR], label="Air (carved)"),
-        Patch(facecolor=tileColors[DIRT], label="Dirt"),
-        Patch(facecolor=tileColors[STONE], label="Stone"),
+        Patch(facecolor=ENGINE_TILE_COLORS[AIR], label="Air (carved)"),
+        Patch(facecolor=ENGINE_TILE_COLORS[DIRT], label="Dirt"),
+        Patch(facecolor=ENGINE_TILE_COLORS[STONE], label="Stone"),
     ]
-    fig.legend(
-        handles=legendElements, loc="lower center", ncol=3,
-        fontsize=12, frameon=True, fancybox=True, shadow=True,
-        bbox_to_anchor=(0.5, 0.01),
-    )
+    fig.legend(handles=legendElements, loc="lower center", ncol=3,
+               fontsize=10, frameon=True, bbox_to_anchor=(0.5, 0.01))
 
-    # Algorithm description
-    fig.text(
-        0.02, 0.95,
-        "TileRunner: diamond brush (manhattan dist), strength decay per step,\n"
-        "drunkard's walk drift vectors, clamped speed [-2, 2]",
-        fontsize=11, ha="left", va="top",
-        bbox=dict(boxstyle="round,pad=0.4", facecolor=COLORS["legend_bg"], alpha=0.9, edgecolor=COLORS["edge"]),
-    )
-
-    plt.tight_layout(rect=[0, 0.05, 1, 0.93])
-    plt.savefig(savePath, dpi=300, bbox_inches="tight")
+    plt.tight_layout(rect=[0, 0.06, 1, 0.94])
+    plt.savefig(savePath, dpi=200, bbox_inches="tight", facecolor=COLORS["bg"])
     plt.close()
     print(f"Cave system visualization saved to {savePath}")
 
@@ -279,25 +238,6 @@ def createCaveSystemVisualization(savePath: str) -> None:
 # ===================================================================
 # 3. Biome tile-type conversion (hard boundaries, no gradients)
 # ===================================================================
-
-# Display colors per tile type for the biome visualization
-TILE_DISPLAY_COLORS: dict[int, tuple[float, float, float]] = {
-    AIR:           (0.53, 0.81, 0.92),  # sky blue
-    GRASS:         (0.13, 0.55, 0.13),  # dark green
-    DIRT:          (0.55, 0.35, 0.17),  # brown
-    STONE:         (0.50, 0.50, 0.52),  # gray
-    MUD:           (0.30, 0.20, 0.10),  # dark brown
-    SNOW:          (0.90, 0.93, 0.96),  # near white
-    ICE:           (0.68, 0.85, 0.90),  # light blue
-    SAND:          (0.86, 0.80, 0.55),  # tan
-    EBONSTONE:     (0.33, 0.17, 0.50),  # dark purple
-    CORRUPT_DIRT:  (0.40, 0.25, 0.55),  # purple-brown
-    CRIMSTONE:     (0.60, 0.10, 0.10),  # dark red
-    CRIMSON_DIRT:  (0.55, 0.15, 0.15),  # red-brown
-    PEARLSTONE:    (0.85, 0.75, 0.90),  # light lavender
-    HALLOW_DIRT:   (0.80, 0.70, 0.85),  # pastel purple
-}
-
 
 def convertBiomeTiles(
     grid: npt.NDArray[np.int32],
@@ -308,8 +248,8 @@ def convertBiomeTiles(
     """Apply hard tile-type conversion within a horizontal range.
 
     This is how Terraria defines biomes: Dirt becomes Mud (Jungle),
-    Dirt becomes Snow Block (Snow), Stone becomes Ebonstone (Corruption), etc.
-    There is NO gradient or blending; tile types switch at the boundary.
+    Stone becomes Ebonstone (Corruption), etc. No gradient blending;
+    tile types switch at the boundary.
     """
     region = grid[:, xStart:xEnd]
     for srcTile, dstTile in conversions.items():
@@ -321,14 +261,14 @@ def createBiomeTileConversionVisualization(savePath: str) -> None:
     """Visualize hard-boundary biome tile-type conversion across a world slice."""
     print("Creating biome tile-type conversion visualization...")
 
-    sliceWidth = 800
-    sliceHeight = 300
+    sliceWidth = FEATURE_PLOT.width  # 500
+    sliceHeight = FEATURE_PLOT.height  # 300
     rng = np.random.default_rng(seed=999)
 
     # Build base terrain: air, grass surface, dirt, stone
     grid = np.full((sliceHeight, sliceWidth), STONE, dtype=np.int32)
-    surfaceRow = 40
-    dirtBottom = 120
+    surfaceRow = int(sliceHeight * 0.13)
+    dirtBottom = int(sliceHeight * 0.40)
     grid[:surfaceRow, :] = AIR
     grid[surfaceRow, :] = GRASS
     grid[surfaceRow + 1:dirtBottom, :] = DIRT
@@ -339,90 +279,66 @@ def createBiomeTileConversionVisualization(savePath: str) -> None:
         sy = rng.integers(surfaceRow + 10, sliceHeight - 20)
         tileRunner(grid, sx, sy, rng.uniform(4.0, 10.0), rng.integers(20, 60), tileType=-1)
 
-    # Snapshot: before biome conversion
     gridBefore = grid.copy()
 
     # --- Apply biome conversions at hard boundaries ---
-    # Forest: columns 0-130 (unchanged, already dirt/stone)
-    # Jungle: columns 130-260
-    convertBiomeTiles(grid, 130, 260, {DIRT: MUD, GRASS: MUD})
-    # Snow: columns 260-390
-    convertBiomeTiles(grid, 260, 390, {DIRT: SNOW, STONE: ICE, GRASS: SNOW})
-    # Desert: columns 390-520
-    convertBiomeTiles(grid, 390, 520, {DIRT: SAND, GRASS: SAND})
-    # Corruption: columns 520-660
-    convertBiomeTiles(grid, 520, 660, {DIRT: CORRUPT_DIRT, STONE: EBONSTONE, GRASS: CORRUPT_DIRT})
-    # Crimson: columns 660-800
-    convertBiomeTiles(grid, 660, 800, {DIRT: CRIMSON_DIRT, STONE: CRIMSTONE, GRASS: CRIMSON_DIRT})
+    # Boundaries scaled to FEATURE_PLOT width (500): 5 biome bands.
+    boundaries = [int(sliceWidth * f) for f in (0.16, 0.33, 0.49, 0.66, 0.82)]
+    convertBiomeTiles(grid, boundaries[0], boundaries[1], {DIRT: MUD, GRASS: MUD})
+    convertBiomeTiles(grid, boundaries[1], boundaries[2], {DIRT: SNOW, STONE: ICE, GRASS: SNOW})
+    convertBiomeTiles(grid, boundaries[2], boundaries[3], {DIRT: SAND, GRASS: SAND})
+    convertBiomeTiles(grid, boundaries[3], boundaries[4], {DIRT: CORRUPT_DIRT, STONE: EBONSTONE, GRASS: CORRUPT_DIRT})
+    convertBiomeTiles(grid, boundaries[4], sliceWidth, {DIRT: CRIMSON_DIRT, STONE: CRIMSTONE, GRASS: CRIMSON_DIRT})
 
     gridAfter = grid
 
-    # --- Render ---
-    def gridToRGB(g: npt.NDArray[np.int32]) -> npt.NDArray[np.float64]:
-        rgb = np.zeros((*g.shape, 3), dtype=np.float64)
-        for tileID, color in TILE_DISPLAY_COLORS.items():
-            mask = g == tileID
-            rgb[mask] = color
-        # Fallback for unmapped tiles
-        unmapped = np.all(rgb == 0, axis=-1) & (g != AIR)
-        rgb[unmapped] = (0.4, 0.4, 0.4)
-        return rgb
-
-    imgBefore = gridToRGB(gridBefore)
-    imgAfter = gridToRGB(gridAfter)
-
-    fig, axes = plt.subplots(2, 1, figsize=(20, 12))
+    fig, axes = plt.subplots(2, 1, figsize=(14, 8))
     fig.suptitle(
-        "Terraria Biome Tile-Type Conversion (Hard Boundaries)\n"
+        "Biome Tile-Type Conversion (Hard Boundaries)\n"
         "No gradient interpolation: tile types switch instantly at biome edges",
-        fontsize=16, fontweight="bold", y=0.98,
+        fontsize=13, fontweight="bold", y=0.98,
     )
 
-    axes[0].imshow(imgBefore, origin="upper", aspect="auto")
-    axes[0].set_title("Before Biome Conversion (base terrain: Dirt / Stone)", fontsize=14, fontweight="bold")
+    drawTileGrid(axes[0], gridBefore)
+    axes[0].set_title("Before Conversion (Dirt / Stone base)", fontsize=11, fontweight="bold")
     axes[0].set_ylabel("Depth (tiles)", fontweight="bold")
-    axes[0].set_facecolor("#2F2F2F")
+    axes[0].set_xlim(0, sliceWidth)
+    axes[0].set_ylim(sliceHeight, 0)
 
-    axes[1].imshow(imgAfter, origin="upper", aspect="auto")
-    axes[1].set_title("After Biome Conversion (hard tile-type replacement)", fontsize=14, fontweight="bold")
+    drawTileGrid(axes[1], gridAfter)
+    axes[1].set_title("After Conversion (hard tile-type replacement)", fontsize=11, fontweight="bold")
     axes[1].set_xlabel("X (tiles)", fontweight="bold")
     axes[1].set_ylabel("Depth (tiles)", fontweight="bold")
-    axes[1].set_facecolor("#2F2F2F")
+    axes[1].set_xlim(0, sliceWidth)
+    axes[1].set_ylim(sliceHeight, 0)
 
-    # Biome boundary lines and labels
-    boundaries = [130, 260, 390, 520, 660]
     biomeLabels = ["Forest", "Jungle", "Snow", "Desert", "Corruption", "Crimson"]
-    biomeMidpoints = [65, 195, 325, 455, 590, 730]
-    labelColors = ["#2E8B57", "#228B22", "#87CEEB", "#DEB887", "#9370DB", "#DC143C"]
+    biomeMidpoints = [
+        boundaries[0] // 2,
+        (boundaries[0] + boundaries[1]) // 2,
+        (boundaries[1] + boundaries[2]) // 2,
+        (boundaries[2] + boundaries[3]) // 2,
+        (boundaries[3] + boundaries[4]) // 2,
+        (boundaries[4] + sliceWidth) // 2,
+    ]
+    labelColors = [
+        PALETTE["green"], "#73daca", PALETTE["cyan"],
+        PALETTE["yellow"], PALETTE["purple"], PALETTE["red"],
+    ]
 
     for bx in boundaries:
         for ax in axes:
-            ax.axvline(bx, color="white", linewidth=1.5, linestyle="--", alpha=0.8)
+            ax.axvline(bx, color=PALETTE["fg"], linewidth=1.0, linestyle="--", alpha=0.7)
 
     for mid, label, lc in zip(biomeMidpoints, biomeLabels, labelColors):
         axes[1].text(
-            mid, 15, label, ha="center", va="center", fontweight="bold",
-            fontsize=10, color="white",
-            bbox=dict(boxstyle="round,pad=0.3", facecolor=lc, alpha=0.85),
+            mid, surfaceRow * 0.4, label, ha="center", va="center",
+            fontweight="bold", fontsize=8, color=PALETTE["bg"],
+            bbox=dict(boxstyle="round,pad=0.25", facecolor=lc, alpha=0.9),
         )
 
-    # Conversion rules text
-    rulesText = (
-        "Conversion rules (from WorldGen.cs):\n"
-        "  Jungle: Dirt -> Mud, Grass -> Mud\n"
-        "  Snow: Dirt -> Snow Block, Stone -> Ice, Grass -> Snow Block\n"
-        "  Desert: Dirt -> Sand, Grass -> Sand\n"
-        "  Corruption: Dirt -> Corrupt Dirt, Stone -> Ebonstone\n"
-        "  Crimson: Dirt -> Crimson Dirt, Stone -> Crimstone"
-    )
-    fig.text(
-        0.02, 0.02, rulesText, fontsize=10, ha="left", va="bottom",
-        family="monospace",
-        bbox=dict(boxstyle="round,pad=0.5", facecolor=COLORS["legend_bg"], alpha=0.9, edgecolor=COLORS["edge"]),
-    )
-
-    plt.tight_layout(rect=[0, 0.10, 1, 0.95])
-    plt.savefig(savePath, dpi=300, bbox_inches="tight")
+    plt.tight_layout(rect=[0, 0.02, 1, 0.94])
+    plt.savefig(savePath, dpi=200, bbox_inches="tight", facecolor=COLORS["bg"])
     plt.close()
     print(f"Biome tile-type conversion visualization saved to {savePath}")
 

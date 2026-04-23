@@ -1,83 +1,77 @@
-"""
-Terraria Structure Generation Visualization
-============================================
+"""Terraria Structure Generation -- Macro Density + Sprite Detail.
 
-Accurate large-world structure placement using game-derived quotas,
-layer depths, and StructureMap exclusion zones. Attempt-loop placement
-replicates the actual C# WorldGen logic.
+Game-accurate structure placement using StructureMap exclusion zones,
+LayerDepths, and StructureQuotas. Two output plots:
 
-Author: Terraria Generation Project
+1. ``terraria_structure_density.png`` -- LARGE world (8400x2400)
+   density heatmap showing where each structure type clusters.
+2. ``terraria_structure_detail.png`` -- DETAIL_PLOT (600x400) sprite
+   render of representative structures: dungeon, cabin, floating
+   island, pyramid.
 """
+
+from __future__ import annotations
 
 import os
 import random
-from typing import Dict, List, Tuple, Optional
 
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-import seaborn as sns
 
-# Engine imports
-from Engine.constants import LARGE, LayerDepths, StructureQuotas
-from Engine.structureMap import StructureMap, Rectangle
-from Engine.theme import applyDarkTheme, COLORS
+from Engine.algorithms import (
+    AIR, DIRT, STONE, EBONSTONE, SAND,
+)
+from Engine.constants import DETAIL_PLOT, LARGE, LayerDepths, StructureQuotas
+from Engine.spriteRenderer import (
+    Rect as SpriteRect,
+    drawCabin, drawDungeon, drawFloatingIsland, drawPyramid, drawTileGrid,
+)
+from Engine.structureMap import Rectangle, StructureMap
+from Engine.theme import COLORS, PALETTE, applyTokyoNight
 
-applyDarkTheme()
+applyTokyoNight()
 
 
+# ===================================================================
+# Generator
+# ===================================================================
 class TerrariaStructureGenerator:
-    """Generates and visualizes Terraria large-world structures
-    using game-accurate quotas, layer depths, and StructureMap
-    exclusion zones."""
+    """Generates large-world structures via attempt-loop placement.
+
+    Uses instance-scoped ``random.Random`` and ``np.random.Generator``
+    to avoid mutating global RNG state.
+    """
 
     def __init__(
         self,
-        worldWidth: int = 8400,
-        worldHeight: int = 2400,
+        worldWidth: int = LARGE.width,
+        worldHeight: int = LARGE.height,
         seed: int = 12345,
     ) -> None:
         self.worldWidth = worldWidth
         self.worldHeight = worldHeight
         self.seed = seed
 
-        np.random.seed(seed)
-        random.seed(seed)
+        self.rng = random.Random(seed)
+        self.npRng = np.random.default_rng(seed)
 
-        # Game-accurate layer depths and quotas
-        self.layers = LayerDepths.forLarge()
-        self.quotas = StructureQuotas.forLarge()
-        self.borderBuffer = LARGE.borderBuffer  # 45 tiles
+        self.layers: LayerDepths = LayerDepths.forLarge()
+        self.quotas: StructureQuotas = StructureQuotas.forLarge()
+        self.borderBuffer: int = LARGE.borderBuffer
 
-        # Exclusion zone tracker
         self.structureMap = StructureMap()
-
-        # Placed structure storage
-        self.structures: Dict[str, List[Tuple[int, int, int, int]]] = {}
-
-        # Dungeon side (True = right, False = left)
-        self.dungeonOnRight: bool = random.choice([True, False])
+        self.structures: dict[str, list[tuple[int, int, int, int]]] = {}
+        self.dungeonOnRight: bool = self.rng.random() < 0.5
 
     # ------------------------------------------------------------------
-    # Placement helpers
-    # ------------------------------------------------------------------
-
     def _attemptPlace(
-        self,
-        xMin: int,
-        xMax: int,
-        yMin: int,
-        yMax: int,
-        structW: int,
-        structH: int,
-        padding: int = 5,
-        maxAttempts: int = 1000,
-    ) -> Optional[Rectangle]:
-        """Try up to maxAttempts random positions within bounds.
-        Returns a Rectangle if placement succeeds, None otherwise."""
+        self, xMin: int, xMax: int, yMin: int, yMax: int,
+        structW: int, structH: int,
+        padding: int = 5, maxAttempts: int = 1000,
+    ) -> Rectangle | None:
         for _ in range(maxAttempts):
-            x = random.randint(xMin, xMax - structW)
-            y = random.randint(yMin, yMax - structH)
+            x = self.rng.randint(xMin, xMax - structW)
+            y = self.rng.randint(yMin, yMax - structH)
             rect = Rectangle(x, y, structW, structH)
             if self.structureMap.canPlace(rect, padding):
                 self.structureMap.addProtectedStructure(rect, padding)
@@ -85,389 +79,317 @@ class TerrariaStructureGenerator:
         return None
 
     # ------------------------------------------------------------------
-    # Structure placement methods
-    # ------------------------------------------------------------------
-
-    def placeFloatingIslands(self) -> List[Tuple[int, int, int, int]]:
-        """Place exactly 6 floating islands for a large world.
-        Islands sit above worldSurface with attempt-loop spacing."""
-        count = self.quotas.floatingIslands  # 6
+    def placeFloatingIslands(self) -> list[tuple[int, int, int, int]]:
+        count = self.quotas.floatingIslands
         islandW, islandH = 80, 40
-        yMin = 80  # well above surface
+        yMin = 80
         yMax = int(self.layers.worldSurface) - islandH - 20
-        xMin = self.borderBuffer
-        xMax = self.worldWidth - self.borderBuffer
+        xMin, xMax = self.borderBuffer, self.worldWidth - self.borderBuffer
 
-        placed: List[Tuple[int, int, int, int]] = []
+        placed: list[tuple[int, int, int, int]] = []
         for _ in range(count):
-            rect = self._attemptPlace(
-                xMin, xMax, yMin, yMax, islandW, islandH,
-                padding=60, maxAttempts=2000,
-            )
-            if rect is not None:
-                placed.append((rect.x, rect.y, rect.width, rect.height))
-
+            r = self._attemptPlace(xMin, xMax, yMin, yMax, islandW, islandH,
+                                   padding=60, maxAttempts=2000)
+            if r is not None:
+                placed.append((r.x, r.y, r.width, r.height))
         self.structures["floatingIslands"] = placed
         return placed
 
-    def placeUndergroundCabins(self) -> List[Tuple[int, int, int, int]]:
-        """Place 140-160 underground cabins between rockLayer and hellLayer."""
-        count = random.randint(
-            self.quotas.undergroundCabinsMin,
-            self.quotas.undergroundCabinsMax,
-        )
+    def placeUndergroundCabins(self) -> list[tuple[int, int, int, int]]:
+        count = self.rng.randint(self.quotas.undergroundCabinsMin,
+                                 self.quotas.undergroundCabinsMax)
         cabinW, cabinH = 24, 18
         yMin = int(self.layers.rockLayer)
         yMax = self.layers.hellLayer - cabinH
-        xMin = self.borderBuffer
-        xMax = self.worldWidth - self.borderBuffer
+        xMin, xMax = self.borderBuffer, self.worldWidth - self.borderBuffer
 
-        placed: List[Tuple[int, int, int, int]] = []
+        placed: list[tuple[int, int, int, int]] = []
         for _ in range(count):
-            rect = self._attemptPlace(
-                xMin, xMax, yMin, yMax, cabinW, cabinH,
-                padding=8, maxAttempts=1000,
-            )
-            if rect is not None:
-                placed.append((rect.x, rect.y, rect.width, rect.height))
-
+            r = self._attemptPlace(xMin, xMax, yMin, yMax, cabinW, cabinH,
+                                   padding=8, maxAttempts=1000)
+            if r is not None:
+                placed.append((r.x, r.y, r.width, r.height))
         self.structures["undergroundCabins"] = placed
         return placed
 
-    def placeLifeCrystals(self) -> List[Tuple[int, int, int, int]]:
-        """Place up to 403 Life Crystals (2x2 FrameImportant tiles)
-        between worldSurface and hellLayer."""
-        maxCount = self.quotas.lifeCrystalsMax  # 403
+    def placeLifeCrystals(self) -> list[tuple[int, int, int, int]]:
+        maxCount = self.quotas.lifeCrystalsMax
         crystalW, crystalH = 2, 2
         yMin = int(self.layers.worldSurface) + 20
         yMax = self.layers.hellLayer - crystalH
-        xMin = self.borderBuffer
-        xMax = self.worldWidth - self.borderBuffer
+        xMin, xMax = self.borderBuffer, self.worldWidth - self.borderBuffer
 
-        placed: List[Tuple[int, int, int, int]] = []
+        placed: list[tuple[int, int, int, int]] = []
         for _ in range(maxCount):
-            rect = self._attemptPlace(
-                xMin, xMax, yMin, yMax, crystalW, crystalH,
-                padding=2, maxAttempts=200,
-            )
-            if rect is not None:
-                placed.append((rect.x, rect.y, rect.width, rect.height))
-
+            r = self._attemptPlace(xMin, xMax, yMin, yMax,
+                                   crystalW, crystalH,
+                                   padding=2, maxAttempts=200)
+            if r is not None:
+                placed.append((r.x, r.y, r.width, r.height))
         self.structures["lifeCrystals"] = placed
         return placed
 
-    def placeSurfaceChests(self) -> List[Tuple[int, int, int, int]]:
-        """Place 42 surface chests near the surface layer."""
-        count = self.quotas.surfaceChests  # 42
+    def placeSurfaceChests(self) -> list[tuple[int, int, int, int]]:
+        count = self.quotas.surfaceChests
         chestW, chestH = 2, 2
         yMin = int(self.layers.worldSurface) - 30
         yMax = int(self.layers.worldSurface) + 60
-        xMin = self.borderBuffer
-        xMax = self.worldWidth - self.borderBuffer
+        xMin, xMax = self.borderBuffer, self.worldWidth - self.borderBuffer
 
-        placed: List[Tuple[int, int, int, int]] = []
+        placed: list[tuple[int, int, int, int]] = []
         for _ in range(count):
-            rect = self._attemptPlace(
-                xMin, xMax, yMin, yMax, chestW, chestH,
-                padding=20, maxAttempts=1000,
-            )
-            if rect is not None:
-                placed.append((rect.x, rect.y, rect.width, rect.height))
-
+            r = self._attemptPlace(xMin, xMax, yMin, yMax,
+                                   chestW, chestH,
+                                   padding=20, maxAttempts=1000)
+            if r is not None:
+                placed.append((r.x, r.y, r.width, r.height))
         self.structures["surfaceChests"] = placed
         return placed
 
-    def placeDungeon(self) -> List[Tuple[int, int, int, int]]:
-        """Place the dungeon on one side of the world (large rectangle).
-        Dungeon side is chosen at init; jungle temple goes opposite."""
+    def placeDungeon(self) -> list[tuple[int, int, int, int]]:
         dungeonW, dungeonH = 200, 300
         yMin = int(self.layers.worldSurface) - 20
         yMax = int(self.layers.rockLayer)
-
         if self.dungeonOnRight:
             xMin = int(self.worldWidth * 0.75)
             xMax = self.worldWidth - self.borderBuffer
         else:
             xMin = self.borderBuffer
             xMax = int(self.worldWidth * 0.25)
-
-        placed: List[Tuple[int, int, int, int]] = []
-        rect = self._attemptPlace(
-            xMin, xMax, yMin, yMax, dungeonW, dungeonH,
-            padding=30, maxAttempts=2000,
-        )
-        if rect is not None:
-            placed.append((rect.x, rect.y, rect.width, rect.height))
-
+        placed: list[tuple[int, int, int, int]] = []
+        r = self._attemptPlace(xMin, xMax, yMin, yMax, dungeonW, dungeonH,
+                               padding=30, maxAttempts=2000)
+        if r is not None:
+            placed.append((r.x, r.y, r.width, r.height))
         self.structures["dungeon"] = placed
         return placed
 
-    def placeJungleTemple(self) -> List[Tuple[int, int, int, int]]:
-        """Place the jungle temple on the opposite side from the dungeon,
-        deep in the cavern layer."""
+    def placeJungleTemple(self) -> list[tuple[int, int, int, int]]:
         templeW, templeH = 150, 120
         yMin = int(self.layers.rockLayer) + 50
         yMax = self.layers.hellLayer - templeH - 50
-
-        # Opposite side from dungeon
         if self.dungeonOnRight:
-            xMin = self.borderBuffer
-            xMax = int(self.worldWidth * 0.35)
+            xMin, xMax = self.borderBuffer, int(self.worldWidth * 0.35)
         else:
             xMin = int(self.worldWidth * 0.65)
             xMax = self.worldWidth - self.borderBuffer
-
-        placed: List[Tuple[int, int, int, int]] = []
-        rect = self._attemptPlace(
-            xMin, xMax, yMin, yMax, templeW, templeH,
-            padding=40, maxAttempts=2000,
-        )
-        if rect is not None:
-            placed.append((rect.x, rect.y, rect.width, rect.height))
-
+        placed: list[tuple[int, int, int, int]] = []
+        r = self._attemptPlace(xMin, xMax, yMin, yMax, templeW, templeH,
+                               padding=40, maxAttempts=2000)
+        if r is not None:
+            placed.append((r.x, r.y, r.width, r.height))
         self.structures["jungleTemple"] = placed
         return placed
 
-    def generateAllStructures(self) -> Dict[str, List[Tuple[int, int, int, int]]]:
-        """Run all placement passes in order (large structures first)."""
+    def generateAllStructures(self) -> dict[str, list[tuple[int, int, int, int]]]:
         self.structureMap.clear()
         self.structures.clear()
-
         self.placeDungeon()
         self.placeJungleTemple()
         self.placeFloatingIslands()
         self.placeUndergroundCabins()
         self.placeSurfaceChests()
         self.placeLifeCrystals()
-
         return self.structures
 
-    # ------------------------------------------------------------------
-    # Visualization
-    # ------------------------------------------------------------------
 
-    def visualize(self, savePath: Optional[str] = None) -> None:
-        """Two-panel figure: world cross-section with all structures
-        and a statistics panel comparing counts to game quotas."""
-        if not self.structures:
-            self.generateAllStructures()
+# ===================================================================
+# Visualization 1: macro density (LARGE world)
+# ===================================================================
+STRUCTURE_COLOR = {
+    "floatingIslands":   PALETTE["cyan"],
+    "undergroundCabins": PALETTE["yellow"],
+    "lifeCrystals":      PALETTE["red"],
+    "surfaceChests":     PALETTE["orange"],
+    "dungeon":           PALETTE["purple"],
+    "jungleTemple":      PALETTE["green"],
+}
 
-        fig, (axMap, axStats) = plt.subplots(
-            1, 2, figsize=(26, 14),
-            gridspec_kw={"width_ratios": [3, 1]},
-        )
-
-        # -- Left panel: world cross-section --
-        colorMap = {
-            "floatingIslands": "#87CEEB",
-            "undergroundCabins": "#DEB887",
-            "lifeCrystals": "#FF69B4",
-            "surfaceChests": "#FFD700",
-            "dungeon": "#4A4A4A",
-            "jungleTemple": "#8B4513",
-        }
-        markerMap = {
-            "floatingIslands": ("o", 90),
-            "undergroundCabins": ("s", 18),
-            "lifeCrystals": ("D", 8),
-            "surfaceChests": ("^", 40),
-            "dungeon": ("D", 250),
-            "jungleTemple": ("^", 200),
-        }
-
-        # World background
-        worldRect = patches.Rectangle(
-            (0, 0), self.worldWidth, self.worldHeight,
-            linewidth=2, edgecolor=COLORS["edge"],
-            facecolor=COLORS["axes"], alpha=0.3,
-        )
-        axMap.add_patch(worldRect)
-
-        # Border buffer shading
-        for bx in [0, self.worldWidth - self.borderBuffer]:
-            buf = patches.Rectangle(
-                (bx, 0), self.borderBuffer, self.worldHeight,
-                facecolor="gray", alpha=0.15,
-            )
-            axMap.add_patch(buf)
-
-        # Layer lines
-        ws = self.layers.worldSurface
-        rl = self.layers.rockLayer
-        hl = self.layers.hellLayer
-        axMap.axhline(y=ws, color="saddlebrown", lw=2.5, label=f"worldSurface ({int(ws)})")
-        axMap.axhline(y=rl, color="slategray", ls="--", lw=2, label=f"rockLayer ({int(rl)})")
-        axMap.axhline(y=hl, color="darkred", ls="-.", lw=2.5, label=f"hellLayer ({hl})")
-
-        # Plot structures
-        for key, rects in self.structures.items():
-            if not rects:
-                continue
-            color = colorMap.get(key, "#000000")
-            marker, size = markerMap.get(key, (".", 20))
-            xs = [r[0] + r[2] / 2 for r in rects]
-            ys = [r[1] + r[3] / 2 for r in rects]
-            label = f"{key} ({len(rects)})"
-            axMap.scatter(
-                xs, ys, c=color, s=size, marker=marker,
-                alpha=0.75, edgecolors="black", linewidth=0.5,
-                label=label, zorder=5,
-            )
-
-            # Draw rectangles for large structures
-            if key in ("dungeon", "jungleTemple"):
-                for r in rects:
-                    p = patches.Rectangle(
-                        (r[0], r[1]), r[2], r[3],
-                        linewidth=2, edgecolor=color,
-                        facecolor=color, alpha=0.25,
-                    )
-                    axMap.add_patch(p)
-
-        axMap.set_xlim(0, self.worldWidth)
-        axMap.set_ylim(0, self.worldHeight)
-        axMap.invert_yaxis()
-        axMap.set_xlabel("X (tiles)", fontsize=13, fontweight="bold")
-        axMap.set_ylabel("Y (tiles)", fontsize=13, fontweight="bold")
-        axMap.set_title(
-            "Terraria Large World Structure Placement\n"
-            "Game-Accurate Quotas with StructureMap Exclusion",
-            fontsize=16, fontweight="bold", pad=15,
-        )
-        axMap.legend(
-            loc="upper left", fontsize=10, frameon=True,
-            fancybox=True, shadow=True, ncol=2,
-        )
-        axMap.grid(True, alpha=0.25, ls="--")
-
-        # -- Right panel: statistics table --
-        axStats.axis("off")
-        axStats.set_title(
-            "Placement vs Game Quotas", fontsize=14, fontweight="bold", pad=15,
-        )
-
-        tableData = [
-            ["Structure", "Placed", "Quota", "Match"],
-            [
-                "Floating Islands",
-                str(len(self.structures.get("floatingIslands", []))),
-                str(self.quotas.floatingIslands),
-                "",
-            ],
-            [
-                "Underground Cabins",
-                str(len(self.structures.get("undergroundCabins", []))),
-                f"{self.quotas.undergroundCabinsMin}-{self.quotas.undergroundCabinsMax}",
-                "",
-            ],
-            [
-                "Life Crystals",
-                str(len(self.structures.get("lifeCrystals", []))),
-                f"<= {self.quotas.lifeCrystalsMax}",
-                "",
-            ],
-            [
-                "Surface Chests",
-                str(len(self.structures.get("surfaceChests", []))),
-                str(self.quotas.surfaceChests),
-                "",
-            ],
-            [
-                "Dungeon",
-                str(len(self.structures.get("dungeon", []))),
-                "1",
-                "",
-            ],
-            [
-                "Jungle Temple",
-                str(len(self.structures.get("jungleTemple", []))),
-                "1",
-                "",
-            ],
-        ]
-
-        # Compute match column
-        for row in tableData[1:]:
-            placed = int(row[1])
-            quotaStr = row[2]
-            if quotaStr.startswith("<="):
-                ok = placed <= int(quotaStr.split()[-1])
-            elif "-" in quotaStr:
-                lo, hi = quotaStr.split("-")
-                ok = int(lo) <= placed <= int(hi)
-            else:
-                ok = placed == int(quotaStr)
-            row[3] = "YES" if ok else "NO"
-
-        cellColors = []
-        for i, row in enumerate(tableData):
-            if i == 0:
-                cellColors.append([COLORS["accent"]] * 4)
-            else:
-                matchColor = "#2d6a4f" if row[3] == "YES" else "#6b2020"
-                cellColors.append([COLORS["grid"], COLORS["grid"], COLORS["grid"], matchColor])
-
-        table = axStats.table(
-            cellText=tableData,
-            cellColours=cellColors,
-            cellLoc="center",
-            loc="upper center",
-            bbox=[0.0, 0.30, 1.0, 0.60],
-        )
-        table.auto_set_font_size(False)
-        table.set_fontsize(11)
-        for (r, c), cell in table.get_celld().items():
-            if r == 0:
-                cell.set_text_props(color="white", fontweight="bold")
-            cell.set_edgecolor(COLORS["edge"])
-
-        # Layer depth summary below table
-        depthText = (
-            f"Layer Depths (large world):\n"
-            f"  worldSurface = {int(self.layers.worldSurface)}\n"
-            f"  rockLayer    = {int(self.layers.rockLayer)}\n"
-            f"  hellLayer    = {self.layers.hellLayer}\n"
-            f"  borderBuffer = {self.borderBuffer}\n\n"
-            f"StructureMap zones: {len(self.structureMap.protectedZones)}"
-        )
-        axStats.text(
-            0.5, 0.18, depthText, transform=axStats.transAxes,
-            fontsize=11, va="top", ha="center", family="monospace",
-            bbox=dict(boxstyle="round,pad=0.4", facecolor=COLORS["legend_bg"],
-                      edgecolor=COLORS["edge"], alpha=0.9),
-        )
-
-        plt.tight_layout()
-        if savePath:
-            os.makedirs(os.path.dirname(savePath), exist_ok=True)
-            plt.savefig(savePath, dpi=300, bbox_inches="tight")
-            plt.close()
-            print(f"Saved: {savePath}")
-        else:
-            plt.show()
+STRUCTURE_MARKER = {
+    "floatingIslands":   ("o", 60),
+    "undergroundCabins": ("s", 14),
+    "lifeCrystals":      ("D", 6),
+    "surfaceChests":     ("^", 28),
+    "dungeon":           ("D", 200),
+    "jungleTemple":      ("^", 160),
+}
 
 
-# ------------------------------------------------------------------
-# Entry point
-# ------------------------------------------------------------------
+def createMacroDensityPlot(
+    gen: TerrariaStructureGenerator, savePath: str | None = None,
+) -> None:
+    """LARGE-world overview: scatter density of every placed structure."""
+    if not gen.structures:
+        gen.generateAllStructures()
 
+    fig, ax = plt.subplots(figsize=(18, 6))
+
+    ws, rl, hl = gen.layers.worldSurface, gen.layers.rockLayer, gen.layers.hellLayer
+    ax.axhline(y=ws, color=PALETTE["yellow"], lw=1.5,
+               label=f"worldSurface ({int(ws)})")
+    ax.axhline(y=rl, color=PALETTE["orange"], ls="--", lw=1.5,
+               label=f"rockLayer ({int(rl)})")
+    ax.axhline(y=hl, color=PALETTE["red"], ls="-.", lw=1.5,
+               label=f"hellLayer ({hl})")
+
+    for key, rects in gen.structures.items():
+        if not rects:
+            continue
+        color = STRUCTURE_COLOR.get(key, PALETTE["fg"])
+        marker, size = STRUCTURE_MARKER.get(key, (".", 20))
+        xs = [r[0] + r[2] / 2 for r in rects]
+        ys = [r[1] + r[3] / 2 for r in rects]
+        ax.scatter(xs, ys, c=color, s=size, marker=marker,
+                   alpha=0.75, edgecolors=PALETTE["bg"], linewidth=0.4,
+                   label=f"{key} ({len(rects)})", zorder=5)
+
+    ax.set_xlim(0, gen.worldWidth)
+    ax.set_ylim(0, gen.worldHeight)
+    ax.invert_yaxis()
+    ax.set_xlabel("X (tiles)", fontweight="bold")
+    ax.set_ylabel("Y (tiles)", fontweight="bold")
+    ax.set_title(
+        "Large-World Structure Density (game-accurate quotas)",
+        fontsize=13, fontweight="bold",
+    )
+    ax.legend(loc="upper right", fontsize=8, ncol=2, frameon=True)
+    ax.grid(True, alpha=0.20, ls="--")
+
+    plt.tight_layout()
+    if savePath:
+        os.makedirs(os.path.dirname(savePath), exist_ok=True)
+        plt.savefig(savePath, dpi=200, bbox_inches="tight",
+                    facecolor=COLORS["bg"])
+        print(f"Saved: {savePath}")
+    plt.close(fig)
+
+
+# ===================================================================
+# Visualization 2: detail panel (DETAIL_PLOT 600x400 sprites)
+# ===================================================================
+def _buildDungeonGrid(w: int, h: int) -> tuple[np.ndarray, np.ndarray]:
+    """Stone background + brick room cutouts for dungeon detail."""
+    grid = np.full((h, w), STONE, dtype=np.int32)
+    walls = np.full((h, w), 0, dtype=np.int32)
+    walls[2:h - 2, 2:w - 2] = EBONSTONE
+    # Carve a few rooms.
+    for (x0, y0, rw, rh) in [(8, 12, 28, 18), (40, 16, 24, 14),
+                             (10, 38, 30, 20), (44, 42, 28, 16)]:
+        grid[y0:y0 + rh, x0:x0 + rw] = AIR
+    return grid, walls
+
+
+def _dungeonRooms() -> list[SpriteRect]:
+    return [
+        SpriteRect(8, 12, 28, 18),
+        SpriteRect(40, 16, 24, 14),
+        SpriteRect(10, 38, 30, 20),
+        SpriteRect(44, 42, 28, 16),
+    ]
+
+
+def _buildIslandGrid(w: int, h: int) -> np.ndarray:
+    grid = np.full((h, w), AIR, dtype=np.int32)
+    # Lens-shaped dirt island.
+    cx, cy = w // 2, h // 2
+    for j in range(h):
+        for i in range(w):
+            r = ((i - cx) / (w * 0.45)) ** 2 + ((j - cy) / (h * 0.35)) ** 2
+            if r <= 1.0:
+                grid[j, i] = DIRT
+    return grid
+
+
+def _buildPyramidGrid(w: int, h: int) -> np.ndarray:
+    grid = np.full((h, w), AIR, dtype=np.int32)
+    # Triangular sandstone silhouette.
+    for j in range(h):
+        rowWidth = int((j / h) * w)
+        x0 = (w - rowWidth) // 2
+        grid[j, x0:x0 + rowWidth] = SAND
+    return grid
+
+
+def createStructureDetailPlot(
+    savePath: str | None = None, seed: int = 42,
+) -> None:
+    """4-panel sprite detail: dungeon, cabin, floating island, pyramid."""
+    fig, axes = plt.subplots(2, 2, figsize=(14, 9))
+
+    # --- Dungeon ---
+    dgW, dgH = 80, 64
+    dgGrid, dgWalls = _buildDungeonGrid(dgW, dgH)
+    drawDungeon(axes[0, 0], dgGrid, dgWalls, _dungeonRooms())
+    axes[0, 0].set_xlim(0, dgW)
+    axes[0, 0].set_ylim(dgH, 0)
+    axes[0, 0].set_title("Dungeon (rooms + doors + chests)",
+                         fontsize=11, fontweight="bold")
+
+    # --- Underground Cabin ---
+    cbW, cbH = 24, 16
+    cabinBg = np.full((cbH, cbW), STONE, dtype=np.int32)
+    drawTileGrid(axes[0, 1], cabinBg)
+    drawCabin(axes[0, 1], 6, 4, w=12, h=8)
+    axes[0, 1].set_xlim(0, cbW)
+    axes[0, 1].set_ylim(cbH, 0)
+    axes[0, 1].set_title("Underground Cabin (door + chest + torch)",
+                         fontsize=11, fontweight="bold")
+
+    # --- Floating Island ---
+    fiW, fiH = 60, 40
+    fiGrid = _buildIslandGrid(fiW, fiH)
+    drawFloatingIsland(axes[1, 0], fiGrid, 0, 0, fiW, fiH)
+    axes[1, 0].set_xlim(0, fiW)
+    axes[1, 0].set_ylim(fiH, 0)
+    axes[1, 0].set_title("Floating Island (sky house)",
+                         fontsize=11, fontweight="bold")
+
+    # --- Pyramid ---
+    pyW, pyH = 60, 50
+    pyGrid = _buildPyramidGrid(pyW, pyH)
+    drawPyramid(axes[1, 1], pyGrid, 0, 0, pyW, pyH)
+    axes[1, 1].set_xlim(0, pyW)
+    axes[1, 1].set_ylim(pyH, 0)
+    axes[1, 1].set_title("Pyramid (chamber + chest)",
+                         fontsize=11, fontweight="bold")
+
+    for ax in axes.flat:
+        ax.set_xlabel("X (tiles)", fontsize=8)
+        ax.set_ylabel("Y (tiles)", fontsize=8)
+
+    fig.suptitle("Structure Detail (DETAIL_PLOT sprite render)",
+                 fontsize=13, fontweight="bold")
+    plt.tight_layout()
+    if savePath:
+        os.makedirs(os.path.dirname(savePath), exist_ok=True)
+        plt.savefig(savePath, dpi=200, bbox_inches="tight",
+                    facecolor=COLORS["bg"])
+        print(f"Saved: {savePath}")
+    plt.close(fig)
+
+
+# ===================================================================
+# Main
+# ===================================================================
 def main() -> None:
-    """Generate structure placement and save visualization."""
-    print("Terraria Large World Structure Generation")
+    print("Terraria Structure Generation")
     print("=" * 42)
 
-    gen = TerrariaStructureGenerator(worldWidth=8400, worldHeight=2400, seed=12345)
+    gen = TerrariaStructureGenerator(seed=12345)
     gen.generateAllStructures()
-
-    # Print summary
     for key, rects in gen.structures.items():
         print(f"  {key}: {len(rects)}")
     print(f"  StructureMap zones: {len(gen.structureMap.protectedZones)}")
 
-    # Save plot
-    plotDir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "Plots")
-    savePath = os.path.join(plotDir, "terraria_structure_placement_large.png")
-    gen.visualize(savePath=savePath)
+    plotDir = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "Plots"
+    )
+    createMacroDensityPlot(
+        gen, savePath=os.path.join(plotDir, "terraria_structure_density.png"),
+    )
+    createStructureDetailPlot(
+        savePath=os.path.join(plotDir, "terraria_structure_detail.png"),
+    )
 
 
 if __name__ == "__main__":

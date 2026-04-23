@@ -45,13 +45,13 @@ from Engine.constants import (
     INFECTION_GAP_TILES, SURFACE_UPDATE_RATE, UNDERGROUND_UPDATE_RATE,
     LIFE_CRYSTAL, ALTAR,
 )
-from Engine.theme import applyDarkTheme, COLORS, TILE_COLORS as ENGINE_TILE_COLORS
+from Engine.theme import applyTokyoNight, COLORS, TILE_COLORS as ENGINE_TILE_COLORS
 
-from terrariaWorldGeneration import TerrariaWorldGenerator
-from terrariaCorruptionEvolution import TerrariaCorruptionEvolution
-from terrariaHardmodeStructures import TerrariaHardmodeTransformation
+from Advanced.terrariaWorldGeneration import TerrariaWorldGenerator
+from Advanced.terrariaCorruptionEvolution import TerrariaCorruptionEvolution
+from Advanced.terrariaHardmodeStructures import TerrariaHardmodeTransformation
 
-applyDarkTheme()
+applyTokyoNight()
 
 
 # ---------------------------------------------------------------------------

@@ -18,7 +18,6 @@ import os
 
 import numpy as np
 import matplotlib.pyplot as plt
-from typing import List, Tuple
 
 from Engine.algorithms import (
     tileRunner, cellularAutomataSmooth,
@@ -34,14 +33,14 @@ from Engine.constants import (
     INFECTION_GAP_TILES, SURFACE_UPDATE_RATE, UNDERGROUND_UPDATE_RATE,
     INFECTION_SPREAD_RADIUS, LIFE_CRYSTAL,
 )
-from Engine.theme import applyDarkTheme, COLORS
+from Engine.theme import applyTokyoNight, COLORS
 
-applyDarkTheme()
+applyTokyoNight()
 
 # ---------------------------------------------------------------------------
 # RGB color table for rendering sparse tile IDs to an image
 # ---------------------------------------------------------------------------
-TILE_COLORS: dict[int, Tuple[int, int, int]] = {
+TILE_COLORS: dict[int, tuple[int, int, int]] = {
     AIR: (0, 0, 17),
     DIRT: (139, 69, 19),
     STONE: (105, 105, 105),
@@ -148,12 +147,12 @@ class TerrariaCompleteWorldEvolution:
         self.evilType: str = self.rng.choice(["corruption", "crimson"])
 
         # Pre-HM ore selection (one from each alternating pair)
-        self.preHmOres: List[str] = []
+        self.preHmOres: list[str] = []
         for pair in OreConfig.PRE_HARDMODE_PAIRS:
             self.preHmOres.append(pair[int(self.rng.integers(0, 2))])
 
         # HM ore selection (one from each tier)
-        self.hmOres: List[str] = []
+        self.hmOres: list[str] = []
         for tier in OreConfig.HARDMODE_TIERS:
             self.hmOres.append(tier[int(self.rng.integers(0, 2))])
 
@@ -170,7 +169,7 @@ class TerrariaCompleteWorldEvolution:
         self.evilXEnd: int = 0
 
         # Snapshot history for visualization
-        self.history: List[Tuple[str, np.ndarray]] = []
+        self.history: list[tuple[str, np.ndarray]] = []
 
     # ------------------------------------------------------------------
     # Phase 1: Base terrain
@@ -394,7 +393,7 @@ class TerrariaCompleteWorldEvolution:
     # ------------------------------------------------------------------
     # Phase 7: Infection spread
     # ------------------------------------------------------------------
-    def simulateSpread(self, steps: int = 15) -> List[np.ndarray]:
+    def simulateSpread(self, steps: int = 15) -> list[np.ndarray]:
         """Tile update cycle infection spread with air gap blocking.
 
         Each step, infected tiles pick a random neighbor within
@@ -403,7 +402,7 @@ class TerrariaCompleteWorldEvolution:
         Surface tiles spread faster than underground tiles.
         """
         h, w = self.worldHeight, self.worldWidth
-        snapshots: List[np.ndarray] = []
+        snapshots: list[np.ndarray] = []
 
         # Select evil infection set
         if self.evilType == "corruption":
@@ -507,7 +506,7 @@ class TerrariaCompleteWorldEvolution:
     # ------------------------------------------------------------------
     # Run all phases
     # ------------------------------------------------------------------
-    def runEvolution(self) -> List[Tuple[str, np.ndarray]]:
+    def runEvolution(self) -> list[tuple[str, np.ndarray]]:
         """Execute the full 7-phase lifecycle, returning snapshot history."""
         self.buildTerrain()
         self.history.append(("Phase 1: Base Terrain", self.grid.copy()))
@@ -542,7 +541,7 @@ class TerrariaCompleteWorldEvolution:
 # Visualization
 # ===================================================================
 def plotEvolution(
-    history: List[Tuple[str, np.ndarray]],
+    history: list[tuple[str, np.ndarray]],
     evolution: TerrariaCompleteWorldEvolution,
 ) -> None:
     """Render 2x4 multi-panel evolution grid and save as PNG."""

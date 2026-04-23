@@ -27,9 +27,9 @@ from Engine.algorithms import (
 from Engine.constants import LARGE, LayerDepths, StructureQuotas, OreConfig, LIFE_CRYSTAL
 from Engine.structureMap import StructureMap, Rectangle
 from Engine.structures import rocksInDirt, dirtInRocks, placeClay, placeSilt
-from Engine.theme import applyDarkTheme, COLORS, TILE_COLORS as ENGINE_TILE_COLORS
+from Engine.theme import applyTokyoNight, COLORS, TILE_COLORS as ENGINE_TILE_COLORS
 
-applyDarkTheme()
+applyTokyoNight()
 
 # Ordered color map: index = tile ID -> hex color
 TILE_COLORS = {
@@ -566,7 +566,7 @@ def _savePath(filename: str) -> str:
 
 def _renderGrid(ax, grid: np.ndarray, title: str, maxId: int) -> None:
     """Render a grid onto a matplotlib axes."""
-    ax.imshow(grid, cmap=TERRAIN_CMAP, aspect='auto', vmin=0, vmax=maxId, interpolation='nearest')
+    ax.imshow(grid, cmap=TERRAIN_CMAP, aspect='auto', vmin=0, vmax=_MAX_TILE_ID, interpolation='nearest')
     ax.set_title(title, fontsize=12, fontweight='bold')
     ax.set_xlabel('X (blocks)')
     ax.set_ylabel('Y (blocks)')
@@ -600,30 +600,6 @@ def createWorldGenerationAnimation(saveName: str = "world_generation_animation.g
     print("Animation saved.")
 
 
-def createGenerationStagesPlot(saveName: str = "world_generation_stages.png") -> None:
-    """Static plot showing key generation milestones (4 panels)."""
-    print("Generating world at 1/10 scale for stage plot...")
-    gen = TerrariaWorldGenerator(worldWidth=840, worldHeight=240, seed=12345)
-    gen.generate()
-
-    keyIndices = [1, 7, 10, len(gen.snapshots) - 1]  # Terrain, Smooth, Corruption, Final
-    keyIndices = [min(i, len(gen.snapshots) - 1) for i in keyIndices]
-    maxId = max(TILE_COLORS.keys())
-
-    fig, axes = plt.subplots(2, 2, figsize=(18, 8))
-    fig.suptitle("Terraria World Generation Stages (1/10 scale)", fontsize=16, fontweight='bold')
-
-    for ax, idx in zip(axes.flat, keyIndices):
-        name, grid = gen.snapshots[idx]
-        _renderGrid(ax, grid, f"After: {name}", maxId)
-
-    plt.tight_layout()
-    path = _savePath(saveName)
-    plt.savefig(path, dpi=200, bbox_inches='tight')
-    plt.close(fig)
-    print(f"Stage plot saved to {path}")
-
-
 def createFullPassGrid(saveName: str = "world_generation_all_passes.png") -> None:
     """Grid showing every pass as a thumbnail."""
     print("Generating world at 1/10 scale for full pass grid...")
@@ -653,6 +629,5 @@ def createFullPassGrid(saveName: str = "world_generation_all_passes.png") -> Non
 
 
 if __name__ == "__main__":
-    createGenerationStagesPlot()
     createFullPassGrid()
     createWorldGenerationAnimation()
