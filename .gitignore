@@ -39,5 +39,8 @@ audit/
 *.log
 .ipynb_checkpoints/
 
+# Ephemeral agent briefs (per-repo persona, never push)
+.copilot/
+
 # Generated plot outputs are tracked so the README renders on GitHub.
 # Regenerate them locally with the scripts in Code/ and Advanced/.

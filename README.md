@@ -68,12 +68,6 @@ Three-panel detail at FEATURE_PLOT scale (500x300): pre-Hardmode veins, post-alt
 
 Depth-density profiles showing tile counts per row, with Tokyo Night layer boundary markers.
 
-### Structure Placement
-
-![Structure Placement](Plots/terraria_structure_density.png)
-
-600x500 crop of a SMALL (4200x1200) world with game-accurate structure overlays rendered via `Engine.spriteRenderer` composer primitives: Underground Cabins (doors, chests, torches), Floating Island (lens-shaped grass body), Pyramid (sandstone-brick silhouette with hidden chamber), and Dungeon corner (interlocking brick rooms). StructureMap exclusion zones prevent placement overlap. Standard grass-strip and layer-marker decorations annotate worldSurface, rockLayer, and hellLayer boundaries.
-
 
 ## Advanced Simulations
 
@@ -124,7 +118,6 @@ Code/                                # Visualization scripts (FEATURE_PLOT and D
     terrariaBiomeAnalysis.py         # LARGE biome layout + DETAIL_PLOT sprite-rendered biome transition
     terrariaNoiseSystems.py          # Surface terrain (4 biomes) + cave systems + tile conversion
     terrariaOreDistribution.py       # 3-panel ore distribution with vein-detail luster crop + depth density
-    terrariaStructureGeneration.py   # Macro density scatter + 4-panel sprite detail
     Excess/
         terrariaLiquidPhysics.py     # Liquid settling simulation
 Advanced/                            # Full-scale simulations
@@ -202,26 +195,20 @@ the local percolation below $p_c$ and halts spread deterministically.
 After cavinator carves raw voids, several majority-rule CA passes shape the
 caverns into the lacy organic look characteristic of Terraria. Each cell
 $s_i \in \{0, 1\}$ (solid / air) updates from its 8-neighbor Moore
-neighborhood $\mathcal{N}_8(i)$ via separate birth and death thresholds:
+neighborhood $\mathcal{N}_8(i)$ via separate birth and death thresholds.
 
-$$s_i^{(t+1)} = \begin{cases} 1 & \text{(solid)} \quad \text{if } s_i^{(t)} = 1 \text{ and } n_i^{(t)} \geq d \\ 1 & \text{(solid)} \quad \text{if } s_i^{(t)} = 0 \text{ and } n_i^{(t)} > b \\ 0 & \text{(air)} \quad \text{otherwise} \end{cases}$$
+A solid cell survives when it has at least $d = 4$ solid neighbors:
 
-where $n_i^{(t)} = \sum_{j \in \mathcal{N}_8(i)} s_j^{(t)}$ is the solid
-neighbor count, $b = 5$ is the birth threshold (air becomes solid only when
-densely surrounded), and $d = 4$ is the death threshold (solid erodes when
-fewer than $d$ neighbors are solid). This rule minimizes a surface-tension
-energy functional $E[s] = \sum_{\langle i,j \rangle} (s_i - s_j)^2$ subject
-to a majority constraint, removing isolated spurs and growing chambers
-without collapsing the cave network. Five iterations match the smoothing
-pass documented in decompiled `WorldGen.cs`.
+$$s_i^{(t+1)} = 1 \quad \text{if} \quad s_i^{(t)} = 1 \text{ and } n_i^{(t)} \geq 4$$
+
+An air cell becomes solid when more than $b = 5$ neighbors are solid:
+
+$$s_i^{(t+1)} = 1 \quad \text{if} \quad s_i^{(t)} = 0 \text{ and } n_i^{(t)} > 5$$
+
+Otherwise $s_i^{(t+1)} = 0$ (air). Here $n_i^{(t)} = \sum_{j \in \mathcal{N}_8(i)} s_j^{(t)}$ is the solid
+neighbor count.
 
 ---
-
-## References
-
-- Decompiled `WorldGen.cs` from Terraria source (Re-Logic)
-- Perlin, K. (1985). "An Image Synthesizer". Computer Graphics, 19(3), 287-296
-- See [References/worldgen-research.md](References/worldgen-research.md) for full research notes
 
 ## License
 

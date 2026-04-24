@@ -575,17 +575,17 @@ def createEvolutionFigure(savePath: str | None = None) -> plt.Figure:
     ]
     snaps = [snapPreHM, snapV, snapSpread1, snapSpread2]
 
-    fig, axes = plt.subplots(2, 2, figsize=(11, 8))
+    fig, axes = plt.subplots(2, 2, figsize=(10, 7))
     for idx, (ax, snap, title) in enumerate(zip(axes.flat, snaps, titles)):
         cropped, bounds = cropSmallWorld(snap, centerX=centerX, centerY=centerY,
-                                         width=260, height=200)
+                                         width=130, height=90)
         drawTileGrid(ax, cropped)
         applyMapDecorations(ax, cropped, layers, cropBounds=bounds)
         ax.set_title(title, fontsize=10, fontweight="bold")
         ax.set_xticks([]); ax.set_yticks([])
 
     fig.suptitle(
-        "Corruption Evolution (260x200 tight crops)",
+        "Corruption Evolution (130x90 tight crops)",
         fontsize=13, fontweight="bold", y=0.995,
     )
     plt.tight_layout(rect=[0, 0, 1, 0.97])
@@ -612,8 +612,9 @@ def createSpreadAnimation(savePath: str | None = None) -> None:
     print("Generating SMALL world for corruption spread GIF...")
     world = generateSmallWorld(seed=20260423, evilType="corruption", compactBiomes=True)
     layers = world.layers
-    centerX = world.spawnX
-    centerY = int((layers.worldSurface + layers.rockLayer) / 2)
+    centerX = world.grid.shape[1] // 2
+    # Center near surface so both V-arms stay within the crop window.
+    centerY = int(layers.worldSurface) + 60
     h0, w0 = world.grid.shape
 
     # Crop helper (no sprite decorations -- fast for animation frames).
@@ -623,7 +624,7 @@ def createSpreadAnimation(savePath: str | None = None) -> None:
     y1 = min(h0, centerY + 100)
 
     def _crop(grid: np.ndarray) -> np.ndarray:
-        return grid[y0:y1, x0:x1]
+        return grid[y0:y1, x0:x1].copy()
 
     sim = TerrariaCorruptionEvolution(
         worldWidth=w0, worldHeight=h0,

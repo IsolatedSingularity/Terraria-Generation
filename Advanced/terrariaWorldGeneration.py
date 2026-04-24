@@ -16,7 +16,6 @@ import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import ListedColormap
-from matplotlib.patches import Rectangle as MplRectangle
 
 from Engine.algorithms import (
     AIR,
@@ -594,10 +593,8 @@ def _renderGrid(ax, grid: np.ndarray, title: str, maxId: int) -> None:
 def createWorldGenerationAnimation(saveName: str = "world_generation_animation.gif") -> None:
     """Create a GIF animation stepping through all 23 generation passes.
 
-    Uses an 840x240 1/10-scale world but renders TWO panels per frame:
-    a thin overview strip (so you see ocean + desert + biome bands) and a
-    tight 220x150 detail crop centered at world middle (so individual tiles
-    are readable instead of looking like a beige box).
+    Single-panel tight 140x100 tile crop centered on world middle so
+    individual tiles are readable at every pass.
     """
     print("Generating world at 1/10 scale for animation...")
     gen = TerrariaWorldGenerator(worldWidth=840, worldHeight=240, seed=12345)
@@ -605,37 +602,24 @@ def createWorldGenerationAnimation(saveName: str = "world_generation_animation.g
     snapshots = gen.snapshots
 
     maxId = max(TILE_COLORS.keys())
-    fig = plt.figure(figsize=(11, 6.5))
-    axOverview = fig.add_subplot(2, 1, 1)
-    axDetail = fig.add_subplot(2, 1, 2)
+    detailW, detailH = 140, 100
+    detailX = 350 - detailW // 2
+    detailY = 80 - detailH // 2
 
-    detailW, detailH = 220, 150
-    detailX = 840 // 2 - detailW // 2
-    detailY = 240 // 2 - detailH // 2
+    fig, ax = plt.subplots(figsize=(6, 4.5))
+    ax.set_axis_off()
+    crop0 = snapshots[0][1][detailY:detailY + detailH, detailX:detailX + detailW]
+    im = ax.imshow(crop0, cmap=TERRAIN_CMAP, aspect="equal",
+                   vmin=0, vmax=maxId, interpolation="nearest")
+    titleObj = ax.set_title("", fontsize=11, fontweight="bold")
 
     def animate(frame: int):
-        axOverview.clear()
-        axDetail.clear()
         idx = frame % len(snapshots)
         name, grid = snapshots[idx]
-        # Overview: full world as a wide strip with ocean visible at edges.
-        axOverview.imshow(grid, cmap=TERRAIN_CMAP, aspect="auto",
-                          vmin=0, vmax=maxId, interpolation="nearest")
-        axOverview.set_title(f"Pass {idx}: {name}  (full 1/10 scale: 840x240)",
-                             fontsize=11, fontweight="bold")
-        axOverview.set_xticks([]); axOverview.set_yticks([])
-        # Highlight detail rectangle on overview.
-        axOverview.add_patch(MplRectangle((detailX, detailY), detailW, detailH,
-                                          linewidth=1.2, edgecolor="#7aa2f7",
-                                          facecolor="none"))
-
-        # Detail: tight 220x150 crop, equal aspect so tiles are square.
         crop = grid[detailY:detailY + detailH, detailX:detailX + detailW]
-        axDetail.imshow(crop, cmap=TERRAIN_CMAP, aspect="equal",
-                        vmin=0, vmax=maxId, interpolation="nearest")
-        axDetail.set_title(f"Detail crop ({detailW}x{detailH} at world center)",
-                           fontsize=10)
-        axDetail.set_xticks([]); axDetail.set_yticks([])
+        im.set_data(crop)
+        titleObj.set_text(f"Pass {idx}: {name}  (140x100 crop)")
+        return [im, titleObj]
 
     anim = animation.FuncAnimation(fig, animate, frames=len(snapshots), interval=1500, repeat=True)
     path = _savePath(saveName)

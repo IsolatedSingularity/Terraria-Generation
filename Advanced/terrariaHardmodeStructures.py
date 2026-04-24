@@ -501,10 +501,10 @@ def visualize(sim: TerrariaHardmodeTransformation,
         (worldHM.grid, "Panel 3: Post-Altar x9 (Full HM Ores)"),
     ]
 
-    fig, axes = plt.subplots(1, 3, figsize=(24, 9))
+    fig, axes = plt.subplots(1, 3, figsize=(12, 4.5))
     for ax, (snap, title) in zip(axes, panels):
         cropped, bounds = cropSmallWorld(snap, centerX=centerX, centerY=centerY,
-                                          width=600, height=500)
+                                          width=130, height=90)
         drawTileGrid(ax, cropped)
         applyMapDecorations(ax, cropped, layers, cropBounds=bounds)
         ax.set_title(title, fontsize=11, fontweight="bold")
@@ -512,7 +512,7 @@ def visualize(sim: TerrariaHardmodeTransformation,
         ax.set_ylabel("Depth (tiles, crop-local)")
 
     fig.suptitle(
-        "Hardmode Transformation (600x500 SMALL-World Crop)",
+        "Hardmode Transformation (130x90 SMALL-World Crop)",
         fontsize=14, fontweight="bold",
     )
     plt.tight_layout()

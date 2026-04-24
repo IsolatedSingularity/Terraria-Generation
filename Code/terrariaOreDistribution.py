@@ -85,7 +85,7 @@ def createOreDistributionFigure(savePath: str) -> None:
         ("Late Hardmode (9 altars smashed)", generateSmallWorld(seed=seed, altarsSmashed=9)),
     ]
 
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5.5))
+    fig, axes = plt.subplots(1, 3, figsize=(12, 4.5))
     for ax, (title, world) in zip(axes, worlds):
         layers = world.layers
         # Center deep enough to span rock layer to hellstone band.
@@ -93,7 +93,7 @@ def createOreDistributionFigure(savePath: str) -> None:
         centerY = int((layers.rockLayer + layers.hellLayer) / 2)
         cropped, bounds = cropSmallWorld(
             world.grid, centerX=centerX, centerY=centerY,
-            width=260, height=200,
+            width=130, height=90,
         )
         drawTileGrid(ax, cropped)
         applyMapDecorations(ax, cropped, layers, cropBounds=bounds,
@@ -106,7 +106,7 @@ def createOreDistributionFigure(savePath: str) -> None:
         ax.set_ylabel("Depth (tiles)")
 
     fig.suptitle(
-        "Ore Distribution (260x200 tight crops, SMALL world)",
+        "Ore Distribution (130x90 tight crops, SMALL world)",
         fontsize=13, fontweight="bold", y=1.0,
     )
     plt.tight_layout()

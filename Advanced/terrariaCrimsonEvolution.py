@@ -65,17 +65,17 @@ def createCrimsonEvolutionFigure(savePath: str | None = None) -> plt.Figure:
     ]
     snaps = [snapPreHM, snapV, snapSpread1, snapSpread2]
 
-    fig, axes = plt.subplots(2, 2, figsize=(11, 8))
+    fig, axes = plt.subplots(2, 2, figsize=(10, 7))
     for ax, snap, title in zip(axes.flat, snaps, titles):
         cropped, bounds = cropSmallWorld(snap, centerX=centerX, centerY=centerY,
-                                          width=260, height=200)
+                                          width=130, height=90)
         drawTileGrid(ax, cropped)
         applyMapDecorations(ax, cropped, layers, cropBounds=bounds)
         ax.set_title(title, fontsize=10, fontweight="bold")
         ax.set_xticks([]); ax.set_yticks([])
 
     fig.suptitle(
-        "Crimson Evolution (260x200 tight crops)",
+        "Crimson Evolution (130x90 tight crops)",
         fontsize=13, fontweight="bold", y=0.995,
     )
     plt.tight_layout(rect=[0, 0, 1, 0.97])
@@ -99,9 +99,9 @@ def createCrimsonSpreadAnimation(savePath: str | None = None) -> None:
     print("Generating SMALL world for crimson spread GIF...")
     world = generateSmallWorld(seed=20260424, evilType="crimson", compactBiomes=True)
     layers = world.layers
-    centerX = world.spawnX
-    centerY = int((layers.worldSurface + layers.rockLayer) / 2)
     h0, w0 = world.grid.shape
+    centerX = w0 // 2
+    centerY = int(layers.worldSurface) + 60
 
     x0 = max(0, centerX - 130)
     x1 = min(w0, centerX + 130)
@@ -109,7 +109,7 @@ def createCrimsonSpreadAnimation(savePath: str | None = None) -> None:
     y1 = min(h0, centerY + 100)
 
     def _crop(grid: np.ndarray) -> np.ndarray:
-        return grid[y0:y1, x0:x1]
+        return grid[y0:y1, x0:x1].copy()
 
     sim = TerrariaCorruptionEvolution(
         worldWidth=w0, worldHeight=h0,
