@@ -15,12 +15,12 @@ from Engine.algorithms import (
     tileRunner,
 )
 from Engine.constants import (
-    ALTAR,
+    ALTAR,  # noqa: F401
     DETAIL_PLOT,
     FEATURE_PLOT,
-    HALLOW_GRASS,
+    HALLOW_GRASS,  # noqa: F401
     LARGE,
-    LIFE_CRYSTAL,
+    LIFE_CRYSTAL,  # noqa: F401
     MEDIUM,
     SMALL,
     TINY,
@@ -70,9 +70,9 @@ from Engine.theme import (
     TILE_COLORS,
     applyTokyoNight,
     buildTileColormap,
-    saveTinyGif,
     divCmap,
     lightCmap,
+    saveTinyGif,
     seqCmap,
 )
 from Engine.worldgen import (

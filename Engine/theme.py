@@ -317,6 +317,7 @@ def saveTinyGif(
         Number of tile IDs to map; default 200 covers all known tiles.
     """
     import os
+
     import numpy as np
     from PIL import Image, ImageDraw, ImageFont
 

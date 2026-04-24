@@ -690,7 +690,7 @@ def renderMiniWorld(
     Returns:
         ``AxesImage`` from matplotlib's ``imshow``.
     """
-    from Engine.theme import buildTileColormap, PALETTE  # local import: avoid cycles
+    from Engine.theme import PALETTE, buildTileColormap  # local import: avoid cycles
 
     cmap = buildTileColormap()
     if highlightTiles is None:

@@ -676,7 +676,7 @@ def generateShimmerBiome(
     """
     if config is None:
         config = ShimmerConfig()
-    rng = np.random.default_rng(seed)
+    _ = np.random.default_rng(seed)
     maxY, maxX = grid.shape
     r = config.radius
 
@@ -884,7 +884,7 @@ def placeSunflowers(
     Returns:
         The modified grid.
     """
-    rng = np.random.default_rng(seed)
+    _ = np.random.default_rng(seed)
     maxY, maxX = grid.shape
 
     for xStart, xEnd in evilBiomeXRanges:
@@ -1155,7 +1155,7 @@ def generateMushroomBiome(
     Returns:
         The modified grid.
     """
-    rng = np.random.default_rng(seed)
+    _ = np.random.default_rng(seed)
     maxY, maxX = grid.shape
 
     for dy in range(-radius, radius + 1):

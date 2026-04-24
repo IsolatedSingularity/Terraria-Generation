@@ -1,10 +1,10 @@
 # Terraria World Generation
 
 [![CI](https://img.shields.io/github/actions/workflow/status/IsolatedSingularity/Terraria-Generation/ci.yml?branch=main&label=CI&logo=github)](https://github.com/IsolatedSingularity/Terraria-Generation/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/python-3.11%2B-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![NumPy](https://img.shields.io/badge/numpy-2.2-013243.svg?style=for-the-badge&logo=numpy&logoColor=white)](https://numpy.org/)
-[![SciPy](https://img.shields.io/badge/scipy-1.15-8CAAE6.svg?style=for-the-badge&logo=scipy&logoColor=white)](https://scipy.org/)
-[![Matplotlib](https://img.shields.io/badge/matplotlib-3.10-11557C.svg?style=for-the-badge&logo=plotly&logoColor=white)](https://matplotlib.org/)
+[![Python](https://img.shields.io/badge/python-3.11%2B-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![NumPy](https://img.shields.io/badge/numpy-2.2-013243.svg?logo=numpy&logoColor=white)](https://numpy.org/)
+[![SciPy](https://img.shields.io/badge/scipy-1.15-8CAAE6.svg?logo=scipy&logoColor=white)](https://scipy.org/)
+[![Matplotlib](https://img.shields.io/badge/matplotlib-3.10-11557C.svg)](https://matplotlib.org/)
 
 ![Master Evolution](Plots/Advanced/terraria_master_evolution.gif)
 
@@ -194,6 +194,22 @@ $$s_i^{(t+1)} = 1 \quad \text{if} \quad s_i^{(t)} = 0 \text{ and } n_i^{(t)} > 5
 
 Otherwise $s_i^{(t+1)} = 0$ (air). Here $n_i^{(t)} = \sum_{j \in \mathcal{N}_8(i)} s_j^{(t)}$ is the solid
 neighbor count.
+
+---
+
+## Warning
+
+> **Experimental research project.** This codebase reverse-engineers Terraria's internal world-generation pipeline from decompiled C# source. It is not affiliated with or endorsed by Re-Logic. Generation fidelity is high for core passes (terrain, caves, biomes, liquid settling, infection spread) but some late-game structure placement logic is approximate. Expect minor deviations from in-game output, especially for dungeon room layouts and underground cabin density.
+
+---
+
+## Next Steps
+
+- [ ] **Full 103-pass fidelity** -- port the remaining structure-placement passes (Living Tree, Shimmer biome crevice, Gem Cave variant seeding) to close the gap with `WorldGen.cs`.
+- [ ] **Large and Expert world sizes** -- current engine targets Small; scale `LayerDepths` and `StructureQuotas` constants for Medium/Large and add the extra Evil biome arm that Expert mode spawns.
+- [ ] **Surface/underground animated fly-through** -- render a multi-frame GIF sweeping left to right across the world, suitable for embedding as a demo.
+- [ ] **Seed reproducibility tests** -- add property-based tests (Hypothesis) that verify a fixed seed always produces the same world grid, catching any RNG-state leak between passes.
+- [ ] **Tile palette overhaul** -- add proper sprite rendering with Terraria's actual tile-sheet sprite coordinates for a pixel-perfect reconstruction of the in-game look.
 
 ---
 

@@ -23,8 +23,8 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP"]
-# N: we use camelCase by convention, suppress PEP 8 naming warnings
-ignore = ["N802", "N803", "N806", "N815", "N816"]
+# N: we use camelCase by convention; N999: module names use PascalCase by design
+ignore = ["N802", "N803", "N806", "N815", "N816", "N999"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["Engine"]
