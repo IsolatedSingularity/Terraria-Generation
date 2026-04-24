@@ -313,37 +313,42 @@ class TerrariaWorldGenerator:
 
     def _passSurfaceCaves(self) -> None:
         """Pass 4: Small caves near the surface using TileRunner."""
-        count = max(5, int(self.worldWidth * self.worldHeight * 1.5e-05))
+        count = max(60, int(self.worldWidth * self.worldHeight * 2.5e-04))
+        scale = max(0.6, min(self.scaleX, self.scaleY))
         for _ in range(count):
             sx = self.rng.integers(0, self.worldWidth)
             sy = self.rng.integers(self.worldSurface, min(self.worldSurface + int(100 * self.scaleY), self.rockLayer))
-            strength = self.rng.uniform(4, 8) * min(self.scaleX, self.scaleY)
-            steps = self.rng.integers(10, 30)
+            strength = self.rng.uniform(8, 16) * scale
+            steps = self.rng.integers(20, 50)
             tileRunner(self.grid, int(sx), int(sy), float(strength), int(steps), tileType=-1)
 
     def _passDirtLayerCaves(self) -> None:
-        """Pass 5: Medium caves in the dirt/transition layer."""
-        count = max(10, int(self.worldWidth * self.worldHeight * 3e-05))
+        """Pass 5: Dense organic caves in the dirt/transition layer."""
+        count = max(200, int(self.worldWidth * self.worldHeight * 8e-04))
+        scale = max(0.6, min(self.scaleX, self.scaleY))
         for _ in range(count):
             sx = self.rng.integers(0, self.worldWidth)
             sy = self.rng.integers(self.worldSurface, self.rockLayer)
-            strength = self.rng.uniform(6, 14) * min(self.scaleX, self.scaleY)
-            steps = self.rng.integers(20, 60)
+            strength = self.rng.uniform(12, 24) * scale
+            steps = self.rng.integers(35, 90)
             tileRunner(self.grid, int(sx), int(sy), float(strength), int(steps), tileType=-1)
 
     def _passRockLayerCaves(self) -> None:
-        """Pass 6: Large caves in the rock/cavern layer."""
-        count = max(10, int(self.worldWidth * self.worldHeight * 4e-05))
+        """Pass 6: Large airy chambers in the rock/cavern layer."""
+        count = max(200, int(self.worldWidth * self.worldHeight * 9e-04))
+        scale = max(0.6, min(self.scaleX, self.scaleY))
         for _ in range(count):
             sx = self.rng.integers(0, self.worldWidth)
             sy = self.rng.integers(self.rockLayer, self.hellLayer)
-            strength = self.rng.uniform(10, 22) * min(self.scaleX, self.scaleY)
-            steps = self.rng.integers(30, 100)
+            strength = self.rng.uniform(18, 34) * scale
+            steps = self.rng.integers(50, 120)
             tileRunner(self.grid, int(sx), int(sy), float(strength), int(steps), tileType=-1)
 
     def _passSmoothWorld(self) -> None:
-        """Pass 7: Cellular automata smoothing for organic cave edges."""
-        cellularAutomataSmooth(self.grid, iterations=3, birthThreshold=5, deathThreshold=3)
+        """Pass 7: Cellular automata smoothing for lacy organic cave network."""
+        # Lenient params at small scale: high birth threshold + low iterations
+        # so the CA cleans up isolated noise without sealing the cave network.
+        cellularAutomataSmooth(self.grid, iterations=2, birthThreshold=6, deathThreshold=3)
 
     def _passSnowBiome(self) -> None:
         """Pass 8: Convert a lateral section to snow/ice biome."""
@@ -603,8 +608,9 @@ def createWorldGenerationAnimation(saveName: str = "world_generation_animation.g
 
     maxId = max(TILE_COLORS.keys())
     detailW, detailH = 140, 100
-    detailX = 350 - detailW // 2
-    detailY = 80 - detailH // 2
+    # Center on dirt-to-rock transition where caves are densest.
+    detailX = max(0, 420 - detailW // 2)
+    detailY = max(0, 130 - detailH // 2)
 
     fig, ax = plt.subplots(figsize=(6, 4.5))
     ax.set_axis_off()

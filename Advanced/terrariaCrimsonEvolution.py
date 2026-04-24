@@ -121,7 +121,7 @@ def createCrimsonSpreadAnimation(savePath: str | None = None) -> None:
 
     frames: list[np.ndarray] = [_crop(sim.grid)]
     for _ in range(10):
-        sim.simulateSpread(1000.0)
+        sim.simulateSpread(2500.0)
         frames.append(_crop(sim.grid))
 
     sim.triggerHardmode()
@@ -129,7 +129,7 @@ def createCrimsonSpreadAnimation(savePath: str | None = None) -> None:
     hmFrame = len(frames) - 1
 
     for _ in range(30):
-        sim.simulateSpread(3000.0)
+        sim.simulateSpread(12000.0)
         frames.append(_crop(sim.grid))
 
     fig, ax = plt.subplots(figsize=(6.5, 5))
