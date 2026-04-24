@@ -15,21 +15,40 @@ Frame sequence:
 """
 
 import os
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.animation import FuncAnimation, PillowWriter
 
 from Engine.algorithms import (
-    tileRunner, AIR, STONE, DIRT, MUD, GRASS, SAND, HELLSTONE,
-    COBALT, PALLADIUM, MYTHRIL, ORICHALCUM,
-    ADAMANTITE, TITANIUM, CHLOROPHYTE,
-    EBONSTONE, CRIMSTONE, CORRUPT_DIRT, CRIMSON_DIRT,
-    PEARLSTONE, HALLOW_DIRT,
+    ADAMANTITE,
+    AIR,
+    CHLOROPHYTE,
+    COBALT,
+    CORRUPT_DIRT,
+    CRIMSON_DIRT,
+    CRIMSTONE,
+    DIRT,
+    EBONSTONE,
+    GRASS,
+    HALLOW_DIRT,
+    HELLSTONE,
+    MUD,
+    MYTHRIL,
+    ORICHALCUM,
+    PALLADIUM,
+    PEARLSTONE,
+    SAND,
+    STONE,
+    TITANIUM,
+    tileRunner,
 )
 from Engine.constants import (
-    LayerDepths, OreConfig,
-    SURFACE_UPDATE_RATE, UNDERGROUND_UPDATE_RATE,
     HALLOW_GRASS,
+    SURFACE_UPDATE_RATE,
+    UNDERGROUND_UPDATE_RATE,
+    LayerDepths,
+    OreConfig,
 )
 from Engine.theme import applyTokyoNight
 

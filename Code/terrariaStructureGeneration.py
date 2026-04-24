@@ -17,7 +17,8 @@ import numpy as np
 from Engine.algorithms import AIR, DIRT, EBONSTONE, SAND, STONE
 from Engine.spriteRenderer import (
     Rect as SpriteRect,
-    applyMapDecorations,
+)
+from Engine.spriteRenderer import (
     cropSmallWorld,
     drawCabin,
     drawDungeon,
@@ -96,65 +97,82 @@ def _stampSubGrid(target: np.ndarray, sub: np.ndarray,
 
 
 def createStructurePlacementScene(savePath: str) -> None:
-    """Render a 600x500 crop of a SMALL world with structures overlaid."""
-    print("Creating structure placement scene (600x500 SMALL crop)...")
+    """Render four 180x130 detail crops, one per structure archetype.
+
+    Each panel anchors a different structure (floating island, dungeon corner,
+    pyramid, surface cabin cluster) on top of a fresh SMALL-world crop, so the
+    underlying terrain matches the structure's natural placement context.
+    """
+    print("Creating structure placement scene (2x2 detail crops)...")
     world = generateSmallWorld(seed=20260423)
     layers = world.layers
+    surfaceY = int(layers.worldSurface)
 
-    # Anchor crop near surface so cabins, floating island, pyramid, and a
-    # dungeon corner all fit visually.
-    centerX = world.spawnX
-    centerY = int(layers.worldSurface) + 180
-    cropped, bounds = cropSmallWorld(
-        world.grid, centerX=centerX, centerY=centerY,
-        width=600, height=500,
-    )
+    fig, axes = plt.subplots(2, 2, figsize=(11, 7.5))
+    cropW, cropH = 180, 130
 
-    # Stamp structure grids into the cropped tile array.
+    def _crop(centerX: int, centerY: int):
+        return cropSmallWorld(world.grid, centerX=centerX, centerY=centerY,
+                              width=cropW, height=cropH)
+
+    # ---- Panel 1: Floating Island in the sky ---------------------------
+    ax = axes[0, 0]
+    cropped, bounds = _crop(world.spawnX - 200, surfaceY - 60)
     h, w = cropped.shape
-
-    # Pyramid (lower-right) - rises from sandstone area.
-    pyW, pyH = 60, 50
-    pyGrid = _buildPyramidGrid(pyW, pyH)
-    _stampSubGrid(cropped, pyGrid, originX=w - pyW - 30, originY=h - pyH - 80)
-
-    # Floating island (upper-left in sky band).
-    fiW, fiH = 70, 28
+    fiW, fiH = 70, 24
     fiGrid = _buildIslandGrid(fiW, fiH)
-    fiOriginY = max(2, int(layers.worldSurface) - bounds[2] - 90)
-    _stampSubGrid(cropped, fiGrid, originX=20, originY=fiOriginY)
-
-    # Dungeon corner (upper-right surface).
-    dgW, dgH = 50, 38
-    dgGrid, dgWalls = _buildDungeonGrid(dgW, dgH)
-    dgOriginX = w - dgW - 110
-    dgOriginY = max(2, int(layers.worldSurface) - bounds[2] - 8)
-    _stampSubGrid(cropped, dgGrid, originX=dgOriginX, originY=dgOriginY)
-
-    # Render base + decorations.
-    fig, ax = plt.subplots(figsize=(13, 10))
+    fiX, fiY = (w - fiW) // 2, max(2, h // 2 - fiH // 2 - 10)
+    _stampSubGrid(cropped, fiGrid, originX=fiX, originY=fiY)
     drawTileGrid(ax, cropped)
-    applyMapDecorations(ax, cropped, layers, cropBounds=bounds)
+    drawFloatingIsland(ax, fiGrid, fiX, fiY, fiW, fiH)
+    ax.set_xlim(0, w); ax.set_ylim(h, 0)
+    ax.set_title("Floating Island (sky band)", fontsize=10, fontweight="bold")
+    ax.set_xticks([]); ax.set_yticks([])
 
-    # Composer overlays for sub-tile primitives (doors, chests, torches).
-    for cabinX, cabinY in [(140, fiOriginY + 90),
-                            (260, fiOriginY + 130),
-                            (430, fiOriginY + 200)]:
-        if 0 <= cabinX < w - 12 and 0 <= cabinY < h - 8:
-            drawCabin(ax, cabinX, cabinY, w=12, h=8)
+    # ---- Panel 2: Dungeon corner ---------------------------------------
+    ax = axes[0, 1]
+    cropped, bounds = _crop(world.spawnX + 600, surfaceY + 30)
+    h, w = cropped.shape
+    dgW, dgH = 70, 60
+    dgGrid, dgWalls = _buildDungeonGrid(dgW, dgH)
+    dgX, dgY = (w - dgW) // 2, max(2, h // 2 - dgH // 2)
+    _stampSubGrid(cropped, dgGrid, originX=dgX, originY=dgY)
+    drawTileGrid(ax, cropped)
+    drawDungeon(ax, dgGrid, dgWalls, _dungeonRooms(dgX, dgY))
+    ax.set_xlim(0, w); ax.set_ylim(h, 0)
+    ax.set_title("Dungeon entrance", fontsize=10, fontweight="bold")
+    ax.set_xticks([]); ax.set_yticks([])
 
-    drawFloatingIsland(ax, fiGrid, 20, fiOriginY, fiW, fiH)
-    drawPyramid(ax, pyGrid, w - pyW - 30, h - pyH - 80, pyW, pyH)
-    drawDungeon(ax, dgGrid, dgWalls,
-                _dungeonRooms(dgOriginX, dgOriginY))
+    # ---- Panel 3: Surface cabin cluster --------------------------------
+    ax = axes[1, 0]
+    cropped, bounds = _crop(world.spawnX, surfaceY + 30)
+    h, w = cropped.shape
+    drawTileGrid(ax, cropped)
+    surfaceLocal = surfaceY - bounds[2]
+    for cx in (35, 90, 140):
+        if surfaceLocal - 8 > 0 and surfaceLocal < h:
+            drawCabin(ax, cx, surfaceLocal - 8, w=14, h=9)
+    ax.set_xlim(0, w); ax.set_ylim(h, 0)
+    ax.set_title("Surface cabin cluster", fontsize=10, fontweight="bold")
+    ax.set_xticks([]); ax.set_yticks([])
 
-    ax.set_xlim(0, w)
-    ax.set_ylim(h, 0)
-    ax.set_xlabel("X (tiles, crop-local)", fontweight="bold")
-    ax.set_ylabel("Depth (tiles, crop-local)", fontweight="bold")
-    ax.set_title(
-        "Structure Placement (600x500 crop)",
-        fontsize=14, fontweight="bold",
+    # ---- Panel 4: Pyramid in desert ------------------------------------
+    ax = axes[1, 1]
+    cropped, bounds = _crop(world.desertX, surfaceY + 50)
+    h, w = cropped.shape
+    pyW, pyH = 70, 56
+    pyGrid = _buildPyramidGrid(pyW, pyH)
+    pyX, pyY = (w - pyW) // 2, max(2, h - pyH - 8)
+    _stampSubGrid(cropped, pyGrid, originX=pyX, originY=pyY)
+    drawTileGrid(ax, cropped)
+    drawPyramid(ax, pyGrid, pyX, pyY, pyW, pyH)
+    ax.set_xlim(0, w); ax.set_ylim(h, 0)
+    ax.set_title("Pyramid (underground desert)", fontsize=10, fontweight="bold")
+    ax.set_xticks([]); ax.set_yticks([])
+
+    fig.suptitle(
+        "Structure Placement (180x130 detail crops, SMALL world)",
+        fontsize=13, fontweight="bold", y=0.995,
     )
     plt.tight_layout()
     plt.savefig(savePath, dpi=200, bbox_inches="tight",

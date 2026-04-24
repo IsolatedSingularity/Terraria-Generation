@@ -25,29 +25,56 @@ Animation Sequence (10 phases, ~26 frames):
 
 import os
 
-import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.animation import FuncAnimation, PillowWriter
-from typing import List, Tuple, Dict, Optional
 
-from Engine.algorithms import (
-    AIR, STONE, DIRT, MUD, GRASS, SAND, ASH, HELLSTONE,
-    SNOW, ICE, WATER, LAVA, COPPER, IRON, SILVER, GOLD,
-    COBALT, PALLADIUM, MYTHRIL, ORICHALCUM,
-    ADAMANTITE, TITANIUM, CHLOROPHYTE,
-    EBONSTONE, CRIMSTONE, CORRUPT_DIRT, CRIMSON_DIRT,
-    PEARLSTONE, HALLOW_DIRT, PEARLSAND,
-    CORRUPT_ICE, CRIMSON_ICE, HALLOW_ICE, DUNGEON_BRICK,
-)
-from Engine.constants import (
-    LARGE, LIFE_CRYSTAL, ALTAR,
-)
-from Engine.theme import applyTokyoNight
-
-from Advanced.terrariaWorldGeneration import TerrariaWorldGenerator
 from Advanced.terrariaCorruptionEvolution import TerrariaCorruptionEvolution
 from Advanced.terrariaHardmodeStructures import TerrariaHardmodeTransformation
+from Advanced.terrariaWorldGeneration import TerrariaWorldGenerator
+from Engine.algorithms import (
+    ADAMANTITE,
+    AIR,
+    ASH,
+    CHLOROPHYTE,
+    COBALT,
+    COPPER,
+    CORRUPT_DIRT,
+    CORRUPT_ICE,
+    CRIMSON_DIRT,
+    CRIMSON_ICE,
+    CRIMSTONE,
+    DIRT,
+    DUNGEON_BRICK,
+    EBONSTONE,
+    GOLD,
+    GRASS,
+    HALLOW_DIRT,
+    HALLOW_ICE,
+    HELLSTONE,
+    ICE,
+    IRON,
+    LAVA,
+    MUD,
+    MYTHRIL,
+    ORICHALCUM,
+    PALLADIUM,
+    PEARLSAND,
+    PEARLSTONE,
+    SAND,
+    SILVER,
+    SNOW,
+    STONE,
+    TITANIUM,
+    WATER,
+)
+from Engine.constants import (
+    ALTAR,
+    LARGE,
+    LIFE_CRYSTAL,
+)
+from Engine.theme import applyTokyoNight
 
 applyTokyoNight()
 
@@ -125,7 +152,7 @@ def _gridToRgb(grid: np.ndarray) -> np.ndarray:
     return rgb
 
 
-def _tileStats(grid: np.ndarray, tileIds: List[int]) -> str:
+def _tileStats(grid: np.ndarray, tileIds: list[int]) -> str:
     """Return compact tile count string for the given IDs."""
     parts = []
     for tid in tileIds:
@@ -161,7 +188,7 @@ class TerrariaWorldEvolutionMaster:
     ]
 
     # Which worldgen pass names map to which animation phase
-    _PHASE_PASSES: Dict[str, List[str]] = {
+    _PHASE_PASSES: dict[str, list[str]] = {
         "Base Terrain Generation": ["Terrain", "Stone Layer", "Sand Patches"],
         "Cave Carving + Smoothing": [
             "Surface Caves", "Rock Layer Caves", "Smooth World",
@@ -190,12 +217,12 @@ class TerrariaWorldEvolutionMaster:
         # Force corruption to match worldgen (always places EBONSTONE)
         self.hardmodeTrans.isCorruption = True
 
-        self.frames: List[Tuple[str, np.ndarray]] = []
+        self.frames: list[tuple[str, np.ndarray]] = []
 
     # ------------------------------------------------------------------
     # Main entry point
     # ------------------------------------------------------------------
-    def runEvolution(self) -> List[Tuple[str, np.ndarray]]:
+    def runEvolution(self) -> list[tuple[str, np.ndarray]]:
         """Execute all 10 phases, capturing ~26 frames total.
 
         Returns list of (phaseName, gridSnapshot) tuples.
@@ -205,7 +232,7 @@ class TerrariaWorldEvolutionMaster:
         # -- Phases 1-4: world generation --------------------------------
         print("Phases 1-4: Running 19-pass world generation...")
         self.worldGen.generate()
-        snapDict: Dict[str, np.ndarray] = {
+        snapDict: dict[str, np.ndarray] = {
             name: grid.copy()
             for name, grid in self.worldGen.snapshots
         }
@@ -299,10 +326,10 @@ class TerrariaWorldEvolutionMaster:
     # ------------------------------------------------------------------
     def createAnimation(
         self,
-        savePath: Optional[str] = None,
+        savePath: str | None = None,
         interval: int = 400,
         dpi: int = 150,
-    ) -> Optional[FuncAnimation]:
+    ) -> FuncAnimation | None:
         """Create FuncAnimation with PillowWriter and save as .gif.
 
         Args:

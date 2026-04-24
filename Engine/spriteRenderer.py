@@ -15,8 +15,8 @@ Public API:
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 import numpy as np
 import numpy.typing as npt
@@ -28,9 +28,10 @@ from Engine.constants import LayerDepths
 from Engine.theme import (
     PALETTE,
     TILE_COLORS,
+)
+from Engine.theme import (
     buildTileColormap as _buildFromTheme,
 )
-
 
 # ---------------------------------------------------------------------------
 # Sub-tile primitive colors (decorative overlays only)

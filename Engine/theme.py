@@ -13,10 +13,8 @@ Usage::
 from __future__ import annotations
 
 import matplotlib as mpl
-import numpy as np
 from cycler import cycler
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap
-
 
 # ---------------------------------------------------------------------------
 # Tokyo Night Storm palette (chrome only)

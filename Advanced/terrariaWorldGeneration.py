@@ -12,20 +12,40 @@ constants from Engine.constants.
 
 import os
 
-import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.colors import ListedColormap
+from matplotlib.patches import Rectangle as MplRectangle
 
 from Engine.algorithms import (
-    tileRunner, digTunnel, cellularAutomataSmooth, settleLiquids,
-    AIR, DIRT, STONE, GRASS, SAND, ASH, MUD, SNOW, ICE,
-    HELLSTONE, LAVA, WATER, COPPER, IRON, SILVER, GOLD,
-    EBONSTONE, CORRUPT_DIRT, DUNGEON_BRICK,
+    AIR,
+    ASH,
+    COPPER,
+    CORRUPT_DIRT,
+    DIRT,
+    DUNGEON_BRICK,
+    EBONSTONE,
+    GOLD,
+    GRASS,
+    HELLSTONE,
+    ICE,
+    IRON,
+    LAVA,
+    MUD,
+    SAND,
+    SILVER,
+    SNOW,
+    STONE,
+    WATER,
+    cellularAutomataSmooth,
+    digTunnel,
+    settleLiquids,
+    tileRunner,
 )
-from Engine.constants import LARGE, LayerDepths, StructureQuotas, OreConfig, LIFE_CRYSTAL
-from Engine.structureMap import StructureMap, Rectangle
-from Engine.structures import rocksInDirt, dirtInRocks, placeClay, placeSilt
+from Engine.constants import LARGE, LIFE_CRYSTAL, LayerDepths, OreConfig, StructureQuotas
+from Engine.structureMap import Rectangle, StructureMap
+from Engine.structures import dirtInRocks, placeClay, placeSilt, rocksInDirt
 from Engine.theme import applyTokyoNight
 
 applyTokyoNight()
@@ -574,8 +594,10 @@ def _renderGrid(ax, grid: np.ndarray, title: str, maxId: int) -> None:
 def createWorldGenerationAnimation(saveName: str = "world_generation_animation.gif") -> None:
     """Create a GIF animation stepping through all 23 generation passes.
 
-    Uses 840x240 (1/10 scale of Large) for performance. Labels indicate
-    this is a scaled visualization, not a real Terraria world size.
+    Uses an 840x240 1/10-scale world but renders TWO panels per frame:
+    a thin overview strip (so you see ocean + desert + biome bands) and a
+    tight 220x150 detail crop centered at world middle (so individual tiles
+    are readable instead of looking like a beige box).
     """
     print("Generating world at 1/10 scale for animation...")
     gen = TerrariaWorldGenerator(worldWidth=840, worldHeight=240, seed=12345)
@@ -583,18 +605,42 @@ def createWorldGenerationAnimation(saveName: str = "world_generation_animation.g
     snapshots = gen.snapshots
 
     maxId = max(TILE_COLORS.keys())
-    fig, ax = plt.subplots(figsize=(16, 5))
+    fig = plt.figure(figsize=(11, 6.5))
+    axOverview = fig.add_subplot(2, 1, 1)
+    axDetail = fig.add_subplot(2, 1, 2)
+
+    detailW, detailH = 220, 150
+    detailX = 840 // 2 - detailW // 2
+    detailY = 240 // 2 - detailH // 2
 
     def animate(frame: int):
-        ax.clear()
+        axOverview.clear()
+        axDetail.clear()
         idx = frame % len(snapshots)
         name, grid = snapshots[idx]
-        _renderGrid(ax, grid, f"Pass {idx}: {name}  (1/10 scale visualization)", maxId)
+        # Overview: full world as a wide strip with ocean visible at edges.
+        axOverview.imshow(grid, cmap=TERRAIN_CMAP, aspect="auto",
+                          vmin=0, vmax=maxId, interpolation="nearest")
+        axOverview.set_title(f"Pass {idx}: {name}  (full 1/10 scale: 840x240)",
+                             fontsize=11, fontweight="bold")
+        axOverview.set_xticks([]); axOverview.set_yticks([])
+        # Highlight detail rectangle on overview.
+        axOverview.add_patch(MplRectangle((detailX, detailY), detailW, detailH,
+                                          linewidth=1.2, edgecolor="#7aa2f7",
+                                          facecolor="none"))
+
+        # Detail: tight 220x150 crop, equal aspect so tiles are square.
+        crop = grid[detailY:detailY + detailH, detailX:detailX + detailW]
+        axDetail.imshow(crop, cmap=TERRAIN_CMAP, aspect="equal",
+                        vmin=0, vmax=maxId, interpolation="nearest")
+        axDetail.set_title(f"Detail crop ({detailW}x{detailH} at world center)",
+                           fontsize=10)
+        axDetail.set_xticks([]); axDetail.set_yticks([])
 
     anim = animation.FuncAnimation(fig, animate, frames=len(snapshots), interval=1500, repeat=True)
     path = _savePath(saveName)
     print(f"Saving animation to {path}")
-    anim.save(path, writer='pillow', fps=1, dpi=100)
+    anim.save(path, writer='pillow', fps=1, dpi=110)
     plt.close(fig)
     print("Animation saved.")
 

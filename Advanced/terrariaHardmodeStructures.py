@@ -13,15 +13,32 @@ All algorithms match decompiled WorldGen.cs behavior:
 """
 
 import os
-import numpy as np
-import matplotlib.pyplot as plt
 
-from Engine.algorithms import (tileRunner, AIR, STONE, DIRT, MUD, GRASS,
-                                COBALT, PALLADIUM, MYTHRIL, ORICHALCUM,
-                                ADAMANTITE, TITANIUM, CHLOROPHYTE,
-                                EBONSTONE, CRIMSTONE, CORRUPT_DIRT, CRIMSON_DIRT)
-from Engine.constants import LARGE, LayerDepths, StructureQuotas, OreConfig, LIFE_CRYSTAL, ALTAR
-from Engine.theme import applyTokyoNight, COLORS, TILE_COLORS as _ENGINE_TILE_COLORS
+import matplotlib.pyplot as plt
+import numpy as np
+
+from Engine.algorithms import (
+    ADAMANTITE,
+    AIR,
+    CHLOROPHYTE,
+    COBALT,
+    CORRUPT_DIRT,
+    CRIMSON_DIRT,
+    CRIMSTONE,
+    DIRT,
+    EBONSTONE,
+    GRASS,
+    MUD,
+    MYTHRIL,
+    ORICHALCUM,
+    PALLADIUM,
+    STONE,
+    TITANIUM,
+    tileRunner,
+)
+from Engine.constants import ALTAR, LARGE, LIFE_CRYSTAL, LayerDepths, OreConfig, StructureQuotas
+from Engine.theme import COLORS, applyTokyoNight
+from Engine.theme import TILE_COLORS as _ENGINE_TILE_COLORS
 
 applyTokyoNight()
 

@@ -19,8 +19,21 @@ import numpy as np
 from matplotlib.lines import Line2D
 
 from Engine.algorithms import (
-    ADAMANTITE, CHLOROPHYTE, COBALT, COPPER, GOLD, IRON, LEAD, MYTHRIL,
-    ORICHALCUM, PALLADIUM, PLATINUM, SILVER, TIN, TITANIUM, TUNGSTEN,
+    ADAMANTITE,
+    CHLOROPHYTE,
+    COBALT,
+    COPPER,
+    GOLD,
+    IRON,
+    LEAD,
+    MYTHRIL,
+    ORICHALCUM,
+    PALLADIUM,
+    PLATINUM,
+    SILVER,
+    TIN,
+    TITANIUM,
+    TUNGSTEN,
 )
 from Engine.spriteRenderer import (
     applyMapDecorations,
@@ -72,7 +85,7 @@ def createOreDistributionFigure(savePath: str) -> None:
         ("Late Hardmode (9 altars smashed)", generateSmallWorld(seed=seed, altarsSmashed=9)),
     ]
 
-    fig, axes = plt.subplots(3, 1, figsize=(11, 14))
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5.5))
     for ax, (title, world) in zip(axes, worlds):
         layers = world.layers
         # Center deep enough to span rock layer to hellstone band.
@@ -80,7 +93,7 @@ def createOreDistributionFigure(savePath: str) -> None:
         centerY = int((layers.rockLayer + layers.hellLayer) / 2)
         cropped, bounds = cropSmallWorld(
             world.grid, centerX=centerX, centerY=centerY,
-            width=600, height=500,
+            width=260, height=200,
         )
         drawTileGrid(ax, cropped)
         applyMapDecorations(ax, cropped, layers, cropBounds=bounds,
@@ -88,13 +101,13 @@ def createOreDistributionFigure(savePath: str) -> None:
         h, w = cropped.shape
         ax.set_xlim(0, w)
         ax.set_ylim(h, 0)
-        ax.set_title(title, fontsize=12, fontweight="bold")
-        ax.set_xlabel("X (tiles, crop-local)")
-        ax.set_ylabel("Depth (tiles, crop-local)")
+        ax.set_title(title, fontsize=11, fontweight="bold")
+        ax.set_xlabel("X (tiles)")
+        ax.set_ylabel("Depth (tiles)")
 
     fig.suptitle(
-        "Ore Distribution (600x500 crop of SMALL world)",
-        fontsize=14, fontweight="bold", y=0.995,
+        "Ore Distribution (260x200 tight crops, SMALL world)",
+        fontsize=13, fontweight="bold", y=1.0,
     )
     plt.tight_layout()
     plt.savefig(savePath, dpi=200, bbox_inches="tight",
@@ -133,12 +146,11 @@ def _drawDepthMarkers(ax: plt.Axes, layers, maxDepth: int) -> None:
 def createOreDensityFigure(savePath: str) -> None:
     """3-panel column of ore-density-vs-depth at altar checkpoints 0/3/9.
 
-    Each panel shares its X axis (tile-count per row band). Pre-HM ores are
-    drawn faded in the post-altar panels so the new tiers are visually
-    distinct. Layer markers are dashed horizontals; legend sits above the
-    panels rather than inside them to avoid the prior overlap.
+    Each ore is rendered as a smoothed filled-area profile (binSize=24,
+    gaussian-smoothed) so the curves read as bell-shaped depth bands rather
+    than jagged 8-tile noise. Pre-HM ores fade in post-altar panels.
     """
-    print("Creating ore depth-density (3-panel column)...")
+    print("Creating ore depth-density (3-panel column, smoothed)...")
     seed = 20260423
     worlds = {
         0: generateSmallWorld(seed=seed, altarsSmashed=0),
@@ -150,8 +162,8 @@ def createOreDensityFigure(savePath: str) -> None:
 
     panelOres = {
         0: [(_PRE_HM_ORES, 1.0)],
-        3: [(_PRE_HM_ORES, 0.30), (_HM_TIER_1, 1.0), (_HM_TIER_2, 1.0)],
-        9: [(_PRE_HM_ORES, 0.30), (_HM_TIER_1, 0.55),
+        3: [(_PRE_HM_ORES, 0.25), (_HM_TIER_1, 1.0), (_HM_TIER_2, 1.0)],
+        9: [(_PRE_HM_ORES, 0.20), (_HM_TIER_1, 0.45),
             (_HM_TIER_2, 1.0), (_HM_TIER_3, 1.0)],
     }
     titles = {
@@ -160,26 +172,41 @@ def createOreDensityFigure(savePath: str) -> None:
         9: "Late Hardmode (9 altars: full tier ladder)",
     }
 
-    fig, axes = plt.subplots(3, 1, figsize=(11, 13), sharex=True)
+    def _smoothProfile(grid: np.ndarray, oreId: int) -> tuple[np.ndarray, np.ndarray]:
+        depths, counts = _countOreByDepth(grid, oreId, binSize=24)
+        if counts.sum() == 0:
+            return depths, counts
+        # Gaussian smoothing kernel (sigma=1.5 bins)
+        kernel = np.exp(-0.5 * (np.arange(-4, 5) / 1.5) ** 2)
+        kernel /= kernel.sum()
+        smoothed = np.convolve(counts, kernel, mode="same")
+        return depths, smoothed
+
+    fig, axes = plt.subplots(3, 1, figsize=(10, 11), sharex=True)
 
     for ax, altars in zip(axes, [0, 3, 9]):
         grid = worlds[altars].grid
         for oreList, alpha in panelOres[altars]:
             for oreId in oreList:
-                depths, counts = _countOreByDepth(grid, oreId, binSize=8)
+                depths, counts = _smoothProfile(grid, oreId)
                 if counts.sum() == 0:
                     continue
-                ax.plot(counts, depths,
-                        color=_ORE_COLOR[oreId],
-                        linewidth=2.0, alpha=alpha,
+                color = _ORE_COLOR[oreId]
+                # Filled area on the left of the curve so colors blend cleanly.
+                ax.fill_betweenx(depths, 0, counts,
+                                 color=color, alpha=alpha * 0.45,
+                                 linewidth=0)
+                ax.plot(counts, depths, color=color,
+                        linewidth=1.6, alpha=alpha,
                         label=_ORE_NAME[oreId] if alpha >= 0.99 else None)
         _drawDepthMarkers(ax, layers, maxDepth)
         ax.invert_yaxis()
         ax.set_title(titles[altars], fontsize=11, fontweight="bold")
         ax.set_ylabel("Depth (tiles)", fontweight="bold")
-        ax.grid(True, alpha=0.18, linestyle="--")
+        ax.grid(True, alpha=0.15, linestyle="--")
+        ax.set_xlim(left=0)
 
-    axes[-1].set_xlabel("Ore tiles per 8-row band", fontweight="bold")
+    axes[-1].set_xlabel("Smoothed ore tiles per 24-row band", fontweight="bold")
 
     # External shared legend above the figure.
     seenIds = list(dict.fromkeys(

@@ -12,17 +12,31 @@ All algorithms reference decompiled WorldGen.cs behavior.
 
 import os
 
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 
-from Engine.algorithms import tileRunner, cellularAutomataSmooth, AIR, DIRT, STONE, GRASS
-from Engine.algorithms import MUD, SNOW, ICE, SAND, EBONSTONE, CORRUPT_DIRT
-from Engine.algorithms import CRIMSTONE, CRIMSON_DIRT
+from Engine.algorithms import (
+    AIR,
+    CORRUPT_DIRT,
+    CRIMSON_DIRT,
+    CRIMSTONE,
+    DIRT,
+    EBONSTONE,
+    GRASS,
+    ICE,
+    MUD,
+    SAND,
+    SNOW,
+    STONE,
+    cellularAutomataSmooth,
+    tileRunner,
+)
 from Engine.constants import DETAIL_PLOT, FEATURE_PLOT, LayerDepths
 from Engine.spriteRenderer import drawTileGrid
-from Engine.theme import applyTokyoNight, COLORS, PALETTE, TILE_COLORS as ENGINE_TILE_COLORS
+from Engine.theme import COLORS, PALETTE, applyTokyoNight
+from Engine.theme import TILE_COLORS as ENGINE_TILE_COLORS
 
 applyTokyoNight()
 

@@ -6,7 +6,7 @@ World sizes, layer depths, structure quotas, ore distribution parameters,
 tile IDs, wall types, and biome detection thresholds.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)

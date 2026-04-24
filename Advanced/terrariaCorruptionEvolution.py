@@ -8,22 +8,39 @@ All tile conversion rules match decompiled WorldGen.cs behavior.
 
 import os
 
-import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
+import numpy as np
+
 from Engine.algorithms import (
+    AIR,
+    CORRUPT_DIRT,
+    CORRUPT_ICE,
+    CRIMSON_DIRT,
+    CRIMSON_ICE,
+    CRIMSTONE,
+    DIRT,
+    EBONSTONE,
+    GRASS,
+    HALLOW_DIRT,
+    HALLOW_ICE,
+    ICE,
+    MUD,
+    PEARLSAND,
+    PEARLSTONE,
+    SAND,
+    SNOW,
+    STONE,
     tileRunner,
-    AIR, DIRT, STONE, SAND, ICE, MUD, GRASS, SNOW,
-    CORRUPT_DIRT, EBONSTONE, CRIMSON_DIRT, CRIMSTONE,
-    PEARLSTONE, HALLOW_DIRT, PEARLSAND,
-    CORRUPT_ICE, CRIMSON_ICE, HALLOW_ICE,
 )
 from Engine.constants import (
-    LayerDepths, INFECTION_GAP_TILES,
-    SURFACE_UPDATE_RATE, UNDERGROUND_UPDATE_RATE,
+    INFECTION_GAP_TILES,
     INFECTION_SPREAD_RADIUS,
+    SURFACE_UPDATE_RATE,
+    UNDERGROUND_UPDATE_RATE,
+    LayerDepths,
 )
-from Engine.theme import applyTokyoNight, COLORS
+from Engine.theme import COLORS, applyTokyoNight
 
 applyTokyoNight()
 
@@ -558,21 +575,20 @@ def createEvolutionFigure(savePath: str | None = None) -> plt.Figure:
     ]
     snaps = [snapPreHM, snapV, snapSpread1, snapSpread2]
 
-    fig, axes = plt.subplots(2, 2, figsize=(18, 14))
+    fig, axes = plt.subplots(2, 2, figsize=(11, 8))
     for idx, (ax, snap, title) in enumerate(zip(axes.flat, snaps, titles)):
         cropped, bounds = cropSmallWorld(snap, centerX=centerX, centerY=centerY,
-                                         width=600, height=500)
+                                         width=260, height=200)
         drawTileGrid(ax, cropped)
         applyMapDecorations(ax, cropped, layers, cropBounds=bounds)
-        ax.set_title(title, fontsize=11, fontweight="bold")
-        ax.set_xlabel("X (tiles, crop-local)")
-        ax.set_ylabel("Depth (tiles, crop-local)")
+        ax.set_title(title, fontsize=10, fontweight="bold")
+        ax.set_xticks([]); ax.set_yticks([])
 
     fig.suptitle(
-        "Corruption Evolution (600x500 SMALL-World Crop)",
-        fontsize=14, fontweight="bold", y=0.98,
+        "Corruption Evolution (260x200 tight crops)",
+        fontsize=13, fontweight="bold", y=0.995,
     )
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
+    plt.tight_layout(rect=[0, 0, 1, 0.97])
 
     os.makedirs(os.path.dirname(os.path.abspath(savePath)), exist_ok=True)
     fig.savefig(savePath, dpi=200, bbox_inches="tight", facecolor=COLORS["bg"])
@@ -584,6 +600,7 @@ def createEvolutionFigure(savePath: str | None = None) -> plt.Figure:
 def createSpreadAnimation(savePath: str | None = None) -> None:
     """Animated GIF showing corruption spread (SMALL world crop, ~600px wide)."""
     from matplotlib.animation import FuncAnimation
+
     from Engine.worldgen import generateSmallWorld
 
     if savePath is None:
@@ -600,10 +617,10 @@ def createSpreadAnimation(savePath: str | None = None) -> None:
     h0, w0 = world.grid.shape
 
     # Crop helper (no sprite decorations -- fast for animation frames).
-    x0 = max(0, centerX - 300)
-    x1 = min(w0, centerX + 300)
-    y0 = max(0, centerY - 250)
-    y1 = min(h0, centerY + 250)
+    x0 = max(0, centerX - 130)
+    x1 = min(w0, centerX + 130)
+    y0 = max(0, centerY - 100)
+    y1 = min(h0, centerY + 100)
 
     def _crop(grid: np.ndarray) -> np.ndarray:
         return grid[y0:y1, x0:x1]
@@ -630,12 +647,11 @@ def createSpreadAnimation(savePath: str | None = None) -> None:
         sim.simulateSpread(3000.0)
         frames.append(_crop(sim.grid))
 
-    fig, ax = plt.subplots(figsize=(13, 10))
-    im = ax.imshow(_gridToRgb(frames[0]), aspect="auto", interpolation="nearest",
+    fig, ax = plt.subplots(figsize=(6.5, 5))
+    im = ax.imshow(_gridToRgb(frames[0]), aspect="equal", interpolation="nearest",
                    origin="upper")
-    ax.set_xlabel("X (tiles, crop-local)")
-    ax.set_ylabel("Depth (tiles, crop-local)")
-    titleObj = ax.set_title("", fontsize=12, fontweight="bold")
+    ax.set_xticks([]); ax.set_yticks([])
+    titleObj = ax.set_title("", fontsize=11, fontweight="bold")
 
     def _update(f: int):
         im.set_data(_gridToRgb(frames[f]))

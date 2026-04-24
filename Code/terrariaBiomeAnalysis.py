@@ -91,10 +91,10 @@ def createBiomeTransitionDetail(savePath: str) -> None:
 
     cropped, bounds = cropSmallWorld(
         world.grid, centerX=centerX, centerY=centerY,
-        width=600, height=500,
+        width=280, height=210,
     )
 
-    fig, ax = plt.subplots(figsize=(12, 9))
+    fig, ax = plt.subplots(figsize=(7, 5.3))
     drawTileGrid(ax, cropped)
     applyMapDecorations(ax, cropped, layers, cropBounds=bounds)
 
@@ -104,8 +104,8 @@ def createBiomeTransitionDetail(savePath: str) -> None:
     ax.set_xlabel("X (tiles, crop-local)", fontweight="bold")
     ax.set_ylabel("Depth (tiles, crop-local)", fontweight="bold")
     ax.set_title(
-        "Biome Transition Detail",
-        fontsize=14, fontweight="bold",
+        "Biome Transition Detail (280x210 tight crop)",
+        fontsize=12, fontweight="bold",
     )
     plt.tight_layout()
     plt.savefig(savePath, dpi=200, bbox_inches="tight",

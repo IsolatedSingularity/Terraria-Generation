@@ -95,12 +95,6 @@ Four-panel 600x500 SMALL-world crop showing the full corruption lifecycle: pre-h
 
 Parallel simulation for the Crimson biome variant -- crimson pockets, V-pattern, and multi-cycle spread using identical stochastic rules with Crimson-specific tile conversion tables.
 
-### Complete World Evolution
-
-![Complete Evolution](Plots/Advanced/terraria_complete_world_evolution.png)
-
-Seven-phase lifecycle from empty grid to late Hardmode: base terrain, cave systems, biome painting, pre-HM ores + Life Crystals, V-pattern, altar-smashing HM ores, infection spread with radius-3 neighbor sampling and air gap blocking.
-
 ### Hardmode Transformation
 
 ![Hardmode Transformation](Plots/Advanced/terraria_hardmode_transformation.png)
@@ -136,8 +130,8 @@ Code/                                # Visualization scripts (FEATURE_PLOT and D
 Advanced/                            # Full-scale simulations
     __init__.py
     terrariaWorldGeneration.py       # 23-pass pipeline thumbnail grid + animation
-    terrariaCompleteWorldEvolution.py # 7-phase lifecycle (840x240)
     terrariaCorruptionEvolution.py   # Infection spread + air gap demo
+    terrariaCrimsonEvolution.py      # Crimson variant (parallel to corruption)
     terrariaHardmodeStructures.py    # HM ore + Chlorophyte
     terrariaHardmodeDetailedAnimation.py # HM animation
     terrariaMasterEvolution.py       # 26-frame master GIF
@@ -156,25 +150,6 @@ pip install -e .          # editable install (Engine becomes importable)
 ```
 
 > `pip install -e .` uses the `[build-system]` in `pyproject.toml` to expose the `Engine/` package.
-
-### Generate All Plots
-
-```bash
-# Code/ visualizations
-python Code/terrariaBiomeAnalysis.py
-python Code/terrariaNoiseSystems.py
-python Code/terrariaOreDistribution.py
-python Code/terrariaStructureGeneration.py
-python Code/Excess/terrariaLiquidPhysics.py
-
-# Advanced simulations
-python Advanced/terrariaWorldGeneration.py
-python Advanced/terrariaCompleteWorldEvolution.py
-python Advanced/terrariaCorruptionEvolution.py
-python Advanced/terrariaHardmodeStructures.py
-python Advanced/terrariaHardmodeDetailedAnimation.py
-python Advanced/terrariaMasterEvolution.py
-```
 
 ## Key Formulas
 
@@ -216,25 +191,29 @@ $$\partial_t \rho = D\,\nabla^2\rho + f(\rho)$$
 where $\rho$ is the infected-tile density, $D$ is an effective diffusivity set
 by `INFECTION_SPREAD_RADIUS`, and $f(\rho)$ encodes logistic saturation.
 Air-gap blocking maps onto percolation: a contiguous void of width
-$w \geq \texttt{INFECTION\_GAP\_TILES} = 4$ constitutes a barrier because the
-path integral of $\mathbf{1}[\text{air}]$ along any geodesic exceeds the
-conduction threshold. In 2-D site percolation, the critical occupation
-probability is $p_c \approx 0.593$; a 4-tile air trench forces the local
-percolation below $p_c$ and halts spread deterministically.
+$w \geq 4$ tiles (one `INFECTION_GAP_TILES` quantum) constitutes a barrier
+because the path integral of $\mathbf{1}[\text{air}]$ along any geodesic
+exceeds the conduction threshold. In 2-D site percolation, the critical
+occupation probability is $p_c \approx 0.593$; a 4-tile air trench forces
+the local percolation below $p_c$ and halts spread deterministically.
 
 ### Cellular Automata Cave Smoothing
 
-After TileRunner carves raw voids, two passes of majority-rule CA smooth the
-cave walls. Each cell $s_i$ is updated:
+After cavinator carves raw voids, several majority-rule CA passes shape the
+caverns into the lacy organic look characteristic of Terraria. Each cell
+$s_i \in \{0, 1\}$ (solid / air) updates from its 8-neighbor Moore
+neighborhood $\mathcal{N}_8(i)$ via separate birth and death thresholds:
 
-$$s_i^{(t+1)} = \begin{cases} 1 & \text{if } \displaystyle\sum_{j \in \mathcal{N}_5(i)} s_j^{(t)} \geq 3 \\ 0 & \text{otherwise} \end{cases}$$
+$$s_i^{(t+1)} = \begin{cases} 1 & \text{(solid)} \quad \text{if } s_i^{(t)} = 1 \text{ and } n_i^{(t)} \geq d \\ 1 & \text{(solid)} \quad \text{if } s_i^{(t)} = 0 \text{ and } n_i^{(t)} > b \\ 0 & \text{(air)} \quad \text{otherwise} \end{cases}$$
 
-where $\mathcal{N}_5(i)$ is the von Neumann 5-neighborhood (center plus four
-cardinal neighbors). This is equivalent to minimizing a surface-tension
-energy functional $E[s] = \sum_{\langle i,j \rangle}(s_i - s_j)^2$ under a
-majority constraint. Two iterations remove isolated spurs and round corners
-without significantly shrinking cave volumes, matching the smoothing pass
-documented in decompiled `WorldGen.cs`.
+where $n_i^{(t)} = \sum_{j \in \mathcal{N}_8(i)} s_j^{(t)}$ is the solid
+neighbor count, $b = 5$ is the birth threshold (air becomes solid only when
+densely surrounded), and $d = 4$ is the death threshold (solid erodes when
+fewer than $d$ neighbors are solid). This rule minimizes a surface-tension
+energy functional $E[s] = \sum_{\langle i,j \rangle} (s_i - s_j)^2$ subject
+to a majority constraint, removing isolated spurs and growing chambers
+without collapsing the cave network. Five iterations match the smoothing
+pass documented in decompiled `WorldGen.cs`.
 
 ---
 

@@ -16,13 +16,44 @@ import numpy as np
 import numpy.typing as npt
 
 from Engine.algorithms import (
-    ADAMANTITE, AIR, ASH, CHLOROPHYTE, COBALT, COPPER, CORRUPT_DIRT, CRIMSON_DIRT,
-    CRIMSTONE, DIRT, EBONSTONE, GOLD, GRASS, HARDENED_SAND, HELLSTONE, ICE, IRON,
-    LEAD, MUD, MYTHRIL, ORICHALCUM, PALLADIUM, PEARLSTONE, PLATINUM,
-    SAND, SANDSTONE_BLOCK, SILVER, SNOW, STONE, TIN, TITANIUM, TUNGSTEN,
-    cavinator, cellularAutomataSmooth, tileRunner,
+    ADAMANTITE,
+    AIR,
+    ASH,
+    CHLOROPHYTE,
+    COBALT,
+    COPPER,
+    CORRUPT_DIRT,
+    CRIMSON_DIRT,
+    CRIMSTONE,
+    DIRT,
+    EBONSTONE,
+    GOLD,
+    GRASS,
+    HARDENED_SAND,
+    HELLSTONE,
+    ICE,
+    IRON,
+    LEAD,
+    MUD,
+    MYTHRIL,
+    ORICHALCUM,
+    PALLADIUM,
+    PEARLSTONE,
+    PLATINUM,
+    SAND,
+    SANDSTONE_BLOCK,
+    SILVER,
+    SNOW,
+    STONE,
+    TIN,
+    TITANIUM,
+    TUNGSTEN,
+    cavinator,
+    cellularAutomataSmooth,
+    tileRunner,
 )
 from Engine.constants import SMALL, LayerDepths
+from Engine.structures import dirtInRocks, rocksInDirt
 
 
 @dataclass
@@ -168,30 +199,57 @@ def _carveCaves(
     layers: LayerDepths,
     rng: np.random.Generator,
 ) -> None:
-    """Aggressive cavinator pass + smoothing to hit ~30-40% air underground."""
+    """Aggressive cavinator + CA smoothing producing reference-style lacy
+    underground (mostly air with organic dirt/stone islands).
+
+    Strategy:
+        1. Stone patches in dirt (rocksInDirt) and dirt patches in rock
+           (dirtInRocks) so the caverns look mixed, not stratified.
+        2. Heavy cavinator chamber pass spanning surface+8 to hellLayer-4.
+        3. Thinner cavinator "connector" pass for tunnel variety.
+        4. Multi-iteration CA smoothing tuned to GROW caves (death=4 so
+           half-buried tiles erode), producing the lacy look.
+    """
     height, width = grid.shape
     rockTop = int(layers.worldSurface) + 8
     hellTop = int(layers.hellLayer) - 4
+    surfaceY = int(layers.worldSurface)
+    rockY = int(layers.rockLayer)
 
-    # Many small surface caves.
-    for _ in range(int(width * 0.18)):
-        sx = int(rng.integers(20, width - 20))
-        sy = int(rng.integers(rockTop, int(layers.rockLayer)))
-        tileRunner(grid, sx, sy, float(rng.uniform(5.0, 9.0)),
-                   int(rng.integers(40, 90)), tileType=-1,
-                   seed=int(rng.integers(0, 1 << 30)))
+    # Stone-in-dirt and dirt-in-rock to break up the strata.
+    rocksInDirt(grid, count=int(width * 0.06),
+                worldSurface=surfaceY, rockLayer=rockY,
+                seed=int(rng.integers(0, 1 << 30)))
+    dirtInRocks(grid, count=int(width * 0.05),
+                rockLayer=rockY, hellLayer=hellTop,
+                seed=int(rng.integers(0, 1 << 30)))
 
-    # Big underground macro caverns via cavinator.
-    for _ in range(int(width * 0.05)):
+    # Big macro chambers covering the entire underground (not just rockLayer+).
+    # Cavinator with strength 18-32 produces ~9-16 tile radius blobs that
+    # bounce and merge into organic chambers.
+    chamberCount = int(width * 0.55)
+    for _ in range(chamberCount):
         sx = int(rng.integers(20, width - 20))
-        sy = int(rng.integers(int(layers.rockLayer) + 20, hellTop))
-        cavinator(grid, sx, sy, float(rng.uniform(40.0, 80.0)),
-                  int(rng.integers(80, 180)),
+        sy = int(rng.integers(rockTop, hellTop))
+        cavinator(grid, sx, sy,
+                  float(rng.uniform(22.0, 38.0)),
+                  int(rng.integers(45, 95)),
                   seed=int(rng.integers(0, 1 << 30)))
 
-    # Smooth so cave edges look organic.
-    cellularAutomataSmooth(grid, iterations=2,
-                           birthThreshold=5, deathThreshold=3)
+    # Smaller scattered carve passes for finer texture.
+    for _ in range(int(width * 0.45)):
+        sx = int(rng.integers(20, width - 20))
+        sy = int(rng.integers(rockTop, hellTop))
+        cavinator(grid, sx, sy,
+                  float(rng.uniform(9.0, 16.0)),
+                  int(rng.integers(20, 50)),
+                  seed=int(rng.integers(0, 1 << 30)))
+
+    # CA smoothing tuned to grow caves: death=4 means tiles with <=3 solid
+    # neighbors erode, so isolated dirt/stone fingers vanish and chambers
+    # merge into the lacy reference look.
+    cellularAutomataSmooth(grid, iterations=5,
+                           birthThreshold=5, deathThreshold=4)
 
 
 # Pre-Hardmode ore configs: (oreId, depthMin, depthMax, attempts, strength).

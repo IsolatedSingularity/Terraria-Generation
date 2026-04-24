@@ -11,7 +11,6 @@ All algorithms derived from decompiled WorldGen.cs source analysis.
 import numpy as np
 import numpy.typing as npt
 
-
 # ---------------------------------------------------------------------------
 # Tile type constants used across the engine
 # ---------------------------------------------------------------------------
