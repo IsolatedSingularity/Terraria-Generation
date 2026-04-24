@@ -50,7 +50,7 @@ Large world biome placement following game rules:
 
 ![Biome Transition Detail](Plots/terraria_biome_transition_detail.png)
 
-DETAIL_PLOT (600x400) sprite render of a 3-biome surface transition (Forest -> Jungle -> Desert) showing how Terraria's biome converters swap base materials (Dirt -> Mud / Sand, Stone -> Ebonstone) across hard boundaries while preserving topography.
+Native 240x140 TINY world rendered at full resolution. Shows the five surface biomes (Forest, Snow, Jungle, Desert, Corruption) with caves carved through every band so the converters' tile swaps (Dirt to Mud or Sand, Stone to Ebonstone) are clearly visible across hard boundaries.
 
 ### Biome Tile Conversion
 
@@ -62,32 +62,32 @@ Side-by-side tile-grid visualization of biome conversion rules: Snow (dirt to sn
 
 ![Ore Distribution](Plots/ore_distribution.png)
 
-Three-panel detail at FEATURE_PLOT scale (500x300): pre-Hardmode veins, post-altar Hardmode tier, and a 200x120 vein-detail crop with white luster scatter. Ore counts use the game's `int(area * 6E-05)` vein formula. Pre-Hardmode picks alternating pairs (Copper/Tin, Iron/Lead, Silver/Tungsten, Gold/Platinum); Hardmode altar smashing follows the 3-cycle Cobalt/Palladium, Mythril/Orichalcum, Adamantite/Titanium tiers.
+Three TINY worlds rendered at full resolution. Pre-Hardmode picks alternating pairs (Copper or Tin, Iron or Lead, Silver or Tungsten, Gold or Platinum). Hardmode Tier 1 (Cobalt, Palladium) appears after smashing the first three altars. Hardmode Tier 3 (Adamantite, Titanium, Chlorophyte) settles in the deep cavern layer. Each tier panel highlights its ores while dimming the rest of the world.
 
-![Ore Density](Plots/ore_depth_density.png)
+![Ore Density](Plots/ore_density.png)
 
-Depth-density profiles showing tile counts per row, with Tokyo Night layer boundary markers.
+Depth-binned heatmap showing ore counts across 10 depth slices and 15 ore types from a SMALL world sample. Cells use a log-scaled Tokyo Night colormap with non-zero counts annotated.
 
 
 ## Advanced Simulations
 
-### 23-Pass World Generation Pipeline
+### Generation Pipeline
 
 ![World Generation Animation](Plots/Advanced/world_generation_animation.gif)
 
-Animated GIF stepping through all 23 terrain passes at 1/10 scale (840x240). Each frame adds one generation layer -- terrain base, cave carving, biome strips, ore placement, dungeon, and final smoothing passes -- illustrating the procedural dependency chain that underlies every Terraria world.
+Native TINY world (240x140) replayed pass by pass. Each frame is the full world rendered at ~6 px/tile: bare stone shell, surface and strata, cave carving, CA smoothing, biome painting (Snow, Jungle, Desert, Corruption), pre-Hardmode ores, V-pattern, and three altar tiers. The frame title names the active pass.
 
 ### Corruption/Crimson/Hallow Evolution
 
 ![Corruption Evolution](Plots/Advanced/corruption_evolution.png)
 
-Four-panel 600x500 SMALL-world crop showing the full corruption lifecycle: pre-hardmode evil pockets placed by TileRunner, hardmode V-pattern diagonal carving from the Wall of Flesh event, tile-update-cycle spread with asymmetric surface/underground rates (`SURFACE_UPDATE_RATE=140s`, `UNDERGROUND_UPDATE_RATE=830s`), and advanced spread after ten update cycles.
+Four TINY world snapshots showing the corruption lifecycle: Pre-Hardmode evil pocket, V-pattern diagonal carving from the Wall of Flesh event, early infection spread, and late-stage saturation. Each panel is a full 240x140 render so the diagonals and infection halos are unambiguous.
 
 ![Corruption Spread](Plots/Advanced/corruption_spread.gif)
 
 ![Crimson Evolution](Plots/Advanced/crimson_evolution.png)
 
-Parallel simulation for the Crimson biome variant -- crimson pockets, V-pattern, and multi-cycle spread using identical stochastic rules with Crimson-specific tile conversion tables.
+Parallel simulation for the Crimson biome variant. Identical TileRunner V-pattern and `INFECTION_SPREAD_RADIUS` rules, but the converter swaps to Crimson tile IDs (Crimstone, Crimson grass, flesh blocks).
 
 ### Hardmode Transformation
 
@@ -97,11 +97,11 @@ Detailed hardmode mechanics: 3-cycle ore generation (Cobalt/Palladium tier 1, My
 
 ![Hardmode Animation](Plots/Advanced/terraria_hardmode_animation.gif)
 
-### Master Evolution
+### World Evolution
 
 ![Master Evolution](Plots/Advanced/terraria_master_evolution.gif)
 
-Complete 26-frame animation covering all 10 phases: world generation (23 passes), corruption initial state, hardmode V-pattern, altar smashing, infection spread, and Chlorophyte growth.
+Complete TINY-world lifecycle hero animation. Frames trace the full progression: bare stone, surface and caves, biome painting, pre-Hardmode ores, V-pattern reveal, three altar tiers, and late-stage infection spread. Every frame is the full 240x140 world.
 
 ## Architecture
 
@@ -144,23 +144,11 @@ pip install -e .          # editable install (Engine becomes importable)
 
 > `pip install -e .` uses the `[build-system]` in `pyproject.toml` to expose the `Engine/` package.
 
-## Key Formulas
-
-**Ore vein count**: `int(worldArea * 6E-05)` per ore type
-
-**TileRunner diamond brush**: Carves/places tiles in a diamond shape of radius `strength` at each step, random-walking `steps` times. All algorithms use `np.random.default_rng(seed)` for full reproducibility.
-
-**Infection spread**: Each tile update cycle, infected tiles pick one random neighbor within radius `INFECTION_SPREAD_RADIUS` (3 tiles). Conversion is blocked by `INFECTION_GAP_TILES` (4) consecutive air tiles on the path.
-
-**Layer depths** (large world, 8400x2400): `worldSurface=340`, `rockLayer=880`, `hellLayer=2200`.
-
----
-
 ## Theory
 
 ### Surface Terrain as Fractional Brownian Motion
 
-Terraria surface heights are synthesized as a sum of sinusoidal octaves -- a
+Terraria surface heights are synthesized as a sum of sinusoidal octaves, a
 discrete approximation of fractional Brownian motion (fBm):
 
 $$h(x) = \sum_{i=0}^{N-1} A_0 \, p^i \sin\!\bigl(2\pi f_0 \, l^i \, x + \phi_i\bigr)$$

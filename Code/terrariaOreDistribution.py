@@ -1,13 +1,12 @@
-"""Terraria Ore Distribution -- SMALL-world crops + altar progression.
+"""Terraria ore distribution figures.
 
-Two figures, both rendered as 600x500 crops of generated SMALL worlds:
+Two figures, mini-world redesign edition:
 
-- ``ore_distribution.png``: 3-panel column showing pre-Hardmode, post-3-altar,
-  and post-9-altar states centered on the rock layer so the altar-tier
-  ladder (Cobalt/Mythril/Adamantite) is visible.
-- ``ore_depth_density.png``: 3-panel column of ore-tile-per-row counts vs
-  depth at the same three altar checkpoints, with shared external legend
-  and dashed worldSurface/rockLayer/hellLayer markers.
+- ``ore_distribution.png``: 3-panel row, each a full TINY world rendered at
+  native resolution with one ore family highlighted (other tiles dimmed).
+  Panels: Pre-Hardmode, Hardmode Tier 1, Hardmode Tier 3.
+- ``ore_density.png``: heatmap with depth bins on the Y axis and ore types
+  on the X axis, computed from a SMALL world for honest statistics.
 """
 
 from __future__ import annotations
@@ -16,7 +15,7 @@ import os
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.lines import Line2D
+from matplotlib.colors import LinearSegmentedColormap
 
 from Engine.algorithms import (
     ADAMANTITE,
@@ -35,224 +34,152 @@ from Engine.algorithms import (
     TITANIUM,
     TUNGSTEN,
 )
-from Engine.spriteRenderer import (
-    applyMapDecorations,
-    cropSmallWorld,
-    drawTileGrid,
+from Engine.theme import COLORS, PALETTE, applyTokyoNight
+from Engine.worldgen import (
+    generateMiniWorld,
+    generateSmallWorld,
+    renderMiniWorld,
 )
-from Engine.theme import COLORS, ORE_COLORS, PALETTE, applyTokyoNight
-from Engine.worldgen import generateSmallWorld
 
 applyTokyoNight()
 
 
-_PRE_HM_ORES = [COPPER, TIN, IRON, LEAD, SILVER, TUNGSTEN, GOLD, PLATINUM]
-_HM_TIER_1 = [COBALT, PALLADIUM]
-_HM_TIER_2 = [MYTHRIL, ORICHALCUM]
-_HM_TIER_3 = [ADAMANTITE, TITANIUM, CHLOROPHYTE]
+_PRE_HM = {COPPER, TIN, IRON, LEAD, SILVER, TUNGSTEN, GOLD, PLATINUM}
+_HM_TIER_1 = {COBALT, PALLADIUM}
+_HM_TIER_3 = {ADAMANTITE, TITANIUM, CHLOROPHYTE}
 
-_ORE_NAME = {
-    COPPER: "Copper", TIN: "Tin", IRON: "Iron", LEAD: "Lead",
-    SILVER: "Silver", TUNGSTEN: "Tungsten",
-    GOLD: "Gold", PLATINUM: "Platinum",
-    COBALT: "Cobalt", PALLADIUM: "Palladium",
-    MYTHRIL: "Mythril", ORICHALCUM: "Orichalcum",
-    ADAMANTITE: "Adamantite", TITANIUM: "Titanium",
-    CHLOROPHYTE: "Chlorophyte",
-}
-_ORE_COLOR = {
-    COPPER: ORE_COLORS["copper"], TIN: ORE_COLORS["tin"],
-    IRON: ORE_COLORS["iron"], LEAD: ORE_COLORS["lead"],
-    SILVER: ORE_COLORS["silver"], TUNGSTEN: ORE_COLORS["tungsten"],
-    GOLD: ORE_COLORS["gold"], PLATINUM: ORE_COLORS["platinum"],
-    COBALT: ORE_COLORS["cobalt"], PALLADIUM: ORE_COLORS["palladium"],
-    MYTHRIL: ORE_COLORS["mythril"], ORICHALCUM: ORE_COLORS["orichalcum"],
-    ADAMANTITE: ORE_COLORS["adamantite"], TITANIUM: ORE_COLORS["titanium"],
-    CHLOROPHYTE: ORE_COLORS["chlorophyte"],
-}
+_ORE_NAMES = [
+    ("Copper", COPPER), ("Tin", TIN),
+    ("Iron", IRON), ("Lead", LEAD),
+    ("Silver", SILVER), ("Tungsten", TUNGSTEN),
+    ("Gold", GOLD), ("Platinum", PLATINUM),
+    ("Cobalt", COBALT), ("Palladium", PALLADIUM),
+    ("Mythril", MYTHRIL), ("Orichalcum", ORICHALCUM),
+    ("Adamantite", ADAMANTITE), ("Titanium", TITANIUM),
+    ("Chlorophyte", CHLOROPHYTE),
+]
 
 
-# ===================================================================
-# D3: Ore distribution (3-panel SMALL crop)
-# ===================================================================
 def createOreDistributionFigure(savePath: str) -> None:
-    """Stack three 600x500 crops at altar checkpoints 0/3/9."""
-    print("Creating ore distribution (3-panel SMALL crops)...")
-    seed = 20260423
-    worlds = [
-        ("Pre-Hardmode (0 altars)", generateSmallWorld(seed=seed, altarsSmashed=0)),
-        ("Hardmode (3 altars smashed)", generateSmallWorld(seed=seed, altarsSmashed=3)),
-        ("Late Hardmode (9 altars smashed)", generateSmallWorld(seed=seed, altarsSmashed=9)),
-    ]
+    """Three TINY-world panels with one ore family highlighted in each."""
+    print("Creating ore distribution (3 TINY worlds)...")
 
-    fig, axes = plt.subplots(1, 3, figsize=(12, 4.5))
-    for ax, (title, world) in zip(axes, worlds):
-        layers = world.layers
-        # Center deep enough to span rock layer to hellstone band.
-        centerX = world.spawnX
-        centerY = int((layers.rockLayer + layers.hellLayer) / 2)
-        cropped, bounds = cropSmallWorld(
-            world.grid, centerX=centerX, centerY=centerY,
-            width=130, height=90,
-        )
-        drawTileGrid(ax, cropped)
-        applyMapDecorations(ax, cropped, layers, cropBounds=bounds,
-                            grassBand=False)
-        h, w = cropped.shape
-        ax.set_xlim(0, w)
-        ax.set_ylim(h, 0)
-        ax.set_title(title, fontsize=11, fontweight="bold")
-        ax.set_xlabel("X (tiles)")
-        ax.set_ylabel("Depth (tiles)")
+    preHm = generateMiniWorld(seed=20260423, altarsSmashed=0, oreScale=10.0)
+    midHm = generateMiniWorld(seed=20260424, altarsSmashed=3, oreScale=10.0)
+    lateHm = generateMiniWorld(seed=20260425, altarsSmashed=9, oreScale=10.0)
 
-    fig.suptitle(
-        "Ore Distribution (130x90 tight crops, SMALL world)",
-        fontsize=13, fontweight="bold", y=1.0,
-    )
+    fig, axes = plt.subplots(1, 3, figsize=(20, 4.6))
+
+    renderMiniWorld(preHm.grid, axes[0],
+                    title="Pre-Hardmode Ores",
+                    showLayers=True, layers=preHm.layers,
+                    highlightTiles=_PRE_HM)
+    renderMiniWorld(midHm.grid, axes[1],
+                    title="Hardmode Tier 1",
+                    showLayers=True, layers=midHm.layers,
+                    highlightTiles=_HM_TIER_1)
+    renderMiniWorld(lateHm.grid, axes[2],
+                    title="Hardmode Tier 3",
+                    showLayers=True, layers=lateHm.layers,
+                    highlightTiles=_HM_TIER_3)
+
     plt.tight_layout()
-    plt.savefig(savePath, dpi=200, bbox_inches="tight",
+    plt.savefig(savePath, dpi=110, bbox_inches="tight",
                 facecolor=COLORS["bg"])
-    plt.close(fig)
+    plt.close()
     print(f"Ore distribution saved to {savePath}")
 
 
-# ===================================================================
-# D4: Ore density (3-panel column with external legend)
-# ===================================================================
-def _countOreByDepth(
-    grid: np.ndarray, oreId: int, binSize: int = 8,
-) -> tuple[np.ndarray, np.ndarray]:
-    h, _ = grid.shape
-    edges = np.arange(0, h + binSize, binSize)
-    counts = np.array([
-        np.sum(grid[edges[i]:min(edges[i + 1], h), :] == oreId)
-        for i in range(len(edges) - 1)
-    ], dtype=float)
-    centers = (edges[:-1] + np.minimum(edges[1:], h)) / 2.0
-    return centers, counts
-
-
-def _drawDepthMarkers(ax: plt.Axes, layers, maxDepth: int) -> None:
-    for y, color in [
-        (layers.worldSurface, PALETTE["cyan"]),
-        (layers.rockLayer, PALETTE["yellow"]),
-        (float(layers.hellLayer), PALETTE["red"]),
-    ]:
-        if 0 <= y <= maxDepth:
-            ax.axhline(y=y, color=color, linestyle="--",
-                       linewidth=0.9, alpha=0.55)
-
-
 def createOreDensityFigure(savePath: str) -> None:
-    """3-panel column of ore-density-vs-depth at altar checkpoints 0/3/9.
+    """Heatmap of ore tile counts by depth bin and ore type.
 
-    Each ore is rendered as a smoothed filled-area profile (binSize=24,
-    gaussian-smoothed) so the curves read as bell-shaped depth bands rather
-    than jagged 8-tile noise. Pre-HM ores fade in post-altar panels.
+    Computed from a SMALL world so statistics are honest. Pre-HM, post-3
+    altar, and post-9 altar runs are summed so all ore families appear in
+    the heatmap.
     """
-    print("Creating ore depth-density (3-panel column, smoothed)...")
-    seed = 20260423
-    worlds = {
-        0: generateSmallWorld(seed=seed, altarsSmashed=0),
-        3: generateSmallWorld(seed=seed, altarsSmashed=3),
-        9: generateSmallWorld(seed=seed, altarsSmashed=9),
-    }
-    layers = worlds[0].layers
-    maxDepth = layers.maxTilesY
+    print("Creating ore density heatmap (SMALL world stats)...")
 
-    panelOres = {
-        0: [(_PRE_HM_ORES, 1.0)],
-        3: [(_PRE_HM_ORES, 0.25), (_HM_TIER_1, 1.0), (_HM_TIER_2, 1.0)],
-        9: [(_PRE_HM_ORES, 0.20), (_HM_TIER_1, 0.45),
-            (_HM_TIER_2, 1.0), (_HM_TIER_3, 1.0)],
-    }
-    titles = {
-        0: "Pre-Hardmode (0 altars)",
-        3: "Hardmode (3 altars: tier-1 + tier-2 visible)",
-        9: "Late Hardmode (9 altars: full tier ladder)",
-    }
+    world0 = generateSmallWorld(seed=42, altarsSmashed=0)
+    world3 = generateSmallWorld(seed=42, altarsSmashed=3)
+    world9 = generateSmallWorld(seed=42, altarsSmashed=9)
+    height = world0.layers.maxTilesY
 
-    def _smoothProfile(grid: np.ndarray, oreId: int) -> tuple[np.ndarray, np.ndarray]:
-        depths, counts = _countOreByDepth(grid, oreId, binSize=24)
-        if counts.sum() == 0:
-            return depths, counts
-        # Gaussian smoothing kernel (sigma=1.5 bins)
-        kernel = np.exp(-0.5 * (np.arange(-4, 5) / 1.5) ** 2)
-        kernel /= kernel.sum()
-        smoothed = np.convolve(counts, kernel, mode="same")
-        return depths, smoothed
+    # 10 depth bins from worldSurface to hellLayer.
+    binEdges = np.linspace(int(world0.layers.worldSurface),
+                           int(world0.layers.hellLayer),
+                           11).astype(int)
+    binLabels = [f"{binEdges[i]}-{binEdges[i + 1]}"
+                 for i in range(len(binEdges) - 1)]
 
-    fig, axes = plt.subplots(3, 1, figsize=(10, 11), sharex=True)
+    # Use the world that contains each ore family.
+    def gridForOre(oreId: int) -> np.ndarray:
+        if oreId in _PRE_HM:
+            return world0.grid
+        if oreId in _HM_TIER_1:
+            return world3.grid
+        return world9.grid
 
-    for ax, altars in zip(axes, [0, 3, 9]):
-        grid = worlds[altars].grid
-        for oreList, alpha in panelOres[altars]:
-            for oreId in oreList:
-                depths, counts = _smoothProfile(grid, oreId)
-                if counts.sum() == 0:
-                    continue
-                color = _ORE_COLOR[oreId]
-                # Filled area on the left of the curve so colors blend cleanly.
-                ax.fill_betweenx(depths, 0, counts,
-                                 color=color, alpha=alpha * 0.45,
-                                 linewidth=0)
-                ax.plot(counts, depths, color=color,
-                        linewidth=1.6, alpha=alpha,
-                        label=_ORE_NAME[oreId] if alpha >= 0.99 else None)
-        _drawDepthMarkers(ax, layers, maxDepth)
-        ax.invert_yaxis()
-        ax.set_title(titles[altars], fontsize=11, fontweight="bold")
-        ax.set_ylabel("Depth (tiles)", fontweight="bold")
-        ax.grid(True, alpha=0.15, linestyle="--")
-        ax.set_xlim(left=0)
+    densityMatrix = np.zeros((len(binLabels), len(_ORE_NAMES)), dtype=np.int64)
+    for col, (_, oreId) in enumerate(_ORE_NAMES):
+        grid = gridForOre(oreId)
+        for row in range(len(binLabels)):
+            y0, y1 = binEdges[row], binEdges[row + 1]
+            densityMatrix[row, col] = int((grid[y0:y1] == oreId).sum())
 
-    axes[-1].set_xlabel("Smoothed ore tiles per 24-row band", fontweight="bold")
-
-    # External shared legend above the figure.
-    seenIds = list(dict.fromkeys(
-        _PRE_HM_ORES + _HM_TIER_1 + _HM_TIER_2 + _HM_TIER_3
-    ))
-    handles = [
-        Line2D([0], [0], color=_ORE_COLOR[oid], linewidth=3.0,
-               label=_ORE_NAME[oid])
-        for oid in seenIds
-    ]
-    fig.legend(
-        handles=handles, loc="upper center",
-        bbox_to_anchor=(0.5, 0.995), ncol=5, fontsize=9, frameon=False,
+    cmap = LinearSegmentedColormap.from_list(
+        "tokyoOreDensity",
+        ["#1a1b26", "#3b4261", "#7aa2f7", "#bb9af7"],
+        N=256,
     )
 
-    fig.suptitle(
-        "Ore Density vs Depth (3 altar checkpoints)",
-        fontsize=14, fontweight="bold", y=1.04,
-    )
-    plt.tight_layout(rect=(0, 0, 1, 0.94))
-    plt.savefig(savePath, dpi=200, bbox_inches="tight",
+    fig, ax = plt.subplots(figsize=(13, 7.5))
+    # Log1p so low-count cells stay readable next to high-count cells.
+    displayed = np.log1p(densityMatrix)
+    im = ax.imshow(displayed, cmap=cmap, aspect="auto",
+                   interpolation="nearest")
+
+    ax.set_xticks(np.arange(len(_ORE_NAMES)))
+    ax.set_xticklabels([n for n, _ in _ORE_NAMES], rotation=35, ha="right",
+                       color=PALETTE["fg"])
+    ax.set_yticks(np.arange(len(binLabels)))
+    ax.set_yticklabels(binLabels, color=PALETTE["fg"])
+    ax.set_xlabel("Ore Type", color=PALETTE["fg"], fontweight="bold")
+    ax.set_ylabel("Depth Range (tiles)", color=PALETTE["fg"], fontweight="bold")
+    ax.set_title("Ore Density by Depth", color=PALETTE["fg"],
+                 fontsize=14, fontweight="bold", pad=10)
+
+    # Annotate non-zero cells with raw counts.
+    for r in range(densityMatrix.shape[0]):
+        for c in range(densityMatrix.shape[1]):
+            count = int(densityMatrix[r, c])
+            if count > 0:
+                ax.text(c, r, str(count), ha="center", va="center",
+                        color=PALETTE["fg"], fontsize=8,
+                        fontweight="bold")
+
+    cbar = fig.colorbar(im, ax=ax, fraction=0.035, pad=0.02)
+    cbar.set_label("log(1 + tile count)", color=PALETTE["fg"])
+    cbar.ax.tick_params(colors=PALETTE["muted"])
+
+    plt.tight_layout()
+    plt.savefig(savePath, dpi=130, bbox_inches="tight",
                 facecolor=COLORS["bg"])
-    plt.close(fig)
-    print(f"Ore depth-density saved to {savePath}")
-
-
-# ===================================================================
-# Main
-# ===================================================================
-def main() -> None:
-    plotsDir = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "Plots"
-    )
-    os.makedirs(plotsDir, exist_ok=True)
-
-    print("=" * 60)
-    print("Terraria Ore Distribution (SMALL-world crops + altar progression)")
-    print("=" * 60)
-
-    createOreDistributionFigure(
-        os.path.join(plotsDir, "ore_distribution.png")
-    )
-    createOreDensityFigure(
-        os.path.join(plotsDir, "ore_depth_density.png")
-    )
+    plt.close()
+    print(f"Ore density saved to {savePath}")
 
 
 if __name__ == "__main__":
-    main()
+    print("Starting Terraria ore distribution analysis")
+
+    outputDir = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "Plots"
+    )
+    os.makedirs(outputDir, exist_ok=True)
+
+    createOreDistributionFigure(
+        os.path.join(outputDir, "ore_distribution.png")
+    )
+    createOreDensityFigure(
+        os.path.join(outputDir, "ore_density.png")
+    )
+    print("All ore distribution visualizations complete.")

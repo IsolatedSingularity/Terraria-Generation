@@ -23,6 +23,7 @@ from Engine.constants import (
     LIFE_CRYSTAL,
     MEDIUM,
     SMALL,
+    TINY,
     DungeonConfig,
     LayerDepths,
     LivingTreeConfig,
@@ -73,11 +74,17 @@ from Engine.theme import (
     lightCmap,
     seqCmap,
 )
-from Engine.worldgen import SmallWorld, generateSmallWorld
+from Engine.worldgen import (
+    MiniWorld,
+    SmallWorld,
+    generateMiniWorld,
+    generateSmallWorld,
+    renderMiniWorld,
+)
 
 __all__ = [
     "WorldSize", "LayerDepths", "StructureQuotas", "OreConfig",
-    "SMALL", "MEDIUM", "LARGE", "FEATURE_PLOT", "DETAIL_PLOT",
+    "SMALL", "MEDIUM", "LARGE", "TINY", "FEATURE_PLOT", "DETAIL_PLOT",
     "DungeonConfig", "TempleConfig", "PyramidConfig", "LivingTreeConfig",
     "ShimmerConfig",
     "tileRunner", "digTunnel", "cavinator", "cellularAutomataSmooth",
@@ -89,6 +96,7 @@ __all__ = [
     "spriteRenderer",
     "cropSmallWorld", "applyMapDecorations", "drawTileGrid",
     "SmallWorld", "generateSmallWorld",
+    "MiniWorld", "generateMiniWorld", "renderMiniWorld",
     "generateDungeon", "generateJungleTemple", "generateLivingTree",
     "generatePyramid", "generateSpiderCave", "generateGemCave",
     "generateUndergroundDesert", "generateMarbleCave", "generateGraniteCave",

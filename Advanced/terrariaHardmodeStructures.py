@@ -67,7 +67,7 @@ def _tileName(tileId: int) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Color palette (delegated to Engine.theme -- single source of truth).
+# Color palette (delegated to Engine.theme, single source of truth).
 # Local _TILE_COLORS retained as a hex-keyed view used by legend builders.
 # ---------------------------------------------------------------------------
 _TILE_COLORS = dict(_ENGINE_TILE_COLORS)
@@ -454,69 +454,52 @@ def _remapGrid(grid: np.ndarray, knownIds: list[int]) -> np.ndarray:
     return out
 
 
-def visualize(sim: TerrariaHardmodeTransformation,
+def visualize(sim: TerrariaHardmodeTransformation | None = None,
               savePath: str | None = None) -> None:
-    """3-panel 600x500 SMALL-crop hardmode transformation figure.
+    """Three TINY worlds rendered side by side: pre-HM, V-pattern, post-altar.
 
-    Panels:
-      1. Pre-HM baseline
-      2. Post-V-pattern (altar x0)
-      3. Post-altar-smashing (full HM ore tiers + Chlorophyte in jungle mud)
+    The ``sim`` argument is accepted for backward compatibility but is no
+    longer required. Each panel is a full 240x140 world drawn at native
+    resolution.
     """
-    from Engine.spriteRenderer import applyMapDecorations, cropSmallWorld, drawTileGrid
-    from Engine.worldgen import generateSmallWorld
+    from Advanced.terrariaCorruptionEvolution import carveVPattern
+    from Engine.worldgen import generateMiniWorld, renderMiniWorld
 
     plotsDir = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "Plots", "Advanced",
     )
     os.makedirs(plotsDir, exist_ok=True)
-    outFile = os.path.join(plotsDir, "terraria_hardmode_transformation.png")
-
-    print("Generating SMALL world for hardmode transformation (seed=20260425)...")
-    worldBase = generateSmallWorld(seed=20260425, evilType="corruption",
-                                    altarsSmashed=0, compactBiomes=True)
-    worldV = generateSmallWorld(seed=20260425, evilType="corruption",
-                                 altarsSmashed=0, compactBiomes=True)
-    worldHM = generateSmallWorld(seed=20260425, evilType="corruption",
-                                  altarsSmashed=9, compactBiomes=True)
-
-    layers = worldBase.layers
-    centerX = worldBase.spawnX
-    centerY = int((layers.worldSurface + layers.rockLayer) / 2)
-
-    # Apply V-pattern to worldV grid via TerrariaCorruptionEvolution
-    from Advanced.terrariaCorruptionEvolution import TerrariaCorruptionEvolution
-    simV = TerrariaCorruptionEvolution(
-        worldWidth=worldV.grid.shape[1], worldHeight=worldV.grid.shape[0],
-        evilType="corruption", seed=20260425,
+    outFile = savePath or os.path.join(
+        plotsDir, "terraria_hardmode_transformation.png"
     )
-    simV.grid = worldV.grid.copy()
-    simV.layers = layers
-    simV.triggerHardmode()
+
+    print("Generating TINY worlds for hardmode transformation...")
+    worldBase = generateMiniWorld(seed=20260425, evilType="corruption",
+                                  altarsSmashed=0)
+    worldV = generateMiniWorld(seed=20260425, evilType="corruption",
+                               altarsSmashed=0)
+    carveVPattern(worldV.grid, evilType="corruption", seed=20260426)
+    worldHM = generateMiniWorld(seed=20260425, evilType="corruption",
+                                altarsSmashed=9)
 
     panels = [
-        (worldBase.grid, "Panel 1: Pre-Hardmode Baseline"),
-        (simV.grid, "Panel 2: Post-V-Pattern (WoF)"),
-        (worldHM.grid, "Panel 3: Post-Altar x9 (Full HM Ores)"),
+        (worldBase.grid, "Pre-Hardmode"),
+        (worldV.grid, "V-Pattern"),
+        (worldHM.grid, "Post-Altar x9"),
     ]
+    layers = worldBase.layers
 
-    fig, axes = plt.subplots(1, 3, figsize=(12, 4.5))
+    fig, axes = plt.subplots(1, 3, figsize=(20, 4.6))
     for ax, (snap, title) in zip(axes, panels):
-        cropped, bounds = cropSmallWorld(snap, centerX=centerX, centerY=centerY,
-                                          width=130, height=90)
-        drawTileGrid(ax, cropped)
-        applyMapDecorations(ax, cropped, layers, cropBounds=bounds)
-        ax.set_title(title, fontsize=11, fontweight="bold")
-        ax.set_xlabel("X (tiles, crop-local)")
-        ax.set_ylabel("Depth (tiles, crop-local)")
+        renderMiniWorld(snap, ax, title=title,
+                        showLayers=True, layers=layers)
 
-    fig.suptitle(
-        "Hardmode Transformation (130x90 SMALL-World Crop)",
-        fontsize=14, fontweight="bold",
-    )
+    fig.suptitle("Hardmode Transformation", color=COLORS["fg"],
+                 fontsize=15, fontweight="bold", y=1.02)
     plt.tight_layout()
-    plt.savefig(outFile, dpi=200, bbox_inches="tight", facecolor=COLORS["bg"])
+    plt.savefig(outFile, dpi=110, bbox_inches="tight",
+                facecolor=COLORS["bg"])
     plt.close(fig)
     print(f"Saved: {outFile}")
 
@@ -525,6 +508,4 @@ def visualize(sim: TerrariaHardmodeTransformation,
 # Main
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    sim = TerrariaHardmodeTransformation(seed=42)
-    sim.runHardmodeTransformation(numAltars=12)
-    visualize(sim)
+    visualize()

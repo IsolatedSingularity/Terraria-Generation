@@ -25,6 +25,7 @@ class WorldSize:
 SMALL = WorldSize(width=4200, height=1200, area=4200 * 1200)
 MEDIUM = WorldSize(width=6400, height=1800, area=6400 * 1800)
 LARGE = WorldSize(width=8400, height=2400, area=8400 * 2400)
+TINY = WorldSize(width=240, height=140, area=240 * 140)
 
 # Feature-focused plot canvases. Used by Code/ scripts so individual tiles
 # (4-tile ore veins, 12-tile cabins, doors, chests) render at visible scale.
@@ -71,6 +72,15 @@ class LayerDepths:
             rockLayer=560.0,
             hellLayer=1200 - 200,
             maxTilesY=1200,
+        )
+
+    @classmethod
+    def forTiny(cls) -> "LayerDepths":
+        return cls(
+            worldSurface=28.0,
+            rockLayer=70.0,
+            hellLayer=125,
+            maxTilesY=140,
         )
 
 

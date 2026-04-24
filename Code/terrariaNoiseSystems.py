@@ -41,7 +41,7 @@ from Engine.theme import TILE_COLORS as ENGINE_TILE_COLORS
 applyTokyoNight()
 
 # ---------------------------------------------------------------------------
-# World constants -- FEATURE_PLOT canvas keeps features visible at pixel scale.
+# World constants. FEATURE_PLOT canvas keeps features visible at pixel scale.
 # Layer depths scale proportionally from the Large reference world.
 # ---------------------------------------------------------------------------
 WORLD_WIDTH: int = FEATURE_PLOT.width   # 500

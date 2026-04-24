@@ -596,41 +596,89 @@ def _renderGrid(ax, grid: np.ndarray, title: str, maxId: int) -> None:
 
 
 def createWorldGenerationAnimation(saveName: str = "world_generation_animation.gif") -> None:
-    """Create a GIF animation stepping through all 23 generation passes.
+    """Create a GIF stepping through the generation pipeline at TINY scale.
 
-    Single-panel tight 140x100 tile crop centered on world middle so
-    individual tiles are readable at every pass.
+    Each frame is a full 240x140 world rendered at native resolution. Pass
+    names label each frame. The TINY primitive is replayed pass by pass
+    (Reset, Surface, Caves, Biomes, Ores, Hardmode V, Altar Tiers) so the
+    full lifecycle is visible without any cropping.
     """
-    print("Generating world at 1/10 scale for animation...")
-    gen = TerrariaWorldGenerator(worldWidth=840, worldHeight=240, seed=12345)
-    gen.generate()
-    snapshots = gen.snapshots
+    import numpy as np
+    from Engine.algorithms import STONE
+    from Engine.constants import TINY, LayerDepths
+    from Engine.theme import COLORS, applyTokyoNight, buildTileColormap
+    from Engine.worldgen import (
+        _miniBiomes,
+        _miniCaves,
+        _miniOres,
+        _miniSurface,
+        generateMiniWorld,
+    )
+    from Advanced.terrariaCorruptionEvolution import carveVPattern
 
-    maxId = max(TILE_COLORS.keys())
-    detailW, detailH = 140, 100
-    # Center on dirt-to-rock transition where caves are densest.
-    detailX = max(0, 420 - detailW // 2)
-    detailY = max(0, 130 - detailH // 2)
+    applyTokyoNight()
 
-    fig, ax = plt.subplots(figsize=(6, 4.5))
-    ax.set_axis_off()
-    crop0 = snapshots[0][1][detailY:detailY + detailH, detailX:detailX + detailW]
-    im = ax.imshow(crop0, cmap=TERRAIN_CMAP, aspect="equal",
-                   vmin=0, vmax=maxId, interpolation="nearest")
-    titleObj = ax.set_title("", fontsize=11, fontweight="bold")
+    print("Building TINY-world pass-by-pass animation...")
+    seed = 20260423
+    rng = np.random.default_rng(seed)
+    layers = LayerDepths.forTiny()
+
+    grid = np.full((TINY.height, TINY.width), STONE, dtype=np.int32)
+    snapshots: list[tuple[str, np.ndarray]] = [("Pass 1: Reset", grid.copy())]
+
+    _miniSurface(grid, layers, rng)
+    snapshots.append(("Pass 2: Surface and Strata", grid.copy()))
+    snapshots.append(("Pass 3: Stone and Hellstone Shell", grid.copy()))
+
+    _miniCaves(grid, layers, rng)
+    snapshots.append(("Pass 4: Caves Carved", grid.copy()))
+    snapshots.append(("Pass 5: CA Smoothing", grid.copy()))
+
+    _miniBiomes(grid, layers, rng, evilType="corruption")
+    snapshots.append(("Pass 6: Snow and Jungle Biomes", grid.copy()))
+    snapshots.append(("Pass 7: Desert Biome", grid.copy()))
+    snapshots.append(("Pass 8: Corruption Biome", grid.copy()))
+
+    _miniOres(grid, layers, rng, altarsSmashed=0)
+    snapshots.append(("Pass 9: Pre-Hardmode Ores", grid.copy()))
+
+    for step in range(3):
+        carveVPattern(grid, evilType="corruption",
+                      seed=int(rng.integers(0, 1 << 30)))
+        snapshots.append((f"Pass {10 + step}: Hardmode V-Pattern", grid.copy()))
+
+    for tierIdx, altars in enumerate((3, 6, 9)):
+        nextWorld = generateMiniWorld(seed=seed, evilType="corruption",
+                                      altarsSmashed=altars)
+        oreMask = np.isin(nextWorld.grid, [110, 111, 112, 113, 114, 115, 116,
+                                           64])
+        grid = np.where(oreMask, nextWorld.grid, grid)
+        snapshots.append((f"Pass {13 + tierIdx}: Altar Tier {tierIdx + 1}",
+                          grid.copy()))
+
+    snapshots.append(("Pass 16: Final World", grid.copy()))
+
+    cmap = buildTileColormap()
+    fig, ax = plt.subplots(figsize=(14.4, 8.4))
+    im = ax.imshow(snapshots[0][1], cmap=cmap, vmin=0, vmax=200,
+                   interpolation="nearest", aspect="equal")
+    ax.set_xticks([]); ax.set_yticks([])
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+    titleObj = ax.set_title(snapshots[0][0], color=COLORS["fg"],
+                            fontsize=13, fontweight="bold", pad=8)
 
     def animate(frame: int):
-        idx = frame % len(snapshots)
-        name, grid = snapshots[idx]
-        crop = grid[detailY:detailY + detailH, detailX:detailX + detailW]
-        im.set_data(crop)
-        titleObj.set_text(f"Pass {idx}: {name}  (140x100 crop)")
+        name, snap = snapshots[frame]
+        im.set_data(snap)
+        titleObj.set_text(name)
         return [im, titleObj]
 
-    anim = animation.FuncAnimation(fig, animate, frames=len(snapshots), interval=1500, repeat=True)
+    anim = animation.FuncAnimation(fig, animate, frames=len(snapshots),
+                                   interval=900, repeat=True)
     path = _savePath(saveName)
     print(f"Saving animation to {path}")
-    anim.save(path, writer='pillow', fps=1, dpi=110)
+    anim.save(path, writer="pillow", fps=2, dpi=110)
     plt.close(fig)
     print("Animation saved.")
 
