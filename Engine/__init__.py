@@ -20,6 +20,7 @@ from Engine.theme import (
     DEFAULT_TILE_COLOR, buildTileColormap, seqCmap, divCmap, lightCmap,
 )
 from Engine import spriteRenderer
+from Engine.spriteRenderer import cropSmallWorld, applyMapDecorations, drawTileGrid
 from Engine.worldgen import SmallWorld, generateSmallWorld
 from Engine.structures import (
     generateDungeon, generateJungleTemple, generateLivingTree,
@@ -43,6 +44,7 @@ __all__ = [
     "ORE_COLORS", "DEFAULT_TILE_COLOR", "buildTileColormap",
     "seqCmap", "divCmap", "lightCmap",
     "spriteRenderer",
+    "cropSmallWorld", "applyMapDecorations", "drawTileGrid",
     "SmallWorld", "generateSmallWorld",
     "generateDungeon", "generateJungleTemple", "generateLivingTree",
     "generatePyramid", "generateSpiderCave", "generateGemCave",

@@ -15,7 +15,6 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-import seaborn as sns
 from matplotlib.colors import ListedColormap
 
 from Engine.algorithms import (
@@ -27,7 +26,7 @@ from Engine.algorithms import (
 from Engine.constants import LARGE, LayerDepths, StructureQuotas, OreConfig, LIFE_CRYSTAL
 from Engine.structureMap import StructureMap, Rectangle
 from Engine.structures import rocksInDirt, dirtInRocks, placeClay, placeSilt
-from Engine.theme import applyTokyoNight, COLORS, TILE_COLORS as ENGINE_TILE_COLORS
+from Engine.theme import applyTokyoNight
 
 applyTokyoNight()
 
@@ -566,7 +565,7 @@ def _savePath(filename: str) -> str:
 
 def _renderGrid(ax, grid: np.ndarray, title: str, maxId: int) -> None:
     """Render a grid onto a matplotlib axes."""
-    ax.imshow(grid, cmap=TERRAIN_CMAP, aspect='auto', vmin=0, vmax=_MAX_TILE_ID, interpolation='nearest')
+    ax.imshow(grid, cmap=TERRAIN_CMAP, aspect='auto', vmin=0, vmax=maxId, interpolation='nearest')
     ax.set_title(title, fontsize=12, fontweight='bold')
     ax.set_xlabel('X (blocks)')
     ax.set_ylabel('Y (blocks)')

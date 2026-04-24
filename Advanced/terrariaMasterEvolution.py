@@ -32,7 +32,7 @@ from matplotlib.animation import FuncAnimation, PillowWriter
 from typing import List, Tuple, Dict, Optional
 
 from Engine.algorithms import (
-    tileRunner, AIR, STONE, DIRT, MUD, GRASS, SAND, ASH, HELLSTONE,
+    AIR, STONE, DIRT, MUD, GRASS, SAND, ASH, HELLSTONE,
     SNOW, ICE, WATER, LAVA, COPPER, IRON, SILVER, GOLD,
     COBALT, PALLADIUM, MYTHRIL, ORICHALCUM,
     ADAMANTITE, TITANIUM, CHLOROPHYTE,
@@ -41,11 +41,9 @@ from Engine.algorithms import (
     CORRUPT_ICE, CRIMSON_ICE, HALLOW_ICE, DUNGEON_BRICK,
 )
 from Engine.constants import (
-    LARGE, LayerDepths, StructureQuotas, OreConfig,
-    INFECTION_GAP_TILES, SURFACE_UPDATE_RATE, UNDERGROUND_UPDATE_RATE,
-    LIFE_CRYSTAL, ALTAR,
+    LARGE, LIFE_CRYSTAL, ALTAR,
 )
-from Engine.theme import applyTokyoNight, COLORS, TILE_COLORS as ENGINE_TILE_COLORS
+from Engine.theme import applyTokyoNight
 
 from Advanced.terrariaWorldGeneration import TerrariaWorldGenerator
 from Advanced.terrariaCorruptionEvolution import TerrariaCorruptionEvolution

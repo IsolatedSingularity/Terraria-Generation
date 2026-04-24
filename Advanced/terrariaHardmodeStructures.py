@@ -15,15 +15,13 @@ All algorithms match decompiled WorldGen.cs behavior:
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from matplotlib.colors import ListedColormap, BoundaryNorm
 
 from Engine.algorithms import (tileRunner, AIR, STONE, DIRT, MUD, GRASS,
                                 COBALT, PALLADIUM, MYTHRIL, ORICHALCUM,
                                 ADAMANTITE, TITANIUM, CHLOROPHYTE,
                                 EBONSTONE, CRIMSTONE, CORRUPT_DIRT, CRIMSON_DIRT)
 from Engine.constants import LARGE, LayerDepths, StructureQuotas, OreConfig, LIFE_CRYSTAL, ALTAR
-from Engine.theme import applyTokyoNight, COLORS
+from Engine.theme import applyTokyoNight, COLORS, TILE_COLORS as _ENGINE_TILE_COLORS
 
 applyTokyoNight()
 
@@ -52,11 +50,9 @@ def _tileName(tileId: int) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Color palette (delegated to Engine.theme — single source of truth).
+# Color palette (delegated to Engine.theme -- single source of truth).
 # Local _TILE_COLORS retained as a hex-keyed view used by legend builders.
 # ---------------------------------------------------------------------------
-from Engine.theme import TILE_COLORS as _ENGINE_TILE_COLORS, DEFAULT_TILE_COLOR
-
 _TILE_COLORS = dict(_ENGINE_TILE_COLORS)
 
 

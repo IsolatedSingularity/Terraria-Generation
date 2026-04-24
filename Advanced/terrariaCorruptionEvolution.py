@@ -19,7 +19,7 @@ from Engine.algorithms import (
     CORRUPT_ICE, CRIMSON_ICE, HALLOW_ICE,
 )
 from Engine.constants import (
-    LARGE, LayerDepths, INFECTION_GAP_TILES,
+    LayerDepths, INFECTION_GAP_TILES,
     SURFACE_UPDATE_RATE, UNDERGROUND_UPDATE_RATE,
     INFECTION_SPREAD_RADIUS,
 )
@@ -474,7 +474,7 @@ def _addLegend(ax: plt.Axes) -> None:
         "Crimson": TILE_COLORS[CRIMSON_DIRT],
         "Hallow": TILE_COLORS[PEARLSTONE],
     }
-    handles = [mpatches.Patch(color=c, label=l) for l, c in entries.items()]
+    handles = [mpatches.Patch(color=c, label=lbl) for lbl, c in entries.items()]
     ax.legend(handles=handles, loc="upper right", fontsize=5, ncol=2, framealpha=0.5)
 
 
@@ -568,7 +568,6 @@ def createEvolutionFigure(savePath: str | None = None) -> plt.Figure:
         ax.set_xlabel("X (tiles, crop-local)")
         ax.set_ylabel("Depth (tiles, crop-local)")
 
-    from Engine.theme import COLORS
     fig.suptitle(
         "Corruption Evolution (600x500 SMALL-World Crop)",
         fontsize=14, fontweight="bold", y=0.98,

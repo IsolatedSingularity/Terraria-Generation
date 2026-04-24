@@ -26,7 +26,6 @@ from matplotlib.patches import Circle, Rectangle
 
 from Engine.constants import LayerDepths
 from Engine.theme import (
-    DEFAULT_TILE_COLOR,
     PALETTE,
     TILE_COLORS,
     buildTileColormap as _buildFromTheme,

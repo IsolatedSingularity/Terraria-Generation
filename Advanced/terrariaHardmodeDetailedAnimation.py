@@ -27,11 +27,11 @@ from Engine.algorithms import (
     PEARLSTONE, HALLOW_DIRT,
 )
 from Engine.constants import (
-    LARGE, LayerDepths, OreConfig,
-    INFECTION_GAP_TILES, SURFACE_UPDATE_RATE, UNDERGROUND_UPDATE_RATE,
+    LayerDepths, OreConfig,
+    SURFACE_UPDATE_RATE, UNDERGROUND_UPDATE_RATE,
     HALLOW_GRASS,
 )
-from Engine.theme import applyTokyoNight, COLORS
+from Engine.theme import applyTokyoNight
 
 applyTokyoNight()
 

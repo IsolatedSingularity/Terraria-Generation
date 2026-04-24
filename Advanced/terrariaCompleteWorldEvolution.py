@@ -428,7 +428,6 @@ class TerrariaCompleteWorldEvolution:
             self.grid[self.worldSurface - 5 : self.hellLayer, col] = AIR
 
         allInfTiles = frozenset().union(*[g[0] for g in infectionGroups])
-        convertible = frozenset().union(*[frozenset(g[1].keys()) for g in infectionGroups])
         radius = INFECTION_SPREAD_RADIUS
 
         for step in range(steps):
@@ -558,7 +557,7 @@ def plotEvolution(
     )
     cropBounds = (0, w, 0, h)
 
-    from Engine.theme import COLORS, applyTokyoNight
+    from Engine.theme import applyTokyoNight
     applyTokyoNight()
 
     fig, axes = plt.subplots(2, 4, figsize=(28, 8), facecolor=COLORS["bg"])
