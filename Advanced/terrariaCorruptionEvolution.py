@@ -11,7 +11,6 @@ import os
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.animation import FuncAnimation
 
 from Engine.algorithms import (
     AIR,
@@ -38,7 +37,7 @@ from Engine.constants import (
     INFECTION_GAP_TILES,
     INFECTION_SPREAD_RADIUS,
 )
-from Engine.theme import COLORS, applyTokyoNight, buildTileColormap
+from Engine.theme import COLORS, applyTokyoNight, saveTinyGif
 from Engine.worldgen import generateMiniWorld, renderMiniWorld
 
 applyTokyoNight()
@@ -249,26 +248,8 @@ def createSpreadAnimation(savePath: str | None = None,
         spreadInfection(grid, cycles=2, seed=int(rng.integers(0, 1 << 30)))
         frames.append(grid.copy())
 
-    cmap = buildTileColormap()
-    fig, ax = plt.subplots(figsize=(14.4, 8.4))
-    im = ax.imshow(frames[0], cmap=cmap, vmin=0, vmax=200,
-                   interpolation="nearest", aspect="equal")
-    ax.set_xticks([]); ax.set_yticks([])
-    for spine in ax.spines.values():
-        spine.set_visible(False)
     title = "Corruption Spread" if evilType == "corruption" else "Crimson Spread"
-    titleObj = ax.set_title(title, color=COLORS["fg"],
-                            fontsize=13, fontweight="bold", pad=8)
-
-    def _update(f: int):
-        im.set_data(frames[f])
-        return [im, titleObj]
-
-    anim = FuncAnimation(fig, _update, frames=len(frames),
-                         interval=180, blit=False)
-    os.makedirs(os.path.dirname(os.path.abspath(savePath)), exist_ok=True)
-    anim.save(savePath, writer="pillow", fps=6)
-    plt.close()
+    saveTinyGif(frames, savePath, fps=6, scale=5, title=title)
     print(f"Saved {savePath}")
 
 

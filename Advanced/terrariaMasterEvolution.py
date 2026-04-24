@@ -18,9 +18,7 @@ from __future__ import annotations
 
 import os
 
-import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.animation import FuncAnimation
 
 from Engine.algorithms import (
     AIR,
@@ -30,7 +28,7 @@ from Engine.algorithms import (
     STONE,
 )
 from Engine.constants import TINY, LayerDepths
-from Engine.theme import COLORS, applyTokyoNight, buildTileColormap
+from Engine.theme import applyTokyoNight, saveTinyGif
 from Engine.worldgen import (
     _miniBiomes,
     _miniCaves,
@@ -114,25 +112,8 @@ def renderHeroAnimation(savePath: str | None = None,
     print("Building master evolution frames...")
     frames = _buildLifecycleFrames(seed=seed)
 
-    cmap = buildTileColormap()
-    fig, ax = plt.subplots(figsize=(14.4, 8.4))
-    im = ax.imshow(frames[0], cmap=cmap, vmin=0, vmax=200,
-                   interpolation="nearest", aspect="equal")
-    ax.set_xticks([]); ax.set_yticks([])
-    for spine in ax.spines.values():
-        spine.set_visible(False)
-    titleObj = ax.set_title("World Evolution", color=COLORS["fg"],
-                            fontsize=14, fontweight="bold", pad=8)
-
-    def _update(f: int):
-        im.set_data(frames[f])
-        return [im, titleObj]
-
-    anim = FuncAnimation(fig, _update, frames=len(frames),
-                         interval=170, blit=False)
-    os.makedirs(os.path.dirname(os.path.abspath(savePath)), exist_ok=True)
-    anim.save(savePath, writer="pillow", fps=6)
-    plt.close()
+    saveTinyGif(frames, savePath, fps=6, scale=5,
+                title="World Evolution")
     print(f"Saved {savePath}")
 
 

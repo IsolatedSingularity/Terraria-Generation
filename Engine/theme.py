@@ -279,6 +279,106 @@ def applyTokyoNight() -> None:
     })
 
 
+# ---------------------------------------------------------------------------
+# Native-pixel GIF writer (palette-quantized, ~10x smaller than matplotlib)
+# ---------------------------------------------------------------------------
+def saveTinyGif(
+    frames,
+    savePath: str,
+    fps: int = 6,
+    scale: int = 5,
+    title: str | None = None,
+    titleHeight: int = 22,
+    maxTileId: int = 200,
+) -> None:
+    """Save a list of TINY-world tile-index grids as a palette-optimized GIF.
+
+    Each frame is upscaled by ``scale`` using nearest-neighbor (preserves the
+    pixel-art look). Output uses an 8-bit palette built from `TILE_COLORS`,
+    yielding a fraction of the size of matplotlib's RGB-frame writer.
+
+    Parameters
+    ----------
+    frames : list[np.ndarray]
+        2-D int arrays of tile IDs (typically shape (140, 240)).
+    savePath : str
+        Destination path for the GIF.
+    fps : int
+        Frames per second.
+    scale : int
+        Integer upscale factor. ``5`` gives a ~1200x700 px GIF for a TINY world.
+    title : str | list[str], optional
+        Optional caption rendered as a single line above the frames. May be a
+        single string (applied to every frame) or a per-frame list with the
+        same length as ``frames``.
+    titleHeight : int
+        Pixel height of the title bar when ``title`` is provided.
+    maxTileId : int
+        Number of tile IDs to map; default 200 covers all known tiles.
+    """
+    import os
+    import numpy as np
+    from PIL import Image, ImageDraw, ImageFont
+
+    # Build an 8-bit RGB palette indexed by tile ID.
+    paletteRgb = []
+    for i in range(256):
+        if i < maxTileId:
+            hexColor = TILE_COLORS.get(i, DEFAULT_TILE_COLOR)
+        else:
+            hexColor = DEFAULT_TILE_COLOR
+        h = hexColor.lstrip("#")
+        paletteRgb.extend((int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)))
+
+    bgHex = PALETTE["bg"].lstrip("#")
+    bgRgb = (int(bgHex[0:2], 16), int(bgHex[2:4], 16), int(bgHex[4:6], 16))
+    fgHex = PALETTE["fg"].lstrip("#")
+    fgRgb = (int(fgHex[0:2], 16), int(fgHex[2:4], 16), int(fgHex[4:6], 16))
+
+    pilFrames = []
+    for idx, grid in enumerate(frames):
+        gridU8 = np.clip(grid, 0, 255).astype(np.uint8)
+        h, w = gridU8.shape
+        img = Image.fromarray(gridU8, mode="P")
+        img.putpalette(paletteRgb)
+        img = img.resize((w * scale, h * scale), Image.NEAREST)
+
+        if title is not None:
+            frameTitle = title[idx] if isinstance(title, (list, tuple)) else title
+            canvas = Image.new("P", (w * scale, h * scale + titleHeight), 0)
+            canvas.putpalette(paletteRgb)
+            # Use a separate RGB layer for the title text to avoid palette
+            # quantization artifacts on antialiased glyphs.
+            rgbCanvas = Image.new("RGB", canvas.size, bgRgb)
+            try:
+                font = ImageFont.truetype("seguisb.ttf", 16)
+            except OSError:
+                try:
+                    font = ImageFont.truetype("DejaVuSans-Bold.ttf", 16)
+                except OSError:
+                    font = ImageFont.load_default()
+            draw = ImageDraw.Draw(rgbCanvas)
+            tw = draw.textlength(frameTitle, font=font)
+            draw.text(((w * scale - tw) / 2, 2), frameTitle,
+                      fill=fgRgb, font=font)
+            rgbCanvas.paste(img.convert("RGB"), (0, titleHeight))
+            img = rgbCanvas.convert("P", palette=Image.ADAPTIVE, colors=128)
+
+        pilFrames.append(img)
+
+    os.makedirs(os.path.dirname(os.path.abspath(savePath)) or ".",
+                exist_ok=True)
+    pilFrames[0].save(
+        savePath,
+        save_all=True,
+        append_images=pilFrames[1:],
+        duration=int(1000 / fps),
+        loop=0,
+        optimize=True,
+        disposal=2,
+    )
+
+
 __all__ = [
     "PALETTE",
     "COLORS",
@@ -292,4 +392,5 @@ __all__ = [
     "lightCmap",
     "applyTokyoNight",
     "buildTileColormap",
+    "saveTinyGif",
 ]

@@ -109,28 +109,26 @@ Complete TINY-world lifecycle hero animation. Frames trace the full progression:
 Engine/                              # Core library
     __init__.py
     algorithms.py                    # tileRunner, digTunnel, cavinator (all accept seed=), cellularAutomataSmooth, settleLiquids
-    constants.py                     # WorldSize (SMALL/MEDIUM/LARGE/FEATURE_PLOT/DETAIL_PLOT), LayerDepths, StructureQuotas, OreConfig, tile/wall IDs
+    constants.py                     # WorldSize (TINY/SMALL/MEDIUM/LARGE/FEATURE_PLOT/DETAIL_PLOT), LayerDepths.forTiny/forSmall/forLarge, StructureQuotas, OreConfig, tile/wall IDs
     structures.py                    # 12 structure generators + 8 placement passes, vectorized spreadGrass
     structureMap.py                  # Rectangle + StructureMap exclusion zones
     spriteRenderer.py                # Crisp pixel-tile rendering + structure composers (drawDungeon/drawCabin/drawFloatingIsland/drawPyramid/...)
-    theme.py                         # Tokyo Night Storm PALETTE, COLORS, BIOME_COLORS, TILE_COLORS, ORE_COLORS, buildTileColormap, applyTokyoNight
-Code/                                # Visualization scripts (FEATURE_PLOT and DETAIL_PLOT scale)
-    terrariaBiomeAnalysis.py         # LARGE biome layout + DETAIL_PLOT sprite-rendered biome transition
-    terrariaNoiseSystems.py          # Surface terrain (4 biomes) + cave systems + tile conversion
-    terrariaOreDistribution.py       # 3-panel ore distribution with vein-detail luster crop + depth density
-    Excess/
-        terrariaLiquidPhysics.py     # Liquid settling simulation
-Advanced/                            # Full-scale simulations
+    worldgen.py                      # generateSmallWorld + generateMiniWorld (TINY 240x140), renderMiniWorld
+    theme.py                         # Tokyo Night Storm PALETTE, COLORS, BIOME_COLORS, TILE_COLORS, ORE_COLORS, buildTileColormap, applyTokyoNight, saveTinyGif
+Code/                                # Static visualizations
+    terrariaBiomeAnalysis.py         # Two TINY-world biome figures
+    terrariaNoiseSystems.py          # Surface terrain noise theory + cave systems + tile conversion
+    terrariaOreDistribution.py       # 3 TINY-world ore tier panels + SMALL-world heatmap
+Advanced/                            # Animations and multi-frame simulations
     __init__.py
-    terrariaWorldGeneration.py       # 23-pass pipeline thumbnail grid + animation
-    terrariaCorruptionEvolution.py   # Infection spread + air gap demo
-    terrariaCrimsonEvolution.py      # Crimson variant (parallel to corruption)
-    terrariaHardmodeStructures.py    # HM ore + Chlorophyte
-    terrariaHardmodeDetailedAnimation.py # HM animation
-    terrariaMasterEvolution.py       # 26-frame master GIF
+    terrariaWorldGeneration.py       # TINY pipeline pass-by-pass GIF
+    terrariaCorruptionEvolution.py   # Evolution figure + spread GIF (corruption + crimson core)
+    terrariaCrimsonEvolution.py      # Crimson wrapper
+    terrariaHardmodeStructures.py    # 3-panel hardmode transformation figure
+    terrariaHardmodeDetailedAnimation.py # Hardmode transition GIF
+    terrariaMasterEvolution.py       # 25-frame hero lifecycle GIF
 Plots/                               # Generated output (tracked so README renders on GitHub)
     Advanced/
-    Excess/
 References/                          # Research documentation (gitignored)
 ```
 
