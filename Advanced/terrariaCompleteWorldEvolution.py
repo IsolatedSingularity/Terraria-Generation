@@ -545,27 +545,37 @@ def plotEvolution(
     evolution: TerrariaCompleteWorldEvolution,
 ) -> None:
     """Render 2x4 multi-panel evolution grid and save as PNG."""
-    plt.style.use("dark_background")
-    fig, axes = plt.subplots(2, 4, figsize=(28, 8), facecolor="#0a0a1a")
+    from Engine.spriteRenderer import applyMapDecorations, drawTileGrid
+    from Engine.constants import LayerDepths
+
+    w = evolution.worldWidth
+    h = evolution.worldHeight
+    layers = LayerDepths(
+        worldSurface=float(evolution.worldSurface),
+        rockLayer=float(evolution.rockLayer),
+        hellLayer=int(evolution.hellLayer),
+        maxTilesY=h,
+    )
+    cropBounds = (0, w, 0, h)
+
+    from Engine.theme import COLORS, applyTokyoNight
+    applyTokyoNight()
+
+    fig, axes = plt.subplots(2, 4, figsize=(28, 8), facecolor=COLORS["bg"])
 
     for idx in range(min(8, len(history))):
         label, grid = history[idx]
         row, col = divmod(idx, 4)
         ax = axes[row, col]
-        img = renderGrid(grid)
-        ax.imshow(img, aspect="auto", interpolation="nearest")
-        ax.set_title(label, color="white", fontsize=11, fontweight="bold", pad=6)
-        ax.tick_params(colors="#666666", labelsize=5)
-
-        # Layer boundary reference lines
-        ax.axhline(y=evolution.worldSurface, color="cyan", ls="--", alpha=0.25, lw=0.5)
-        ax.axhline(y=evolution.rockLayer, color="yellow", ls="--", alpha=0.25, lw=0.5)
-        ax.axhline(y=evolution.hellLayer, color="red", ls="--", alpha=0.25, lw=0.5)
-        ax.set_facecolor("#0a0a1a")
+        drawTileGrid(ax, grid)
+        applyMapDecorations(ax, grid, layers, cropBounds=cropBounds,
+                            grassBand=True, hellstoneBand=False, layerMarkers=True)
+        ax.set_title(label, fontsize=11, fontweight="bold", pad=6)
+        ax.set_facecolor(COLORS["bg"])
 
     plt.suptitle(
         "Terraria Complete World Evolution | 1/10 Scale (840x240)",
-        color="white", fontsize=14, fontweight="bold", y=0.98,
+        fontsize=14, fontweight="bold", y=0.98,
     )
     plt.tight_layout(rect=[0, 0, 1, 0.95])
 
@@ -575,7 +585,7 @@ def plotEvolution(
     )
     os.makedirs(outputDir, exist_ok=True)
     outputPath = os.path.join(outputDir, "terraria_complete_world_evolution.png")
-    plt.savefig(outputPath, dpi=150, bbox_inches="tight", facecolor=fig.get_facecolor())
+    plt.savefig(outputPath, dpi=150, bbox_inches="tight", facecolor=COLORS["bg"])
     plt.close(fig)
     print(f"Saved: {outputPath}")
 

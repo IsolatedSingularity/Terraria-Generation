@@ -600,34 +600,5 @@ def createWorldGenerationAnimation(saveName: str = "world_generation_animation.g
     print("Animation saved.")
 
 
-def createFullPassGrid(saveName: str = "world_generation_all_passes.png") -> None:
-    """Grid showing every pass as a thumbnail."""
-    print("Generating world at 1/10 scale for full pass grid...")
-    gen = TerrariaWorldGenerator(worldWidth=840, worldHeight=240, seed=12345)
-    gen.generate()
-
-    n = len(gen.snapshots)
-    cols = 4
-    rows = (n + cols - 1) // cols
-    maxId = max(TILE_COLORS.keys())
-
-    fig, axes = plt.subplots(rows, cols, figsize=(20, rows * 3))
-    fig.suptitle("All 23 Generation Passes (1/10 scale)", fontsize=16, fontweight='bold')
-
-    for idx, ax in enumerate(axes.flat):
-        if idx < n:
-            name, grid = gen.snapshots[idx]
-            _renderGrid(ax, grid, f"{idx}: {name}", maxId)
-        else:
-            ax.axis('off')
-
-    plt.tight_layout()
-    path = _savePath(saveName)
-    plt.savefig(path, dpi=150, bbox_inches='tight')
-    plt.close(fig)
-    print(f"Full pass grid saved to {path}")
-
-
 if __name__ == "__main__":
-    createFullPassGrid()
     createWorldGenerationAnimation()

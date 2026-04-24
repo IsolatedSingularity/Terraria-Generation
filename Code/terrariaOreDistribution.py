@@ -1,17 +1,13 @@
-"""Terraria Ore Distribution -- TileRunner-based Vein Generation.
+"""Terraria Ore Distribution -- SMALL-world crops + altar progression.
 
-Implements ore vein placement using the game's actual TileRunner algorithm
-with area-proportional formula: ``int(area * 6E-05)`` invocations per ore type.
+Two figures, both rendered as 600x500 crops of generated SMALL worlds:
 
-Each world picks ONE ore from each alternating pair:
-Copper/Tin, Iron/Lead, Silver/Tungsten, Gold/Platinum.
-
-Depth bounds derived from LayerDepths constants (worldSurface, rockLayer,
-hellLayer). Hardmode ores unlocked by breaking Demon/Crimson Altars in a
-3-tier cycle.
-
-Output: two plots — ``ore_distribution.png`` (3-panel: pre-HM, post-HM,
-cross-section detail) and ``ore_depth_density.png`` (line chart).
+- ``ore_distribution.png``: 3-panel column showing pre-Hardmode, post-3-altar,
+  and post-9-altar states centered on the rock layer so the altar-tier
+  ladder (Cobalt/Mythril/Adamantite) is visible.
+- ``ore_depth_density.png``: 3-panel column of ore-tile-per-row counts vs
+  depth at the same three altar checkpoints, with shared external legend
+  and dashed worldSurface/rockLayer/hellLayer markers.
 """
 
 from __future__ import annotations
@@ -20,231 +16,96 @@ import os
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.lines import Line2D
 
 from Engine.algorithms import (
-    AIR, DIRT, STONE,
-    COPPER, TIN, IRON, LEAD, SILVER, TUNGSTEN, GOLD, PLATINUM,
-    COBALT, PALLADIUM, MYTHRIL, ORICHALCUM, ADAMANTITE, TITANIUM,
-    CHLOROPHYTE, HELLSTONE,
-    tileRunner,
+    ADAMANTITE, CHLOROPHYTE, COBALT, COPPER, GOLD, IRON, LEAD, MYTHRIL,
+    ORICHALCUM, PALLADIUM, PLATINUM, SILVER, TIN, TITANIUM, TUNGSTEN,
 )
-from Engine.constants import FEATURE_PLOT, LARGE, LayerDepths, OreConfig
-from Engine.spriteRenderer import drawTileGrid
+from Engine.spriteRenderer import (
+    applyMapDecorations,
+    cropSmallWorld,
+    drawTileGrid,
+)
 from Engine.theme import COLORS, ORE_COLORS, PALETTE, applyTokyoNight
+from Engine.worldgen import generateSmallWorld
 
 applyTokyoNight()
 
 
-# ---------------------------------------------------------------------------
-# Ore metadata: tileID -> (name, hex, strengthRange, stepsRange)
-# ---------------------------------------------------------------------------
-ORE_META: dict[int, tuple[str, str, tuple[int, int], tuple[int, int]]] = {
-    COPPER:      ("Copper",      ORE_COLORS["copper"],      (2, 5), (10, 20)),
-    TIN:         ("Tin",         ORE_COLORS["tin"],         (2, 5), (10, 20)),
-    IRON:        ("Iron",        ORE_COLORS["iron"],        (2, 5), (10, 20)),
-    LEAD:        ("Lead",        ORE_COLORS["lead"],        (2, 5), (10, 20)),
-    SILVER:      ("Silver",      ORE_COLORS["silver"],      (2, 4), (8, 15)),
-    TUNGSTEN:    ("Tungsten",    ORE_COLORS["tungsten"],    (2, 4), (8, 15)),
-    GOLD:        ("Gold",        ORE_COLORS["gold"],        (2, 4), (8, 15)),
-    PLATINUM:    ("Platinum",    ORE_COLORS["platinum"],    (2, 4), (8, 15)),
-    COBALT:      ("Cobalt",      ORE_COLORS["cobalt"],      (2, 5), (10, 25)),
-    PALLADIUM:   ("Palladium",   ORE_COLORS["palladium"],   (2, 5), (10, 25)),
-    MYTHRIL:     ("Mythril",     ORE_COLORS["mythril"],     (2, 4), (8, 20)),
-    ORICHALCUM:  ("Orichalcum",  ORE_COLORS["orichalcum"],  (2, 4), (8, 20)),
-    ADAMANTITE:  ("Adamantite",  ORE_COLORS["adamantite"],  (2, 4), (8, 18)),
-    TITANIUM:    ("Titanium",    ORE_COLORS["titanium"],    (2, 4), (8, 18)),
-    CHLOROPHYTE: ("Chlorophyte", ORE_COLORS["chlorophyte"], (2, 5), (12, 25)),
-    HELLSTONE:   ("Hellstone",   ORE_COLORS["hellstone"],   (3, 6), (10, 20)),
+_PRE_HM_ORES = [COPPER, TIN, IRON, LEAD, SILVER, TUNGSTEN, GOLD, PLATINUM]
+_HM_TIER_1 = [COBALT, PALLADIUM]
+_HM_TIER_2 = [MYTHRIL, ORICHALCUM]
+_HM_TIER_3 = [ADAMANTITE, TITANIUM, CHLOROPHYTE]
+
+_ORE_NAME = {
+    COPPER: "Copper", TIN: "Tin", IRON: "Iron", LEAD: "Lead",
+    SILVER: "Silver", TUNGSTEN: "Tungsten",
+    GOLD: "Gold", PLATINUM: "Platinum",
+    COBALT: "Cobalt", PALLADIUM: "Palladium",
+    MYTHRIL: "Mythril", ORICHALCUM: "Orichalcum",
+    ADAMANTITE: "Adamantite", TITANIUM: "Titanium",
+    CHLOROPHYTE: "Chlorophyte",
+}
+_ORE_COLOR = {
+    COPPER: ORE_COLORS["copper"], TIN: ORE_COLORS["tin"],
+    IRON: ORE_COLORS["iron"], LEAD: ORE_COLORS["lead"],
+    SILVER: ORE_COLORS["silver"], TUNGSTEN: ORE_COLORS["tungsten"],
+    GOLD: ORE_COLORS["gold"], PLATINUM: ORE_COLORS["platinum"],
+    COBALT: ORE_COLORS["cobalt"], PALLADIUM: ORE_COLORS["palladium"],
+    MYTHRIL: ORE_COLORS["mythril"], ORICHALCUM: ORE_COLORS["orichalcum"],
+    ADAMANTITE: ORE_COLORS["adamantite"], TITANIUM: ORE_COLORS["titanium"],
+    CHLOROPHYTE: ORE_COLORS["chlorophyte"],
 }
 
 
 # ===================================================================
-# Core class
+# D3: Ore distribution (3-panel SMALL crop)
 # ===================================================================
-class TerrariaOreDistribution:
-    """Ore distribution using TileRunner with area-proportional formula.
+def createOreDistributionFigure(savePath: str) -> None:
+    """Stack three 600x500 crops at altar checkpoints 0/3/9."""
+    print("Creating ore distribution (3-panel SMALL crops)...")
+    seed = 20260423
+    worlds = [
+        ("Pre-Hardmode (0 altars)", generateSmallWorld(seed=seed, altarsSmashed=0)),
+        ("Hardmode (3 altars smashed)", generateSmallWorld(seed=seed, altarsSmashed=3)),
+        ("Late Hardmode (9 altars smashed)", generateSmallWorld(seed=seed, altarsSmashed=9)),
+    ]
 
-    Defaults to the FEATURE_PLOT canvas (500x300) so individual veins
-    render at visible pixel scale. Layer depths are scaled proportionally
-    from a Large reference world so depth tiers remain game-consistent.
-    """
-
-    def __init__(
-        self,
-        worldWidth: int = FEATURE_PLOT.width,
-        worldHeight: int = FEATURE_PLOT.height,
-        seed: int = 42,
-    ) -> None:
-        self.worldWidth = worldWidth
-        self.worldHeight = worldHeight
-        self.seed = seed
-        self.rng = np.random.default_rng(seed)
-
-        ref = LayerDepths.forLarge()
-        yScale = worldHeight / ref.maxTilesY
-        self.layers = LayerDepths(
-            worldSurface=ref.worldSurface * yScale,
-            rockLayer=ref.rockLayer * yScale,
-            hellLayer=int(ref.hellLayer * yScale),
-            maxTilesY=worldHeight,
+    fig, axes = plt.subplots(3, 1, figsize=(11, 14))
+    for ax, (title, world) in zip(axes, worlds):
+        layers = world.layers
+        # Center deep enough to span rock layer to hellstone band.
+        centerX = world.spawnX
+        centerY = int((layers.rockLayer + layers.hellLayer) / 2)
+        cropped, bounds = cropSmallWorld(
+            world.grid, centerX=centerX, centerY=centerY,
+            width=600, height=500,
         )
+        drawTileGrid(ax, cropped)
+        applyMapDecorations(ax, cropped, layers, cropBounds=bounds,
+                            grassBand=False)
+        h, w = cropped.shape
+        ax.set_xlim(0, w)
+        ax.set_ylim(h, 0)
+        ax.set_title(title, fontsize=12, fontweight="bold")
+        ax.set_xlabel("X (tiles, crop-local)")
+        ax.set_ylabel("Depth (tiles, crop-local)")
 
-        self.area = worldWidth * worldHeight
-        self.loopCount = OreConfig.loopCount(self.area)
-
-        self.preHardmodeOres: list[int] = self._pickOrePairs()
-        self.hardmodeOres: list[int] = self._pickHardmodeTiers()
-
-        self.grid: np.ndarray | None = None
-
-    # ------------------------------------------------------------------
-    def _pickOrePairs(self) -> list[int]:
-        nameToId = {
-            "Copper": COPPER, "Tin": TIN, "Iron": IRON, "Lead": LEAD,
-            "Silver": SILVER, "Tungsten": TUNGSTEN,
-            "Gold": GOLD, "Platinum": PLATINUM,
-        }
-        return [nameToId[pair[self.rng.integers(0, 2)]]
-                for pair in OreConfig.PRE_HARDMODE_PAIRS]
-
-    def _pickHardmodeTiers(self) -> list[int]:
-        nameToId = {
-            "Cobalt": COBALT, "Palladium": PALLADIUM,
-            "Mythril": MYTHRIL, "Orichalcum": ORICHALCUM,
-            "Adamantite": ADAMANTITE, "Titanium": TITANIUM,
-        }
-        return [nameToId[pair[self.rng.integers(0, 2)]]
-                for pair in OreConfig.HARDMODE_TIERS]
-
-    # ------------------------------------------------------------------
-    def _depthBounds(self, oreId: int) -> tuple[int, int]:
-        ws = int(self.layers.worldSurface)
-        rl = int(self.layers.rockLayer)
-        hl = self.layers.hellLayer
-        maxY = self.layers.maxTilesY
-
-        if oreId in (COPPER, TIN):
-            return (0, rl)
-        if oreId in (IRON, LEAD):
-            return (ws, hl)
-        if oreId in (SILVER, TUNGSTEN):
-            return (rl // 2, hl)
-        if oreId in (GOLD, PLATINUM):
-            return (rl, hl)
-        if oreId == HELLSTONE:
-            return (hl, maxY)
-        if oreId in (COBALT, PALLADIUM):
-            return (rl, hl)
-        if oreId in (MYTHRIL, ORICHALCUM):
-            return (rl + (hl - rl) // 5, hl)
-        if oreId in (ADAMANTITE, TITANIUM):
-            return (rl + 2 * (hl - rl) // 5, hl)
-        if oreId == CHLOROPHYTE:
-            return (rl, hl)
-        return (0, maxY)
-
-    def _initGrid(self) -> np.ndarray:
-        grid = np.full((self.worldHeight, self.worldWidth), STONE, dtype=np.int32)
-        ws = int(self.layers.worldSurface)
-        rl = int(self.layers.rockLayer)
-        grid[:ws, :] = AIR
-        grid[ws:rl, :] = DIRT
-        return grid
-
-    def _placeVein(
-        self, grid: np.ndarray, x: int, y: int,
-        oreId: int, strength: float, steps: int,
-    ) -> None:
-        tileRunner(
-            grid, x, y,
-            strength=strength, steps=steps,
-            tileType=oreId, overRide=True,
-        )
-
-    def generatePreHardmodeOres(self) -> np.ndarray:
-        self.grid = self._initGrid()
-        scaledCount = OreConfig.loopCount(self.area)
-        margin = max(2, self.worldWidth // 50)
-
-        print(f"World: {self.worldWidth}x{self.worldHeight} "
-              f"({self.area:,} tiles). Veins/ore: {scaledCount}")
-        print(f"Pre-HM ores: {[ORE_META[o][0] for o in self.preHardmodeOres]}")
-
-        for oreId in self.preHardmodeOres:
-            meta = ORE_META[oreId]
-            yMin, yMax = self._depthBounds(oreId)
-            for _ in range(scaledCount):
-                x = int(self.rng.integers(margin, self.worldWidth - margin))
-                y = int(self.rng.integers(max(yMin, 1), max(yMax, yMin + 2)))
-                self._placeVein(
-                    self.grid, x, y, oreId,
-                    strength=float(self.rng.uniform(*meta[2])),
-                    steps=int(self.rng.integers(*meta[3])),
-                )
-
-        meta = ORE_META[HELLSTONE]
-        yMin, yMax = self._depthBounds(HELLSTONE)
-        hellCount = max(1, scaledCount // 2)
-        for _ in range(hellCount):
-            x = int(self.rng.integers(margin, self.worldWidth - margin))
-            y = int(self.rng.integers(yMin, yMax))
-            self._placeVein(
-                self.grid, x, y, HELLSTONE,
-                strength=float(self.rng.uniform(*meta[2])),
-                steps=int(self.rng.integers(*meta[3])),
-            )
-        return self.grid
-
-    def generateHardmodeOres(self, altarsSmashed: int = 6) -> np.ndarray:
-        if self.grid is None:
-            self.generatePreHardmodeOres()
-        baseCount = OreConfig.loopCount(self.area)
-        margin = max(2, self.worldWidth // 50)
-
-        print(f"\nSmashing {altarsSmashed} altars...")
-        for tierIdx, oreId in enumerate(self.hardmodeOres):
-            veinsForTier = sum(1 for a in range(altarsSmashed) if a % 3 == tierIdx)
-            numVeins = max(1, int(baseCount * veinsForTier * 0.3))
-            meta = ORE_META[oreId]
-            yMin, yMax = self._depthBounds(oreId)
-            for _ in range(numVeins):
-                x = int(self.rng.integers(margin, self.worldWidth - margin))
-                y = int(self.rng.integers(max(yMin, 1), max(yMax, yMin + 2)))
-                self._placeVein(
-                    self.grid, x, y, oreId,
-                    strength=float(self.rng.uniform(*meta[2])),
-                    steps=int(self.rng.integers(*meta[3])),
-                )
-        return self.grid
+    fig.suptitle(
+        "Ore Distribution (600x500 crop of SMALL world)",
+        fontsize=14, fontweight="bold", y=0.995,
+    )
+    plt.tight_layout()
+    plt.savefig(savePath, dpi=200, bbox_inches="tight",
+                facecolor=COLORS["bg"])
+    plt.close(fig)
+    print(f"Ore distribution saved to {savePath}")
 
 
 # ===================================================================
-# Plotting helpers
+# D4: Ore density (3-panel column with external legend)
 # ===================================================================
-def _drawLayerLines(ax: plt.Axes, layers: LayerDepths) -> None:
-    for y, label, color in [
-        (layers.worldSurface, "Surface", PALETTE["yellow"]),
-        (layers.rockLayer, "Rock Layer", PALETTE["orange"]),
-        (layers.hellLayer, "Hell Layer", PALETTE["red"]),
-    ]:
-        ax.axhline(y=y, color=color, linestyle="--", linewidth=1.0, alpha=0.7)
-        ax.text(2, y - 3, label, color=color, fontsize=7,
-                fontweight="bold", alpha=0.9)
-
-
-def _renderOrePanel(
-    ax: plt.Axes, dist: TerrariaOreDistribution, grid: np.ndarray,
-    title: str,
-) -> None:
-    drawTileGrid(ax, grid)
-    _drawLayerLines(ax, dist.layers)
-    ax.set_title(title, fontsize=11, fontweight="bold")
-    ax.set_xlabel("X (tiles)")
-    ax.set_ylabel("Depth (tiles)")
-    ax.set_xlim(0, dist.worldWidth)
-    ax.set_ylim(dist.worldHeight, 0)
-
-
 def _countOreByDepth(
     grid: np.ndarray, oreId: int, binSize: int = 8,
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -258,103 +119,91 @@ def _countOreByDepth(
     return centers, counts
 
 
-# ===================================================================
-# Visualizations
-# ===================================================================
-def visualizeDistribution(
-    dist: TerrariaOreDistribution,
-    altarsSmashed: int = 6,
-    savePath: str | None = None,
-) -> None:
-    """3-panel ore figure: pre-HM, post-altar, vein-detail crop with luster."""
-    if dist.grid is None:
-        dist.generatePreHardmodeOres()
-    preGrid = dist.grid.copy()
-    dist.generateHardmodeOres(altarsSmashed)
-    postGrid = dist.grid.copy()
+def _drawDepthMarkers(ax: plt.Axes, layers, maxDepth: int) -> None:
+    for y, color in [
+        (layers.worldSurface, PALETTE["cyan"]),
+        (layers.rockLayer, PALETTE["yellow"]),
+        (float(layers.hellLayer), PALETTE["red"]),
+    ]:
+        if 0 <= y <= maxDepth:
+            ax.axhline(y=y, color=color, linestyle="--",
+                       linewidth=0.9, alpha=0.55)
 
-    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
-    _renderOrePanel(axes[0], dist, preGrid, "Pre-Hardmode")
-    _renderOrePanel(axes[1], dist, postGrid, f"After {altarsSmashed} Altars")
 
-    # Detail crop centered on rock layer.
-    cy = int(dist.layers.rockLayer)
-    cx = dist.worldWidth // 2
-    halfW, halfH = 100, 60
-    y0, y1 = max(0, cy - halfH), min(dist.worldHeight, cy + halfH)
-    x0, x1 = max(0, cx - halfW), min(dist.worldWidth, cx + halfW)
-    detail = postGrid[y0:y1, x0:x1]
+def createOreDensityFigure(savePath: str) -> None:
+    """3-panel column of ore-density-vs-depth at altar checkpoints 0/3/9.
 
-    drawTileGrid(axes[2], detail, extent=(x0, x1, y1, y0))
-    # Luster: white dot offset on each ore tile in the detail crop.
-    postOres = dist.preHardmodeOres + [HELLSTONE] + dist.hardmodeOres
-    for oreId in postOres:
-        if oreId in ORE_META:
-            ys, xs = np.where(detail == oreId)
-            if ys.size:
-                axes[2].scatter(
-                    xs + x0 + 0.3, ys + y0 + 0.3,
-                    s=8, c="#ffffff", alpha=0.45, marker="o",
-                    edgecolors="none", zorder=2,
-                )
-    axes[2].set_title("Vein Detail (luster)", fontsize=11, fontweight="bold")
-    axes[2].set_xlabel("X (tiles)")
-    axes[2].set_ylabel("Depth (tiles)")
-    axes[2].set_xlim(x0, x1)
-    axes[2].set_ylim(y1, y0)
+    Each panel shares its X axis (tile-count per row band). Pre-HM ores are
+    drawn faded in the post-altar panels so the new tiers are visually
+    distinct. Layer markers are dashed horizontals; legend sits above the
+    panels rather than inside them to avoid the prior overlap.
+    """
+    print("Creating ore depth-density (3-panel column)...")
+    seed = 20260423
+    worlds = {
+        0: generateSmallWorld(seed=seed, altarsSmashed=0),
+        3: generateSmallWorld(seed=seed, altarsSmashed=3),
+        9: generateSmallWorld(seed=seed, altarsSmashed=9),
+    }
+    layers = worlds[0].layers
+    maxDepth = layers.maxTilesY
+
+    panelOres = {
+        0: [(_PRE_HM_ORES, 1.0)],
+        3: [(_PRE_HM_ORES, 0.30), (_HM_TIER_1, 1.0), (_HM_TIER_2, 1.0)],
+        9: [(_PRE_HM_ORES, 0.30), (_HM_TIER_1, 0.55),
+            (_HM_TIER_2, 1.0), (_HM_TIER_3, 1.0)],
+    }
+    titles = {
+        0: "Pre-Hardmode (0 altars)",
+        3: "Hardmode (3 altars: tier-1 + tier-2 visible)",
+        9: "Late Hardmode (9 altars: full tier ladder)",
+    }
+
+    fig, axes = plt.subplots(3, 1, figsize=(11, 13), sharex=True)
+
+    for ax, altars in zip(axes, [0, 3, 9]):
+        grid = worlds[altars].grid
+        for oreList, alpha in panelOres[altars]:
+            for oreId in oreList:
+                depths, counts = _countOreByDepth(grid, oreId, binSize=8)
+                if counts.sum() == 0:
+                    continue
+                ax.plot(counts, depths,
+                        color=_ORE_COLOR[oreId],
+                        linewidth=2.0, alpha=alpha,
+                        label=_ORE_NAME[oreId] if alpha >= 0.99 else None)
+        _drawDepthMarkers(ax, layers, maxDepth)
+        ax.invert_yaxis()
+        ax.set_title(titles[altars], fontsize=11, fontweight="bold")
+        ax.set_ylabel("Depth (tiles)", fontweight="bold")
+        ax.grid(True, alpha=0.18, linestyle="--")
+
+    axes[-1].set_xlabel("Ore tiles per 8-row band", fontweight="bold")
+
+    # External shared legend above the figure.
+    seenIds = list(dict.fromkeys(
+        _PRE_HM_ORES + _HM_TIER_1 + _HM_TIER_2 + _HM_TIER_3
+    ))
+    handles = [
+        Line2D([0], [0], color=_ORE_COLOR[oid], linewidth=3.0,
+               label=_ORE_NAME[oid])
+        for oid in seenIds
+    ]
+    fig.legend(
+        handles=handles, loc="upper center",
+        bbox_to_anchor=(0.5, 0.995), ncol=5, fontsize=9, frameon=False,
+    )
 
     fig.suptitle(
-        "Ore Distribution: TileRunner + 3-Cycle Altar System",
-        fontsize=14, fontweight="bold",
+        "Ore Density vs Depth (3 altar checkpoints)",
+        fontsize=14, fontweight="bold", y=1.04,
     )
-    plt.tight_layout()
-    if savePath:
-        plt.savefig(savePath, dpi=200, bbox_inches="tight",
-                    facecolor=COLORS["bg"])
-        print(f"Saved: {savePath}")
+    plt.tight_layout(rect=(0, 0, 1, 0.94))
+    plt.savefig(savePath, dpi=200, bbox_inches="tight",
+                facecolor=COLORS["bg"])
     plt.close(fig)
-
-
-def visualizeDepthDensity(
-    dist: TerrariaOreDistribution,
-    savePath: str | None = None,
-) -> None:
-    if dist.grid is None:
-        dist.generatePreHardmodeOres()
-
-    fig, ax = plt.subplots(figsize=(10, 6))
-    for oreId in dist.preHardmodeOres + [HELLSTONE]:
-        if oreId not in ORE_META:
-            continue
-        depths, counts = _countOreByDepth(dist.grid, oreId, binSize=8)
-        if counts.sum() == 0:
-            continue
-        name, color = ORE_META[oreId][0], ORE_META[oreId][1]
-        ax.plot(counts, depths, label=name, color=color,
-                linewidth=2.0, alpha=0.9)
-    ax.invert_yaxis()
-
-    for y, label in [
-        (dist.layers.worldSurface, "Surface"),
-        (dist.layers.rockLayer, "Rock"),
-        (dist.layers.hellLayer, "Hell"),
-    ]:
-        ax.axhline(y=y, color=PALETTE["subtle"],
-                   linestyle=":", linewidth=1.0, alpha=0.6)
-        ax.text(ax.get_xlim()[1] * 0.95, y - 4, label,
-                color=PALETTE["muted"], fontsize=8, ha="right", alpha=0.8)
-
-    ax.set_xlabel("Ore tiles per 8-row band", fontweight="bold")
-    ax.set_ylabel("Depth (tiles)", fontweight="bold")
-    ax.set_title("Pre-Hardmode Ore Density vs Depth",
-                 fontsize=13, fontweight="bold")
-    ax.legend(loc="lower right", fontsize=9)
-    plt.tight_layout()
-    if savePath:
-        plt.savefig(savePath, dpi=200, bbox_inches="tight",
-                    facecolor=COLORS["bg"])
-        print(f"Saved: {savePath}")
-    plt.close(fig)
+    print(f"Ore depth-density saved to {savePath}")
 
 
 # ===================================================================
@@ -367,23 +216,14 @@ def main() -> None:
     os.makedirs(plotsDir, exist_ok=True)
 
     print("=" * 60)
-    print("Terraria Ore Distribution (TileRunner + area formula)")
-    print(f"Reference loopCount(LARGE) = {OreConfig.loopCount(LARGE.area)}")
+    print("Terraria Ore Distribution (SMALL-world crops + altar progression)")
     print("=" * 60)
 
-    dist = TerrariaOreDistribution(
-        worldWidth=FEATURE_PLOT.width,
-        worldHeight=FEATURE_PLOT.height,
-        seed=42,
+    createOreDistributionFigure(
+        os.path.join(plotsDir, "ore_distribution.png")
     )
-    dist.generatePreHardmodeOres()
-    visualizeDistribution(
-        dist, altarsSmashed=6,
-        savePath=os.path.join(plotsDir, "ore_distribution.png"),
-    )
-    visualizeDepthDensity(
-        dist,
-        savePath=os.path.join(plotsDir, "ore_depth_density.png"),
+    createOreDensityFigure(
+        os.path.join(plotsDir, "ore_depth_density.png")
     )
 
 

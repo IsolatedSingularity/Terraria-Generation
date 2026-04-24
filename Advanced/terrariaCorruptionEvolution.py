@@ -11,7 +11,6 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-import seaborn as sns
 from Engine.algorithms import (
     tileRunner,
     AIR, DIRT, STONE, SAND, ICE, MUD, GRASS, SNOW,
@@ -506,93 +505,87 @@ def _buildAirGapDemo() -> np.ndarray:
 # Public figure builders
 # ---------------------------------------------------------------------------
 def createEvolutionFigure(savePath: str | None = None) -> plt.Figure:
-    """2x3 panel figure: evil pockets, V-pattern, spread frames, air gap, timeline."""
+    """4-panel 600x500 SMALL-crop figure: pre-HM pockets, V-pattern, spread T+1, T+10."""
+    from Engine.spriteRenderer import applyMapDecorations, cropSmallWorld, drawTileGrid
+    from Engine.worldgen import generateSmallWorld
+
     if savePath is None:
         savePath = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "..", "Plots", "Advanced", "corruption_evolution.png",
         )
 
-    print("Running reduced-resolution corruption evolution (840x240)...")
-    sim = TerrariaCorruptionEvolution(worldWidth=840, worldHeight=240, seed=42)
+    print("Generating SMALL world for corruption evolution (seed=20260423)...")
+    world = generateSmallWorld(seed=20260423, evilType="corruption", compactBiomes=True)
+    layers = world.layers
+    baseGrid = world.grid.copy()
 
-    sim.initializeWorld()
-    sim.placePreHardmodeEvil()
+    centerX = world.spawnX
+    centerY = int((layers.worldSurface + layers.rockLayer) / 2)
+
+    # Build snapshots by running a reduced-res simulation on the SMALL grid
+    # then cropping at the same center for all 4 panels.
+    sim = TerrariaCorruptionEvolution(
+        worldWidth=baseGrid.shape[1], worldHeight=baseGrid.shape[0],
+        evilType="corruption", seed=20260423,
+    )
+    # Seed with the actual world geometry rather than sim's default.
+    sim.grid = baseGrid.copy()
+    sim.layers = layers
+    sim.world = sim.grid
+
+    # Phase 1: pre-HM pockets only (use world's pre-placed evil)
     snapPreHM = sim.grid.copy()
 
+    # Phase 2: V-pattern
     sim.triggerHardmode()
     snapV = sim.grid.copy()
 
+    # Phase 3: T+1 (one spread step, ~5000 in-game seconds)
     sim.simulateSpread(5000.0)
     snapSpread1 = sim.grid.copy()
 
-    for _ in range(5):
+    # Phase 4: T+10 (nine more spread steps)
+    for _ in range(9):
         sim.simulateSpread(5000.0)
     snapSpread2 = sim.grid.copy()
 
-    snapAirGap = _buildAirGapDemo()
-
-    fig, axes = plt.subplots(3, 2, figsize=(18, 14))
-    panels = [
-        (snapPreHM, "Pre-Hardmode Evil Pockets (TileRunner)"),
-        (snapV, "Hardmode V-Pattern (WoF Defeated)"),
-        (snapSpread1, "Spread: +5 000 Game Seconds"),
-        (snapSpread2, "Spread: +30 000 Game Seconds"),
+    titles = [
+        "Phase 1: Pre-Hardmode Evil Pockets",
+        "Phase 2: Hardmode V-Pattern (WoF Defeated)",
+        "Phase 3: Spread T+1 (~5 000 s)",
+        "Phase 4: Spread T+10 (~50 000 s)",
     ]
+    snaps = [snapPreHM, snapV, snapSpread1, snapSpread2]
 
-    for idx, (snap, title) in enumerate(panels):
-        r, c = divmod(idx, 2)
-        axes[r, c].imshow(_gridToRgb(snap), aspect="auto", interpolation="nearest")
-        axes[r, c].set_title(title, fontsize=11, fontweight="bold")
-        axes[r, c].set_xlabel("X (tiles, 1:10 scale)")
-        axes[r, c].set_ylabel("Y (tiles)")
-    _addLegend(axes[0, 0])
+    fig, axes = plt.subplots(2, 2, figsize=(18, 14))
+    for idx, (ax, snap, title) in enumerate(zip(axes.flat, snaps, titles)):
+        cropped, bounds = cropSmallWorld(snap, centerX=centerX, centerY=centerY,
+                                         width=600, height=500)
+        drawTileGrid(ax, cropped)
+        applyMapDecorations(ax, cropped, layers, cropBounds=bounds)
+        ax.set_title(title, fontsize=11, fontweight="bold")
+        ax.set_xlabel("X (tiles, crop-local)")
+        ax.set_ylabel("Depth (tiles, crop-local)")
 
-    # Air gap demo panel
-    axes[2, 0].imshow(_gridToRgb(snapAirGap), aspect="auto", interpolation="nearest")
-    axes[2, 0].set_title(
-        f"Air Gap Demo: {INFECTION_GAP_TILES}-Tile Trench Blocks Spread",
-        fontsize=11, fontweight="bold",
-    )
-    axes[2, 0].set_xlabel("X (tiles)")
-    axes[2, 0].set_ylabel("Y (tiles)")
-    axes[2, 0].axhline(y=39, color="yellow", linewidth=0.8, linestyle="--", alpha=0.6)
-    axes[2, 0].text(62, 18, "No barrier", color="white", fontsize=8, ha="left")
-    axes[2, 0].text(
-        62, 58, f"{INFECTION_GAP_TILES}-tile air trench",
-        color="yellow", fontsize=8, ha="left",
-    )
-
-    # Infection timeline panel
-    ax = axes[2, 1]
-    if sim.corruptionHistory:
-        ax.plot(
-            range(len(sim.corruptionHistory)),
-            sim.corruptionHistory,
-            color=sns.color_palette("rocket")[3],
-            linewidth=2,
-        )
-    ax.set_title("Infected Tile Count Over Spread Steps", fontsize=11, fontweight="bold")
-    ax.set_xlabel("Spread Step")
-    ax.set_ylabel("Infected Tiles")
-    ax.grid(True, alpha=0.3)
-
+    from Engine.theme import COLORS
     fig.suptitle(
-        "Terraria Corruption Evolution (840x240, 1:10 Scale)",
+        "Corruption Evolution (600x500 SMALL-World Crop)",
         fontsize=14, fontweight="bold", y=0.98,
     )
     plt.tight_layout(rect=[0, 0, 1, 0.96])
 
     os.makedirs(os.path.dirname(os.path.abspath(savePath)), exist_ok=True)
-    fig.savefig(savePath, dpi=200, bbox_inches="tight")
+    fig.savefig(savePath, dpi=200, bbox_inches="tight", facecolor=COLORS["bg"])
     print(f"Saved: {savePath}")
     plt.close(fig)
     return fig
 
 
 def createSpreadAnimation(savePath: str | None = None) -> None:
-    """Animated GIF showing corruption spread at reduced resolution (840x240)."""
+    """Animated GIF showing corruption spread (SMALL world crop, ~600px wide)."""
     from matplotlib.animation import FuncAnimation
+    from Engine.worldgen import generateSmallWorld
 
     if savePath is None:
         savePath = os.path.join(
@@ -600,32 +593,49 @@ def createSpreadAnimation(savePath: str | None = None) -> None:
             "..", "Plots", "Advanced", "corruption_spread.gif",
         )
 
-    print("Creating spread animation (840x240)...")
-    sim = TerrariaCorruptionEvolution(worldWidth=840, worldHeight=240, seed=42)
-    sim.initializeWorld()
-    sim.placePreHardmodeEvil()
+    print("Generating SMALL world for corruption spread GIF...")
+    world = generateSmallWorld(seed=20260423, evilType="corruption", compactBiomes=True)
+    layers = world.layers
+    centerX = world.spawnX
+    centerY = int((layers.worldSurface + layers.rockLayer) / 2)
+    h0, w0 = world.grid.shape
 
-    frames: list[np.ndarray] = [sim.grid.copy()]
+    # Crop helper (no sprite decorations -- fast for animation frames).
+    x0 = max(0, centerX - 300)
+    x1 = min(w0, centerX + 300)
+    y0 = max(0, centerY - 250)
+    y1 = min(h0, centerY + 250)
 
-    # Pre-hardmode: 10 steps
+    def _crop(grid: np.ndarray) -> np.ndarray:
+        return grid[y0:y1, x0:x1]
+
+    sim = TerrariaCorruptionEvolution(
+        worldWidth=w0, worldHeight=h0,
+        evilType="corruption", seed=20260423,
+    )
+    sim.grid = world.grid.copy()
+    sim.layers = layers
+    sim.world = sim.grid
+
+    frames: list[np.ndarray] = [_crop(sim.grid)]
+
     for _ in range(10):
         sim.simulateSpread(1000.0)
-        frames.append(sim.grid.copy())
+        frames.append(_crop(sim.grid))
 
-    # Hardmode trigger
     sim.triggerHardmode()
-    frames.append(sim.grid.copy())
+    frames.append(_crop(sim.grid))
     hmFrame = len(frames) - 1
 
-    # Post-hardmode: 30 steps
     for _ in range(30):
         sim.simulateSpread(3000.0)
-        frames.append(sim.grid.copy())
+        frames.append(_crop(sim.grid))
 
-    fig, ax = plt.subplots(figsize=(14, 4))
-    im = ax.imshow(_gridToRgb(frames[0]), aspect="auto", interpolation="nearest")
-    ax.set_xlabel("X (tiles, 1:10 scale)")
-    ax.set_ylabel("Y (tiles)")
+    fig, ax = plt.subplots(figsize=(13, 10))
+    im = ax.imshow(_gridToRgb(frames[0]), aspect="auto", interpolation="nearest",
+                   origin="upper")
+    ax.set_xlabel("X (tiles, crop-local)")
+    ax.set_ylabel("Depth (tiles, crop-local)")
     titleObj = ax.set_title("", fontsize=12, fontweight="bold")
 
     def _update(f: int):

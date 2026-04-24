@@ -24,6 +24,7 @@ from matplotlib.axes import Axes
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Circle, Rectangle
 
+from Engine.constants import LayerDepths
 from Engine.theme import (
     DEFAULT_TILE_COLOR,
     PALETTE,
@@ -314,4 +315,112 @@ __all__ = [
     "drawOreVein",
     "drawDungeon", "drawTemple", "drawCabin", "drawPyramid",
     "drawLivingTree", "drawFloatingIsland", "drawSpiderCave", "drawGemCave",
+    "applyMapDecorations", "cropSmallWorld",
 ]
+
+
+# ---------------------------------------------------------------------------
+# Map decoration + cropping helpers (Phase B/C of redesign audit)
+# ---------------------------------------------------------------------------
+def applyMapDecorations(
+    ax: Axes,
+    grid: npt.NDArray[np.integer],
+    layers: LayerDepths,
+    *,
+    grassBand: bool = True,
+    hellstoneBand: bool = True,
+    layerMarkers: bool = True,
+    cropBounds: tuple[int, int, int, int] | None = None,
+) -> None:
+    """Apply standard decorations to a map ax (after ``drawTileGrid``).
+
+    Args:
+        ax: Matplotlib axis already populated with a tile-grid imshow.
+        grid: The (possibly cropped) tile grid being rendered, used only for
+            bounds inference when ``cropBounds`` is None.
+        layers: World-coordinate ``LayerDepths`` for the *full* world from
+            which ``grid`` was generated. Depths are remapped into crop space
+            when ``cropBounds`` is provided.
+        grassBand: If True, draw a thin bright-green strip at ``worldSurface``.
+        hellstoneBand: If True, draw an orange strip from ``hellLayer`` to
+            the bottom of the visible window.
+        layerMarkers: If True, draw cyan/yellow/red dashed horizontal lines at
+            ``worldSurface``, ``rockLayer``, ``hellLayer``.
+        cropBounds: ``(x0, x1, y0, y1)`` of the crop in world coordinates. If
+            None, the grid is assumed to span the whole world (no remap).
+    """
+    if cropBounds is None:
+        h, w = grid.shape
+        x0, x1, y0, y1 = 0, w, 0, h
+    else:
+        x0, x1, y0, y1 = cropBounds
+
+    def toLocalY(worldY: float) -> float:
+        return worldY - y0
+
+    surfaceLocal = toLocalY(layers.worldSurface)
+    rockLocal = toLocalY(layers.rockLayer)
+    hellLocal = toLocalY(float(layers.hellLayer))
+    cropW = x1 - x0
+    cropH = y1 - y0
+
+    if grassBand and 0 <= surfaceLocal < cropH:
+        ax.add_patch(Rectangle(
+            (0, surfaceLocal - 1), cropW, 2,
+            facecolor=PALETTE.get("green", "#9ece6a"),
+            edgecolor="none", alpha=0.55, zorder=2,
+        ))
+
+    if hellstoneBand and hellLocal < cropH:
+        bandTop = max(hellLocal, 0.0)
+        ax.add_patch(Rectangle(
+            (0, bandTop), cropW, cropH - bandTop,
+            facecolor=PALETTE.get("orange", "#ff9e64"),
+            edgecolor="none", alpha=0.28, zorder=2,
+        ))
+
+    if layerMarkers:
+        markers = (
+            (surfaceLocal, PALETTE.get("cyan", "#7dcfff")),
+            (rockLocal, PALETTE.get("yellow", "#e0af68")),
+            (hellLocal, PALETTE.get("red", "#f7768e")),
+        )
+        for yLocal, color in markers:
+            if 0 <= yLocal <= cropH:
+                ax.axhline(
+                    y=yLocal, color=color, linestyle="--",
+                    linewidth=0.8, alpha=0.55, zorder=6,
+                )
+
+
+def cropSmallWorld(
+    fullGrid: npt.NDArray[np.integer],
+    centerX: int,
+    centerY: int,
+    width: int = 600,
+    height: int = 500,
+) -> tuple[npt.NDArray[np.integer], tuple[int, int, int, int]]:
+    """Crop a centered window from a full SMALL-world grid.
+
+    Clamps the requested window to the grid bounds so callers near the edges
+    still receive a window of the requested size when possible.
+
+    Args:
+        fullGrid: 2D tile-id array shaped ``(H, W)`` where ``H, W`` are the
+            full SMALL-world height and width (e.g. 1200 x 4200).
+        centerX, centerY: World-coordinate center of the desired crop.
+        width, height: Crop dimensions in tiles.
+
+    Returns:
+        ``(croppedGrid, (x0, x1, y0, y1))`` where the bounds are in world
+        coordinates so callers can re-anchor layer markers into crop space.
+    """
+    fullH, fullW = fullGrid.shape
+    halfW, halfH = width // 2, height // 2
+
+    x0 = max(0, min(fullW - width, centerX - halfW))
+    y0 = max(0, min(fullH - height, centerY - halfH))
+    x1 = min(fullW, x0 + width)
+    y1 = min(fullH, y0 + height)
+
+    return fullGrid[y0:y1, x0:x1], (x0, x1, y0, y1)

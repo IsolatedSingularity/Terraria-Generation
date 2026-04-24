@@ -1,12 +1,11 @@
 # Terraria World Generation
 
-![Master Evolution](Plots/Advanced/terraria_master_evolution.gif)
-
 [![Python](https://img.shields.io/badge/python-3.11%2B-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![NumPy](https://img.shields.io/badge/numpy-2.2-013243.svg?style=for-the-badge&logo=numpy&logoColor=white)](https://numpy.org/)
 [![SciPy](https://img.shields.io/badge/scipy-1.15-8CAAE6.svg?style=for-the-badge&logo=scipy&logoColor=white)](https://scipy.org/)
 [![Matplotlib](https://img.shields.io/badge/matplotlib-3.10-11557C.svg?style=for-the-badge&logo=plotly&logoColor=white)](https://matplotlib.org/)
-[![Seaborn](https://img.shields.io/badge/seaborn-0.13-4C72B0.svg?style=for-the-badge&logo=seaborn&logoColor=white)](https://seaborn.pydata.org/)
+
+![Master Evolution](Plots/Advanced/terraria_master_evolution.gif)
 
 ## Overview
 
@@ -71,37 +70,30 @@ Depth-density profiles showing tile counts per row, with Tokyo Night layer bound
 
 ### Structure Placement
 
-![Structure Density](Plots/terraria_structure_density.png)
+![Structure Placement](Plots/terraria_structure_density.png)
 
-Macro-scale (LARGE 8400x2400) scatter of game-accurate structure quotas with StructureMap exclusion zones: 6 Floating Islands, 140-160 Underground Cabins, up to 403 Life Crystals, 42 Surface Chests, 1 Dungeon, 1 Jungle Temple.
+600x500 crop of a SMALL (4200x1200) world with game-accurate structure overlays rendered via `Engine.spriteRenderer` composer primitives: Underground Cabins (doors, chests, torches), Floating Island (lens-shaped grass body), Pyramid (sandstone-brick silhouette with hidden chamber), and Dungeon corner (interlocking brick rooms). StructureMap exclusion zones prevent placement overlap. Standard grass-strip and layer-marker decorations annotate worldSurface, rockLayer, and hellLayer boundaries.
 
-![Structure Detail](Plots/terraria_structure_detail.png)
-
-Four-panel sprite render of representative structures rendered at tile scale via the `Engine.spriteRenderer` module: Dungeon (4 interlocking rooms with doors and torches), Underground Cabin (door + chest + platforms + torch), Floating Island (lens-shaped grass island with embedded chest), and Pyramid (sandstone-brick triangle silhouette).
-
-### Liquid Physics
-
-![Liquid Physics](Plots/Excess/liquid_settling_simulation.png)
-
-Gravity-based liquid settling simulation showing water, lava, and honey behavior with obsidian and crispy honey block formation at contact boundaries.
 
 ## Advanced Simulations
 
 ### 23-Pass World Generation Pipeline
 
-![All Passes](Plots/Advanced/world_generation_all_passes.png)
-
-Every pass of the 23-step pipeline rendered at 1/10 scale (840x240): Reset, Terrain, Stone Layer, Sand Patches, Rocks In Dirt, Dirt In Rocks, Clay, Silt, Surface Caves, Dirt Layer Caves, Rock Layer Caves, Smooth World, Snow Biome, Jungle, Corruption, Floating Islands, Underworld, Shinies, Dungeon, Settle Liquids, Life Crystals, Grass, Border Buffer.
-
 ![World Generation Animation](Plots/Advanced/world_generation_animation.gif)
+
+Animated GIF stepping through all 23 terrain passes at 1/10 scale (840x240). Each frame adds one generation layer -- terrain base, cave carving, biome strips, ore placement, dungeon, and final smoothing passes -- illustrating the procedural dependency chain that underlies every Terraria world.
 
 ### Corruption/Crimson/Hallow Evolution
 
 ![Corruption Evolution](Plots/Advanced/corruption_evolution.png)
 
-Full infection lifecycle: pre-hardmode evil pockets via TileRunner, hardmode V-pattern diagonal carving, tile-update-cycle spread with asymmetric surface/underground rates (`SURFACE_UPDATE_RATE=140s`, `UNDERGROUND_UPDATE_RATE=830s`), and air gap blocking demonstration (`INFECTION_GAP_TILES=4`).
+Four-panel 600x500 SMALL-world crop showing the full corruption lifecycle: pre-hardmode evil pockets placed by TileRunner, hardmode V-pattern diagonal carving from the Wall of Flesh event, tile-update-cycle spread with asymmetric surface/underground rates (`SURFACE_UPDATE_RATE=140s`, `UNDERGROUND_UPDATE_RATE=830s`), and advanced spread after ten update cycles.
 
 ![Corruption Spread](Plots/Advanced/corruption_spread.gif)
+
+![Crimson Evolution](Plots/Advanced/crimson_evolution.png)
+
+Parallel simulation for the Crimson biome variant -- crimson pockets, V-pattern, and multi-cycle spread using identical stochastic rules with Crimson-specific tile conversion tables.
 
 ### Complete World Evolution
 
@@ -193,6 +185,58 @@ python Advanced/terrariaMasterEvolution.py
 **Infection spread**: Each tile update cycle, infected tiles pick one random neighbor within radius `INFECTION_SPREAD_RADIUS` (3 tiles). Conversion is blocked by `INFECTION_GAP_TILES` (4) consecutive air tiles on the path.
 
 **Layer depths** (large world, 8400x2400): `worldSurface=340`, `rockLayer=880`, `hellLayer=2200`.
+
+---
+
+## Theory
+
+### Surface Terrain as Fractional Brownian Motion
+
+Terraria surface heights are synthesized as a sum of sinusoidal octaves -- a
+discrete approximation of fractional Brownian motion (fBm):
+
+$$h(x) = \sum_{i=0}^{N-1} A_0 \, p^i \sin\!\bigl(2\pi f_0 \, l^i \, x + \phi_i\bigr)$$
+
+where $A_0$ is the base amplitude, $p \in (0, 1)$ is the persistence, $f_0$ is
+the base frequency, $l > 1$ is the lacunarity, and $\phi_i$ are independent
+uniform random phases. The resulting power spectrum satisfies
+$S(f) \propto f^{-\beta}$ with $\beta = 2 + 2\log_2 p$, giving the pink-noise
+texture characteristic of natural terrain. In the engine implementation,
+$p \approx 0.5$, $l = 2$, and $N = 4$ octaves produce $\beta \approx 2$, a
+well-known geomorphology exponent.
+
+### Infection Spread as a Stochastic Cellular Automaton
+
+Each tile update cycle, every infected cell $\mathbf{r}$ attempts to convert
+one neighbor $\mathbf{r}' \in B_3(\mathbf{r})$ drawn uniformly at random.
+The macroscopic dynamics approximate a stochastic reaction-diffusion equation
+
+$$\partial_t \rho = D\,\nabla^2\rho + f(\rho)$$
+
+where $\rho$ is the infected-tile density, $D$ is an effective diffusivity set
+by `INFECTION_SPREAD_RADIUS`, and $f(\rho)$ encodes logistic saturation.
+Air-gap blocking maps onto percolation: a contiguous void of width
+$w \geq \texttt{INFECTION\_GAP\_TILES} = 4$ constitutes a barrier because the
+path integral of $\mathbf{1}[\text{air}]$ along any geodesic exceeds the
+conduction threshold. In 2-D site percolation, the critical occupation
+probability is $p_c \approx 0.593$; a 4-tile air trench forces the local
+percolation below $p_c$ and halts spread deterministically.
+
+### Cellular Automata Cave Smoothing
+
+After TileRunner carves raw voids, two passes of majority-rule CA smooth the
+cave walls. Each cell $s_i$ is updated:
+
+$$s_i^{(t+1)} = \begin{cases} 1 & \text{if } \displaystyle\sum_{j \in \mathcal{N}_5(i)} s_j^{(t)} \geq 3 \\ 0 & \text{otherwise} \end{cases}$$
+
+where $\mathcal{N}_5(i)$ is the von Neumann 5-neighborhood (center plus four
+cardinal neighbors). This is equivalent to minimizing a surface-tension
+energy functional $E[s] = \sum_{\langle i,j \rangle}(s_i - s_j)^2$ under a
+majority constraint. Two iterations remove isolated spurs and round corners
+without significantly shrinking cave volumes, matching the smoothing pass
+documented in decompiled `WorldGen.cs`.
+
+---
 
 ## References
 

@@ -443,94 +443,67 @@ def _remapGrid(grid: np.ndarray, knownIds: list[int]) -> np.ndarray:
 
 def visualize(sim: TerrariaHardmodeTransformation,
               savePath: str | None = None) -> None:
-    """Create multi-panel hardmode transformation visualization.
+    """3-panel 600x500 SMALL-crop hardmode transformation figure.
 
     Panels:
-      1. Pre-hardmode world with Life Crystals
-      2. Post-altar smashing (hardmode ores)
-      3. Post-Chlorophyte
-      4. Statistics panel with correct quotas
-    Saves to savePath as PNG.
+      1. Pre-HM baseline
+      2. Post-V-pattern (altar x0)
+      3. Post-altar-smashing (full HM ore tiers + Chlorophyte in jungle mud)
     """
-    if savePath is None:
-        savePath = os.path.join(os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__))), "Plots", "Advanced")
-    os.makedirs(savePath, exist_ok=True)
+    from Engine.spriteRenderer import applyMapDecorations, cropSmallWorld, drawTileGrid
+    from Engine.worldgen import generateSmallWorld
 
-    if not sim.history:
-        print("No history; call runHardmodeTransformation() first.")
-        return
+    plotsDir = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "Plots", "Advanced",
+    )
+    os.makedirs(plotsDir, exist_ok=True)
+    outFile = os.path.join(plotsDir, "terraria_hardmode_transformation.png")
 
-    # Collect all unique tile IDs across snapshots
-    allIds = sorted({
-        int(v)
-        for _, snap in sim.history
-        for v in np.unique(snap)
-    })
+    print("Generating SMALL world for hardmode transformation (seed=20260425)...")
+    worldBase = generateSmallWorld(seed=20260425, evilType="corruption",
+                                    altarsSmashed=0, compactBiomes=True)
+    worldV = generateSmallWorld(seed=20260425, evilType="corruption",
+                                 altarsSmashed=0, compactBiomes=True)
+    worldHM = generateSmallWorld(seed=20260425, evilType="corruption",
+                                  altarsSmashed=9, compactBiomes=True)
 
-    colors = [_TILE_COLORS.get(tid, DEFAULT_TILE_COLOR) for tid in allIds]
-    cmap = ListedColormap(colors)
+    layers = worldBase.layers
+    centerX = worldBase.spawnX
+    centerY = int((layers.worldSurface + layers.rockLayer) / 2)
 
-    fig, axes = plt.subplots(2, 2, figsize=(22, 12))
-    fig.suptitle("Terraria Hardmode Transformation (1/10 scale visualization)",
-                 fontsize=16, fontweight="bold", color="white")
+    # Apply V-pattern to worldV grid via TerrariaCorruptionEvolution
+    from Advanced.terrariaCorruptionEvolution import TerrariaCorruptionEvolution
+    simV = TerrariaCorruptionEvolution(
+        worldWidth=worldV.grid.shape[1], worldHeight=worldV.grid.shape[0],
+        evilType="corruption", seed=20260425,
+    )
+    simV.grid = worldV.grid.copy()
+    simV.layers = layers
+    simV.triggerHardmode()
 
-    # Panels 0-2: world snapshots
-    for i, (label, snap) in enumerate(sim.history[:3]):
-        ax = axes[i // 2][i % 2]
-        mapped = _remapGrid(snap, allIds)
-        ax.imshow(mapped, cmap=cmap, aspect="auto", interpolation="nearest")
-        ax.set_title(label, fontsize=12, color="white")
-        ax.set_xlabel("X (tiles)")
-        ax.set_ylabel("Y (tiles)")
-
-    # Panel 3: statistics text
-    ax = axes[1][1]
-    ax.axis("off")
-
-    area = sim.worldWidth * sim.worldHeight
-    scaledMax = max(1, int(sim.quotas.lifeCrystalsMax * sim._areaScale))
-    invScale = int(round(1.0 / sim._areaScale)) if sim._areaScale > 0 else 1
-    lines = [
-        f"World: {sim.worldWidth} x {sim.worldHeight}",
-        f"Area: {area:,}  (1/{invScale} of large)",
-        f"TileRunner loops/ore: {OreConfig.loopCount(area):,}",
-        f"  (full-scale large: {OreConfig.loopCount(LARGE.area):,})",
-        f"Altars smashed: {sim.altarsSmashed}",
-        f"Evil: {'Corruption' if sim.isCorruption else 'Crimson'}",
-        f"Ore tiers: {[_ORE_NAMES.get(o, '?') for o in sim.selectedOres]}",
-        "",
-        "--- Tile Counts (final) ---",
+    panels = [
+        (worldBase.grid, "Panel 1: Pre-Hardmode Baseline"),
+        (simV.grid, "Panel 2: Post-V-Pattern (WoF)"),
+        (worldHM.grid, "Panel 3: Post-Altar x9 (Full HM Ores)"),
     ]
-    finalGrid = sim.history[-1][1]
-    for oreId in [COBALT, PALLADIUM, MYTHRIL, ORICHALCUM,
-                  ADAMANTITE, TITANIUM, CHLOROPHYTE,
-                  LIFE_CRYSTAL, EBONSTONE, CRIMSTONE]:
-        count = int(np.sum(finalGrid == oreId))
-        if count > 0:
-            lines.append(f"  {_tileName(oreId)}: {count:,}")
 
-    lines.append("")
-    lines.append(f"Life Crystal quota: {scaledMax} scaled "
-                 f"({sim.quotas.lifeCrystalsMax} full-scale)")
+    fig, axes = plt.subplots(1, 3, figsize=(24, 9))
+    for ax, (snap, title) in zip(axes, panels):
+        cropped, bounds = cropSmallWorld(snap, centerX=centerX, centerY=centerY,
+                                          width=600, height=500)
+        drawTileGrid(ax, cropped)
+        applyMapDecorations(ax, cropped, layers, cropBounds=bounds)
+        ax.set_title(title, fontsize=11, fontweight="bold")
+        ax.set_xlabel("X (tiles, crop-local)")
+        ax.set_ylabel("Depth (tiles, crop-local)")
 
-    ax.text(0.05, 0.95, "\n".join(lines), transform=ax.transAxes,
-            fontsize=10, verticalalignment="top", fontfamily="monospace",
-            color="white",
-            bbox=dict(boxstyle="round", facecolor="#1a1a2e", alpha=0.9))
-
-    # Legend
-    handles = []
-    for tid in allIds:
-        if tid in _TILE_COLORS:
-            handles.append(mpatches.Patch(color=_TILE_COLORS[tid],
-                                          label=_tileName(tid)))
-    fig.legend(handles=handles, loc="lower center",
-               ncol=min(9, len(handles)), fontsize=8, framealpha=0.8)
-
-    plt.tight_layout(rect=[0, 0.06, 1, 0.95])
-    outFile = os.path.join(savePath, "terraria_hardmode_transformation.png")
-    plt.savefig(outFile, dpi=200, bbox_inches="tight", facecolor="#0d0d1a")
+    fig.suptitle(
+        "Hardmode Transformation (600x500 SMALL-World Crop)",
+        fontsize=14, fontweight="bold",
+    )
+    plt.tight_layout()
+    plt.savefig(outFile, dpi=200, bbox_inches="tight", facecolor=COLORS["bg"])
     plt.close(fig)
     print(f"Saved: {outFile}")
 
@@ -539,11 +512,6 @@ def visualize(sim: TerrariaHardmodeTransformation,
 # Main
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    # Run at 1/10 scale for performance
-    SCALE = 10
-    w = LARGE.width // SCALE   # 840
-    h = LARGE.height // SCALE  # 240
-
-    sim = TerrariaHardmodeTransformation(worldWidth=w, worldHeight=h, seed=42)
+    sim = TerrariaHardmodeTransformation(seed=42)
     sim.runHardmodeTransformation(numAltars=12)
     visualize(sim)
