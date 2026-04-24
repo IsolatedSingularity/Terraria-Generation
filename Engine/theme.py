@@ -54,8 +54,7 @@ COLORS = {
 }
 
 # Multi-series cycle order: blue, cyan, purple, red, green, yellow, orange.
-CYCLE = [PALETTE[k] for k in
-         ("blue", "cyan", "purple", "red", "green", "yellow", "orange")]
+CYCLE = [PALETTE[k] for k in ("blue", "cyan", "purple", "red", "green", "yellow", "orange")]
 
 
 # ---------------------------------------------------------------------------
@@ -88,79 +87,73 @@ BIOME_COLORS = {
 # ---------------------------------------------------------------------------
 TILE_COLORS = {
     # --- Basic terrain ---
-    0: PALETTE["bg"],   # AIR (matches plot bg so empty space is invisible)
-    1: "#8B6914",       # DIRT
-    2: "#808080",       # STONE
-    3: "#90EE90",       # GRASS
-    4: "#EDC9AF",       # SAND
-    5: "#4A4A4A",       # ASH
-    6: "#FF4500",       # HELLSTONE
-    7: "#6B4423",       # MUD
-    8: "#E8E8F0",       # SNOW
-    9: "#ADD8E6",       # ICE
-    10: "#C4A882",      # CLAY
-    11: "#5A4B3C",      # SILT
-
+    0: PALETTE["bg"],  # AIR (matches plot bg so empty space is invisible)
+    1: "#8B6914",  # DIRT
+    2: "#808080",  # STONE
+    3: "#90EE90",  # GRASS
+    4: "#EDC9AF",  # SAND
+    5: "#4A4A4A",  # ASH
+    6: "#FF4500",  # HELLSTONE
+    7: "#6B4423",  # MUD
+    8: "#E8E8F0",  # SNOW
+    9: "#ADD8E6",  # ICE
+    10: "#C4A882",  # CLAY
+    11: "#5A4B3C",  # SILT
     # --- Liquids ---
-    50: "#1E90FF",      # WATER
-    51: "#FF2400",      # LAVA
-    52: "#FFD700",      # HONEY
-    53: "#484848",      # OBSIDIAN
-    54: "#FFA500",      # CRISPY_HONEY_BLOCK
-
+    50: "#1E90FF",  # WATER
+    51: "#FF2400",  # LAVA
+    52: "#FFD700",  # HONEY
+    53: "#484848",  # OBSIDIAN
+    54: "#FFA500",  # CRISPY_HONEY_BLOCK
     # --- Evil/holy biome conversions ---
-    60: "#5C3D6E",      # CORRUPT_DIRT
-    61: "#7B2D8B",      # EBONSTONE
-    62: "#8B1A1A",      # CRIMSON_DIRT
-    63: "#C41E3A",      # CRIMSTONE
-    64: "#FFB6C1",      # PEARLSTONE
-    65: "#FFE4B5",      # PEARLSAND
-    66: "#FFD700",      # HALLOW_DIRT
-    67: "#8B6FAC",      # CORRUPT_ICE
-    68: "#CD5C5C",      # CRIMSON_ICE
-    69: "#FFB6C1",      # HALLOW_ICE
-
+    60: "#5C3D6E",  # CORRUPT_DIRT
+    61: "#7B2D8B",  # EBONSTONE
+    62: "#8B1A1A",  # CRIMSON_DIRT
+    63: "#C41E3A",  # CRIMSTONE
+    64: "#FFB6C1",  # PEARLSTONE
+    65: "#FFE4B5",  # PEARLSAND
+    66: "#FFD700",  # HALLOW_DIRT
+    67: "#8B6FAC",  # CORRUPT_ICE
+    68: "#CD5C5C",  # CRIMSON_ICE
+    69: "#FFB6C1",  # HALLOW_ICE
     # --- Pre-hardmode ores ---
-    100: "#B87333",     # COPPER
-    101: "#D3D3D3",     # TIN
-    102: "#A9A9A9",     # IRON
-    103: "#4A6670",     # LEAD
-    104: "#C0C0C0",     # SILVER
-    105: "#4F7942",     # TUNGSTEN
-    106: "#FFD700",     # GOLD
-    107: "#E5E4E2",     # PLATINUM
-
+    100: "#B87333",  # COPPER
+    101: "#D3D3D3",  # TIN
+    102: "#A9A9A9",  # IRON
+    103: "#4A6670",  # LEAD
+    104: "#C0C0C0",  # SILVER
+    105: "#4F7942",  # TUNGSTEN
+    106: "#FFD700",  # GOLD
+    107: "#E5E4E2",  # PLATINUM
     # --- Hardmode ores ---
-    110: "#0047AB",     # COBALT
-    111: "#FF6600",     # PALLADIUM
-    112: "#008080",     # MYTHRIL
-    113: "#FF1493",     # ORICHALCUM
-    114: "#8B0000",     # ADAMANTITE
-    115: "#483D8B",     # TITANIUM
-    116: "#00FF00",     # CHLOROPHYTE
-
+    110: "#0047AB",  # COBALT
+    111: "#FF6600",  # PALLADIUM
+    112: "#008080",  # MYTHRIL
+    113: "#FF1493",  # ORICHALCUM
+    114: "#8B0000",  # ADAMANTITE
+    115: "#483D8B",  # TITANIUM
+    116: "#00FF00",  # CHLOROPHYTE
     # --- Structure tiles ---
-    120: "#4A2060",     # DUNGEON_BRICK
-    121: "#8B7355",     # LIHZAHRD_BRICK
-    122: "#E8E8E8",     # MARBLE
-    123: "#383850",     # GRANITE
-    124: "#D2B48C",     # HARDENED_SAND
-    125: "#C4A882",     # SANDSTONE
-    126: "#3D2B1F",     # SPIDER_WALL (cobweb)
-    127: "#C8A2C8",     # SHIMMER
-
+    120: "#4A2060",  # DUNGEON_BRICK
+    121: "#8B7355",  # LIHZAHRD_BRICK
+    122: "#E8E8E8",  # MARBLE
+    123: "#383850",  # GRANITE
+    124: "#D2B48C",  # HARDENED_SAND
+    125: "#C4A882",  # SANDSTONE
+    126: "#3D2B1F",  # SPIDER_WALL (cobweb)
+    127: "#C8A2C8",  # SHIMMER
     # --- Decorative / special ---
-    130: "#FF69B4",     # LIFE_CRYSTAL
-    131: "#8B0000",     # ALTAR
-    132: "#5C3317",     # WOOD (cabin/floating-island walls)
-    133: "#3F2A1A",     # WOOD_PLATFORM
-    134: "#FFB347",     # TORCH
-    135: "#FFD700",     # CHEST
-    136: "#5C3317",     # DOOR
-    137: "#558B2F",     # LIVING_WOOD
-    138: "#7CB342",     # LIVING_LEAF
-    139: "#C97B5A",     # POT
-    140: "#A0522D",     # CACTUS
+    130: "#FF69B4",  # LIFE_CRYSTAL
+    131: "#8B0000",  # ALTAR
+    132: "#5C3317",  # WOOD (cabin/floating-island walls)
+    133: "#3F2A1A",  # WOOD_PLATFORM
+    134: "#FFB347",  # TORCH
+    135: "#FFD700",  # CHEST
+    136: "#5C3317",  # DOOR
+    137: "#558B2F",  # LIVING_WOOD
+    138: "#7CB342",  # LIVING_LEAF
+    139: "#C97B5A",  # POT
+    140: "#A0522D",  # CACTUS
 }
 
 DEFAULT_TILE_COLOR = PALETTE["subtle"]
@@ -231,52 +224,48 @@ def applyTokyoNight() -> None:
     chrome (figure/axes bg, text, ticks, gridlines, legend, color cycle)
     and locks pixel-tile rendering rcParams so `imshow` does not antialias.
     """
-    mpl.rcParams.update({
-        # Figure / axes surfaces
-        "figure.facecolor": PALETTE["bg"],
-        "axes.facecolor": PALETTE["bg"],
-        "savefig.facecolor": PALETTE["bg"],
-        "savefig.edgecolor": "none",
-        "savefig.dpi": 300,
-        "savefig.bbox": "tight",
-
-        # Text + axes chrome
-        "text.color": PALETTE["fg"],
-        "axes.labelcolor": PALETTE["fg"],
-        "axes.titlecolor": PALETTE["fg"],
-        "axes.edgecolor": PALETTE["subtle"],
-        "xtick.color": PALETTE["muted"],
-        "ytick.color": PALETTE["muted"],
-
-        # Gridlines
-        "grid.color": PALETTE["subtle"],
-        "grid.linestyle": "--",
-        "grid.alpha": 0.4,
-
-        # Legend
-        "legend.facecolor": PALETTE["panel"],
-        "legend.edgecolor": PALETTE["subtle"],
-        "legend.labelcolor": PALETTE["fg"],
-
-        # Multi-series color cycle
-        "axes.prop_cycle": cycler(color=CYCLE),
-
-        # Pixel-tile rendering: NEAREST, no resample (sprites must be crisp)
-        "image.interpolation": "nearest",
-        "image.resample": False,
-
-        # Typography
-        "font.family": "sans-serif",
-        "font.sans-serif": ["Inter", "Segoe UI", "DejaVu Sans", "sans-serif"],
-        "font.size": 11,
-        "figure.titlesize": 18,
-        "axes.titlesize": 15,
-        "axes.labelsize": 13,
-        "xtick.labelsize": 11,
-        "ytick.labelsize": 11,
-        "legend.fontsize": 10,
-        "lines.linewidth": 2.0,
-    })
+    mpl.rcParams.update(
+        {
+            # Figure / axes surfaces
+            "figure.facecolor": PALETTE["bg"],
+            "axes.facecolor": PALETTE["bg"],
+            "savefig.facecolor": PALETTE["bg"],
+            "savefig.edgecolor": "none",
+            "savefig.dpi": 300,
+            "savefig.bbox": "tight",
+            # Text + axes chrome
+            "text.color": PALETTE["fg"],
+            "axes.labelcolor": PALETTE["fg"],
+            "axes.titlecolor": PALETTE["fg"],
+            "axes.edgecolor": PALETTE["subtle"],
+            "xtick.color": PALETTE["muted"],
+            "ytick.color": PALETTE["muted"],
+            # Gridlines
+            "grid.color": PALETTE["subtle"],
+            "grid.linestyle": "--",
+            "grid.alpha": 0.4,
+            # Legend
+            "legend.facecolor": PALETTE["panel"],
+            "legend.edgecolor": PALETTE["subtle"],
+            "legend.labelcolor": PALETTE["fg"],
+            # Multi-series color cycle
+            "axes.prop_cycle": cycler(color=CYCLE),
+            # Pixel-tile rendering: NEAREST, no resample (sprites must be crisp)
+            "image.interpolation": "nearest",
+            "image.resample": False,
+            # Typography
+            "font.family": "sans-serif",
+            "font.sans-serif": ["Inter", "Segoe UI", "DejaVu Sans", "sans-serif"],
+            "font.size": 11,
+            "figure.titlesize": 18,
+            "axes.titlesize": 15,
+            "axes.labelsize": 13,
+            "xtick.labelsize": 11,
+            "ytick.labelsize": 11,
+            "legend.fontsize": 10,
+            "lines.linewidth": 2.0,
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -360,15 +349,13 @@ def saveTinyGif(
                     font = ImageFont.load_default()
             draw = ImageDraw.Draw(rgbCanvas)
             tw = draw.textlength(frameTitle, font=font)
-            draw.text(((w * scale - tw) / 2, 2), frameTitle,
-                      fill=fgRgb, font=font)
+            draw.text(((w * scale - tw) / 2, 2), frameTitle, fill=fgRgb, font=font)
             rgbCanvas.paste(img.convert("RGB"), (0, titleHeight))
             img = rgbCanvas.convert("P", palette=Image.ADAPTIVE, colors=128)
 
         pilFrames.append(img)
 
-    os.makedirs(os.path.dirname(os.path.abspath(savePath)) or ".",
-                exist_ok=True)
+    os.makedirs(os.path.dirname(os.path.abspath(savePath)) or ".", exist_ok=True)
     pilFrames[0].save(
         savePath,
         save_all=True,

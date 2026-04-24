@@ -70,12 +70,16 @@ HONEY_BLOCK = 145
 # Tiles the cavinator and tileRunner refuse to carve. Biome shells (MUD,
 # HARDENED_SAND, SANDSTONE_BLOCK) are deliberately NOT immune so caves can
 # tunnel through every biome. Only structure bricks and hellstone resist.
-IMMUNE_TILES = frozenset({
-    ASH, HELLSTONE,
-    DUNGEON_BRICK, LIHZAHRD_BRICK,
-    GRANITE_BLOCK,
-    CHLOROPHYTE,
-})
+IMMUNE_TILES = frozenset(
+    {
+        ASH,
+        HELLSTONE,
+        DUNGEON_BRICK,
+        LIHZAHRD_BRICK,
+        GRANITE_BLOCK,
+        CHLOROPHYTE,
+    }
+)
 
 
 def tileRunner(

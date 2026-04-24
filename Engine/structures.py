@@ -73,6 +73,7 @@ from Engine.structureMap import Rectangle, StructureMap
 # Dungeon eating algorithm
 # ---------------------------------------------------------------------------
 
+
 def generateDungeon(
     grid: npt.NDArray[np.int32],
     walls: npt.NDArray[np.int32],
@@ -185,8 +186,12 @@ def _fillDungeonRoom(
                 continue
 
             # Outer 1-tile border = brick
-            if (x == room.x or x == room.x + room.width - 1 or
-                    y == room.y or y == room.y + room.height - 1):
+            if (
+                x == room.x
+                or x == room.x + room.width - 1
+                or y == room.y
+                or y == room.y + room.height - 1
+            ):
                 grid[y, x] = DUNGEON_BRICK
             else:
                 grid[y, x] = AIR
@@ -197,6 +202,7 @@ def _fillDungeonRoom(
 # ---------------------------------------------------------------------------
 # Jungle Temple (Lihzahrd)
 # ---------------------------------------------------------------------------
+
 
 def generateJungleTemple(
     grid: npt.NDArray[np.int32],
@@ -252,9 +258,7 @@ def generateJungleTemple(
                     grid[ty, tx] = trapType
 
     # Protect the temple
-    structureMap.addProtectedStructure(
-        Rectangle(x0, y0, x1 - x0, y1 - y0), padding=10
-    )
+    structureMap.addProtectedStructure(Rectangle(x0, y0, x1 - x0, y1 - y0), padding=10)
 
     return grid
 
@@ -262,6 +266,7 @@ def generateJungleTemple(
 # ---------------------------------------------------------------------------
 # Living Trees
 # ---------------------------------------------------------------------------
+
 
 def generateLivingTree(
     grid: npt.NDArray[np.int32],
@@ -351,6 +356,7 @@ def generateLivingTree(
 # Pyramids
 # ---------------------------------------------------------------------------
 
+
 def generatePyramid(
     grid: npt.NDArray[np.int32],
     baseX: int,
@@ -428,6 +434,7 @@ def generatePyramid(
 # ---------------------------------------------------------------------------
 # Spider Caves
 # ---------------------------------------------------------------------------
+
 
 def generateSpiderCave(
     grid: npt.NDArray[np.int32],
@@ -512,6 +519,7 @@ def generateGemCave(
 # Underground Desert (ant-hive)
 # ---------------------------------------------------------------------------
 
+
 def generateUndergroundDesert(
     grid: npt.NDArray[np.int32],
     centerX: int,
@@ -560,8 +568,9 @@ def generateUndergroundDesert(
     for _ in range(numTunnels):
         tx = centerX + rng.integers(-radiusX // 2, radiusX // 2)
         ty = centerY + rng.integers(-radiusY // 2, radiusY // 2)
-        tileRunner(grid, tx, ty, strength=rng.uniform(4, 8),
-                   steps=rng.integers(20, 50), tileType=-1)
+        tileRunner(
+            grid, tx, ty, strength=rng.uniform(4, 8), steps=rng.integers(20, 50), tileType=-1
+        )
 
     return grid
 
@@ -569,6 +578,7 @@ def generateUndergroundDesert(
 # ---------------------------------------------------------------------------
 # Marble Cave Generation
 # ---------------------------------------------------------------------------
+
 
 def generateMarbleCave(
     grid: npt.NDArray[np.int32],
@@ -591,8 +601,9 @@ def generateMarbleCave(
         sy = centerY + rng.integers(-5, 6)
         strength = rng.uniform(5, 12)
         steps = rng.integers(15, 35)
-        tileRunner(grid, sx, sy, strength, steps, tileType=MARBLE_BLOCK,
-                   overRide=True, noYChange=True)
+        tileRunner(
+            grid, sx, sy, strength, steps, tileType=MARBLE_BLOCK, overRide=True, noYChange=True
+        )
 
     # Fill walls
     for dy in range(-25, 26):
@@ -619,6 +630,7 @@ def generateMarbleCave(
 # Granite Cave Generation
 # ---------------------------------------------------------------------------
 
+
 def generateGraniteCave(
     grid: npt.NDArray[np.int32],
     walls: npt.NDArray[np.int32],
@@ -640,8 +652,7 @@ def generateGraniteCave(
         sy = centerY + rng.integers(-8, 9)
         strength = rng.uniform(4, 10)
         steps = rng.integers(10, 30)
-        tileRunner(grid, sx, sy, strength, steps, tileType=GRANITE_BLOCK,
-                   overRide=True)
+        tileRunner(grid, sx, sy, strength, steps, tileType=GRANITE_BLOCK, overRide=True)
 
     # Fill walls
     for dy in range(-25, 26):
@@ -658,6 +669,7 @@ def generateGraniteCave(
 # ---------------------------------------------------------------------------
 # Shimmer/Aether biome (post-1.4.4)
 # ---------------------------------------------------------------------------
+
 
 def generateShimmerBiome(
     grid: npt.NDArray[np.int32],
@@ -711,6 +723,7 @@ def generateShimmerBiome(
 # Floating Island Houses
 # ---------------------------------------------------------------------------
 
+
 def generateFloatingIslandHouse(
     grid: npt.NDArray[np.int32],
     islandX: int,
@@ -760,6 +773,7 @@ def generateFloatingIslandHouse(
 # Terrain injection passes
 # ---------------------------------------------------------------------------
 
+
 def rocksInDirt(
     grid: npt.NDArray[np.int32],
     count: int,
@@ -780,10 +794,15 @@ def rocksInDirt(
     for _ in range(count):
         x = rng.integers(10, maxX - 10)
         y = rng.integers(worldSurface, rockLayer)
-        tileRunner(grid, x, y,
-                   strength=rng.uniform(4, 10),
-                   steps=rng.integers(10, 30),
-                   tileType=STONE, overRide=False)
+        tileRunner(
+            grid,
+            x,
+            y,
+            strength=rng.uniform(4, 10),
+            steps=rng.integers(10, 30),
+            tileType=STONE,
+            overRide=False,
+        )
 
     return grid
 
@@ -808,10 +827,15 @@ def dirtInRocks(
     for _ in range(count):
         x = rng.integers(10, maxX - 10)
         y = rng.integers(rockLayer, hellLayer)
-        tileRunner(grid, x, y,
-                   strength=rng.uniform(4, 10),
-                   steps=rng.integers(10, 30),
-                   tileType=DIRT, overRide=False)
+        tileRunner(
+            grid,
+            x,
+            y,
+            strength=rng.uniform(4, 10),
+            steps=rng.integers(10, 30),
+            tileType=DIRT,
+            overRide=False,
+        )
 
     return grid
 
@@ -834,10 +858,15 @@ def placeClay(
     for _ in range(count):
         x = rng.integers(10, maxX - 10)
         y = rng.integers(max(1, worldSurface - 20), rockLayer)
-        tileRunner(grid, x, y,
-                   strength=rng.uniform(3, 7),
-                   steps=rng.integers(8, 20),
-                   tileType=CLAY, overRide=False)
+        tileRunner(
+            grid,
+            x,
+            y,
+            strength=rng.uniform(3, 7),
+            steps=rng.integers(8, 20),
+            tileType=CLAY,
+            overRide=False,
+        )
 
     return grid
 
@@ -860,10 +889,15 @@ def placeSilt(
     for _ in range(count):
         x = rng.integers(10, maxX - 10)
         y = rng.integers(rockLayer, hellLayer)
-        tileRunner(grid, x, y,
-                   strength=rng.uniform(3, 6),
-                   steps=rng.integers(8, 18),
-                   tileType=SILT, overRide=False)
+        tileRunner(
+            grid,
+            x,
+            y,
+            strength=rng.uniform(3, 6),
+            steps=rng.integers(8, 18),
+            tileType=SILT,
+            overRide=False,
+        )
 
     return grid
 
@@ -871,6 +905,7 @@ def placeSilt(
 # ---------------------------------------------------------------------------
 # Decorative placement passes
 # ---------------------------------------------------------------------------
+
 
 def placeSunflowers(
     grid: npt.NDArray[np.int32],
@@ -957,8 +992,7 @@ def placePots(
         y = rng.integers(worldSurface, hellLayer)
 
         # Need air at position and solid below
-        if (0 <= y < maxY - 1 and 0 <= x < maxX and
-                grid[y, x] == AIR and grid[y + 1, x] != AIR):
+        if 0 <= y < maxY - 1 and 0 <= x < maxX and grid[y, x] == AIR and grid[y + 1, x] != AIR:
             grid[y, x] = POT
             placed += 1
 
@@ -999,6 +1033,7 @@ def placeMinecartTracks(
 # Meteorite collision
 # ---------------------------------------------------------------------------
 
+
 def dropMeteor(
     grid: npt.NDArray[np.int32],
     surfaceHeights: npt.NDArray[np.int32],
@@ -1021,10 +1056,15 @@ def dropMeteor(
     y = int(surfaceHeights[min(x, len(surfaceHeights) - 1)])
 
     # Meteorite impact: TileRunner with hellstone
-    tileRunner(grid, x, y,
-               strength=rng.uniform(15, 25),
-               steps=rng.integers(30, 60),
-               tileType=HELLSTONE, overRide=True)
+    tileRunner(
+        grid,
+        x,
+        y,
+        strength=rng.uniform(15, 25),
+        steps=rng.integers(30, 60),
+        tileType=HELLSTONE,
+        overRide=True,
+    )
 
     return grid
 
@@ -1102,7 +1142,7 @@ def clentaminatorSpray(
     maxY, maxX = grid.shape
 
     # Normalize direction
-    mag = np.sqrt(directionX ** 2 + directionY ** 2)
+    mag = np.sqrt(directionX**2 + directionY**2)
     if mag == 0:
         return grid
     dx, dy = directionX / mag, directionY / mag
@@ -1141,6 +1181,7 @@ def clentaminatorSpray(
 # ---------------------------------------------------------------------------
 # Underground Mushroom Biome
 # ---------------------------------------------------------------------------
+
 
 def generateMushroomBiome(
     grid: npt.NDArray[np.int32],
@@ -1193,6 +1234,7 @@ def generateMushroomBiome(
 # ---------------------------------------------------------------------------
 # Full grass spreading (all depths)
 # ---------------------------------------------------------------------------
+
 
 def spreadGrass(
     grid: npt.NDArray[np.int32],

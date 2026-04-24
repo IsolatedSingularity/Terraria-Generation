@@ -59,6 +59,7 @@ from Engine.structures import dirtInRocks, rocksInDirt
 @dataclass
 class SmallWorld:
     """Generated SMALL-world payload."""
+
     grid: npt.NDArray[np.int32]
     layers: LayerDepths
     spawnX: int
@@ -90,13 +91,13 @@ def _carveSurface(
         sy = int(surfaceInt[x])
         grid[:sy, x] = AIR
         grid[sy, x] = GRASS
-        grid[sy + 1: sy + 4, x] = DIRT
-        grid[sy + 4: dirtBottom, x] = DIRT
+        grid[sy + 1 : sy + 4, x] = DIRT
+        grid[sy + 4 : dirtBottom, x] = DIRT
         grid[dirtBottom:, x] = STONE
 
     # Hellstone shell at hellLayer.
-    grid[layers.hellLayer:, :] = ASH
-    grid[layers.hellLayer + 4:, :] = HELLSTONE
+    grid[layers.hellLayer :, :] = ASH
+    grid[layers.hellLayer + 4 :, :] = HELLSTONE
     return grid
 
 
@@ -217,12 +218,20 @@ def _carveCaves(
     rockY = int(layers.rockLayer)
 
     # Stone-in-dirt and dirt-in-rock to break up the strata.
-    rocksInDirt(grid, count=int(width * 0.06),
-                worldSurface=surfaceY, rockLayer=rockY,
-                seed=int(rng.integers(0, 1 << 30)))
-    dirtInRocks(grid, count=int(width * 0.05),
-                rockLayer=rockY, hellLayer=hellTop,
-                seed=int(rng.integers(0, 1 << 30)))
+    rocksInDirt(
+        grid,
+        count=int(width * 0.06),
+        worldSurface=surfaceY,
+        rockLayer=rockY,
+        seed=int(rng.integers(0, 1 << 30)),
+    )
+    dirtInRocks(
+        grid,
+        count=int(width * 0.05),
+        rockLayer=rockY,
+        hellLayer=hellTop,
+        seed=int(rng.integers(0, 1 << 30)),
+    )
 
     # Big macro chambers covering the entire underground (not just rockLayer+).
     # Cavinator with strength 18-32 produces ~9-16 tile radius blobs that
@@ -231,25 +240,32 @@ def _carveCaves(
     for _ in range(chamberCount):
         sx = int(rng.integers(20, width - 20))
         sy = int(rng.integers(rockTop, hellTop))
-        cavinator(grid, sx, sy,
-                  float(rng.uniform(22.0, 38.0)),
-                  int(rng.integers(45, 95)),
-                  seed=int(rng.integers(0, 1 << 30)))
+        cavinator(
+            grid,
+            sx,
+            sy,
+            float(rng.uniform(22.0, 38.0)),
+            int(rng.integers(45, 95)),
+            seed=int(rng.integers(0, 1 << 30)),
+        )
 
     # Smaller scattered carve passes for finer texture.
     for _ in range(int(width * 0.45)):
         sx = int(rng.integers(20, width - 20))
         sy = int(rng.integers(rockTop, hellTop))
-        cavinator(grid, sx, sy,
-                  float(rng.uniform(9.0, 16.0)),
-                  int(rng.integers(20, 50)),
-                  seed=int(rng.integers(0, 1 << 30)))
+        cavinator(
+            grid,
+            sx,
+            sy,
+            float(rng.uniform(9.0, 16.0)),
+            int(rng.integers(20, 50)),
+            seed=int(rng.integers(0, 1 << 30)),
+        )
 
     # CA smoothing tuned to grow caves: death=4 means tiles with <=3 solid
     # neighbors erode, so isolated dirt/stone fingers vanish and chambers
     # merge into the lacy reference look.
-    cellularAutomataSmooth(grid, iterations=5,
-                           birthThreshold=5, deathThreshold=4)
+    cellularAutomataSmooth(grid, iterations=5, birthThreshold=5, deathThreshold=4)
 
 
 # Pre-Hardmode ore configs: (oreId, depthMin, depthMax, attempts, strength).
@@ -283,27 +299,51 @@ def _placeOres(
         for _ in range(attempts):
             ox = int(rng.integers(10, width - 10))
             oy = int(rng.integers(yMin, yMax))
-            tileRunner(grid, ox, oy, strength, int(rng.integers(2, 7)),
-                       tileType=oreId, addTile=False, overRide=False,
-                       seed=int(rng.integers(0, 1 << 30)))
+            tileRunner(
+                grid,
+                ox,
+                oy,
+                strength,
+                int(rng.integers(2, 7)),
+                tileType=oreId,
+                addTile=False,
+                overRide=False,
+                seed=int(rng.integers(0, 1 << 30)),
+            )
 
     if altarsSmashed >= 3:
         # Pearlstone backbone (light pink hardmode rock seam) at rockLayer.
         for _ in range(int(width * 0.04)):
             ox = int(rng.integers(10, width - 10))
             oy = int(rng.integers(int(layers.rockLayer), int(layers.hellLayer) - 80))
-            tileRunner(grid, ox, oy, 8.0, 30, tileType=PEARLSTONE,
-                       addTile=False, overRide=False,
-                       seed=int(rng.integers(0, 1 << 30)))
+            tileRunner(
+                grid,
+                ox,
+                oy,
+                8.0,
+                30,
+                tileType=PEARLSTONE,
+                addTile=False,
+                overRide=False,
+                seed=int(rng.integers(0, 1 << 30)),
+            )
         for oreId, dMin, dMax, attempts, strength in _HM_TIER_1:
             yMin = int(dMin * height)
             yMax = int(dMax * height)
             for _ in range(attempts):
                 ox = int(rng.integers(10, width - 10))
                 oy = int(rng.integers(yMin, yMax))
-                tileRunner(grid, ox, oy, strength, int(rng.integers(3, 6)),
-                           tileType=oreId, addTile=False, overRide=False,
-                           seed=int(rng.integers(0, 1 << 30)))
+                tileRunner(
+                    grid,
+                    ox,
+                    oy,
+                    strength,
+                    int(rng.integers(3, 6)),
+                    tileType=oreId,
+                    addTile=False,
+                    overRide=False,
+                    seed=int(rng.integers(0, 1 << 30)),
+                )
     if altarsSmashed >= 6:
         for oreId, dMin, dMax, attempts, strength in _HM_TIER_2:
             yMin = int(dMin * height)
@@ -311,9 +351,17 @@ def _placeOres(
             for _ in range(attempts):
                 ox = int(rng.integers(10, width - 10))
                 oy = int(rng.integers(yMin, yMax))
-                tileRunner(grid, ox, oy, strength, int(rng.integers(3, 6)),
-                           tileType=oreId, addTile=False, overRide=False,
-                           seed=int(rng.integers(0, 1 << 30)))
+                tileRunner(
+                    grid,
+                    ox,
+                    oy,
+                    strength,
+                    int(rng.integers(3, 6)),
+                    tileType=oreId,
+                    addTile=False,
+                    overRide=False,
+                    seed=int(rng.integers(0, 1 << 30)),
+                )
     if altarsSmashed >= 9:
         for oreId, dMin, dMax, attempts, strength in _HM_TIER_3:
             yMin = int(dMin * height)
@@ -321,9 +369,17 @@ def _placeOres(
             for _ in range(attempts):
                 ox = int(rng.integers(10, width - 10))
                 oy = int(rng.integers(yMin, yMax))
-                tileRunner(grid, ox, oy, strength, int(rng.integers(3, 6)),
-                           tileType=oreId, addTile=False, overRide=False,
-                           seed=int(rng.integers(0, 1 << 30)))
+                tileRunner(
+                    grid,
+                    ox,
+                    oy,
+                    strength,
+                    int(rng.integers(3, 6)),
+                    tileType=oreId,
+                    addTile=False,
+                    overRide=False,
+                    seed=int(rng.integers(0, 1 << 30)),
+                )
         # Chlorophyte in the jungle mud band.
         mudYs, mudXs = np.where(grid == MUD)
         if mudYs.size > 0:
@@ -331,9 +387,17 @@ def _placeOres(
                 idx = int(rng.integers(0, mudYs.size))
                 ox = int(mudXs[idx])
                 oy = int(mudYs[idx])
-                tileRunner(grid, ox, oy, 4.5, 4, tileType=CHLOROPHYTE,
-                           addTile=False, overRide=False,
-                           seed=int(rng.integers(0, 1 << 30)))
+                tileRunner(
+                    grid,
+                    ox,
+                    oy,
+                    4.5,
+                    4,
+                    tileType=CHLOROPHYTE,
+                    addTile=False,
+                    overRide=False,
+                    seed=int(rng.integers(0, 1 << 30)),
+                )
 
 
 def generateSmallWorld(
@@ -396,6 +460,7 @@ __all__ = [
 @dataclass
 class MiniWorld:
     """Generated TINY-world payload."""
+
     grid: npt.NDArray[np.int32]
     layers: LayerDepths
     spawnX: int
@@ -424,10 +489,10 @@ def _miniSurface(
         sy = int(surfaceInt[x])
         grid[:sy, x] = AIR
         grid[sy, x] = GRASS
-        grid[sy + 1: dirtBottom, x] = DIRT
+        grid[sy + 1 : dirtBottom, x] = DIRT
         grid[dirtBottom:, x] = STONE
-    grid[layers.hellLayer:, :] = ASH
-    grid[layers.hellLayer + 3:, :] = HELLSTONE
+    grid[layers.hellLayer :, :] = ASH
+    grid[layers.hellLayer + 3 :, :] = HELLSTONE
 
 
 def _miniCaves(
@@ -445,38 +510,51 @@ def _miniCaves(
     hellTop = int(layers.hellLayer) - 2
 
     # Stone-in-dirt and dirt-in-rock to mottle the strata.
-    rocksInDirt(grid, count=int(width * 0.10),
-                worldSurface=int(layers.worldSurface),
-                rockLayer=int(layers.rockLayer),
-                seed=int(rng.integers(0, 1 << 30)))
-    dirtInRocks(grid, count=int(width * 0.08),
-                rockLayer=int(layers.rockLayer),
-                hellLayer=hellTop,
-                seed=int(rng.integers(0, 1 << 30)))
+    rocksInDirt(
+        grid,
+        count=int(width * 0.10),
+        worldSurface=int(layers.worldSurface),
+        rockLayer=int(layers.rockLayer),
+        seed=int(rng.integers(0, 1 << 30)),
+    )
+    dirtInRocks(
+        grid,
+        count=int(width * 0.08),
+        rockLayer=int(layers.rockLayer),
+        hellLayer=hellTop,
+        seed=int(rng.integers(0, 1 << 30)),
+    )
 
     # Big chambers: ~width * 0.55 passes with strength 4-7.
     chamberCount = int(width * 0.55)
     for _ in range(chamberCount):
         sx = int(rng.integers(4, width - 4))
         sy = int(rng.integers(rockTop, hellTop))
-        cavinator(grid, sx, sy,
-                  float(rng.uniform(4.0, 6.5)),
-                  int(rng.integers(20, 42)),
-                  seed=int(rng.integers(0, 1 << 30)))
+        cavinator(
+            grid,
+            sx,
+            sy,
+            float(rng.uniform(4.0, 6.5)),
+            int(rng.integers(20, 42)),
+            seed=int(rng.integers(0, 1 << 30)),
+        )
 
     # Small connectors so chambers chain into tunnels.
     for _ in range(int(width * 0.45)):
         sx = int(rng.integers(4, width - 4))
         sy = int(rng.integers(rockTop, hellTop))
-        cavinator(grid, sx, sy,
-                  float(rng.uniform(2.0, 3.4)),
-                  int(rng.integers(12, 26)),
-                  seed=int(rng.integers(0, 1 << 30)))
+        cavinator(
+            grid,
+            sx,
+            sy,
+            float(rng.uniform(2.0, 3.4)),
+            int(rng.integers(12, 26)),
+            seed=int(rng.integers(0, 1 << 30)),
+        )
 
     # CA smoothing: birth=5, death=3 so chambers merge but solid pockets
     # survive, producing a lacy 45-55 percent air density.
-    cellularAutomataSmooth(grid, iterations=3,
-                           birthThreshold=5, deathThreshold=3)
+    cellularAutomataSmooth(grid, iterations=3, birthThreshold=5, deathThreshold=3)
 
 
 def _miniBiomes(
@@ -585,20 +663,38 @@ def _miniOres(
             for _ in range(count):
                 ox = int(rng.integers(2, width - 2))
                 oy = int(rng.integers(yMin, yMax))
-                tileRunner(grid, ox, oy, strength, int(rng.integers(2, 5)),
-                           tileType=oreId, addTile=False, overRide=False,
-                           seed=int(rng.integers(0, 1 << 30)))
+                tileRunner(
+                    grid,
+                    ox,
+                    oy,
+                    strength,
+                    int(rng.integers(2, 5)),
+                    tileType=oreId,
+                    addTile=False,
+                    overRide=False,
+                    seed=int(rng.integers(0, 1 << 30)),
+                )
 
     runFamily(_MINI_PRE_HM_ORES)
     if altarsSmashed >= 3:
         for _ in range(int(width * 0.06 * oreScale)):
             ox = int(rng.integers(2, width - 2))
-            oy = int(rng.integers(int(layers.rockLayer),
-                                  max(int(layers.rockLayer) + 1,
-                                      int(layers.hellLayer) - 8)))
-            tileRunner(grid, ox, oy, 3.5, 12, tileType=PEARLSTONE,
-                       addTile=False, overRide=False,
-                       seed=int(rng.integers(0, 1 << 30)))
+            oy = int(
+                rng.integers(
+                    int(layers.rockLayer), max(int(layers.rockLayer) + 1, int(layers.hellLayer) - 8)
+                )
+            )
+            tileRunner(
+                grid,
+                ox,
+                oy,
+                3.5,
+                12,
+                tileType=PEARLSTONE,
+                addTile=False,
+                overRide=False,
+                seed=int(rng.integers(0, 1 << 30)),
+            )
         runFamily(_MINI_HM_TIER_1)
     if altarsSmashed >= 6:
         runFamily(_MINI_HM_TIER_2)
@@ -610,9 +706,17 @@ def _miniOres(
                 idx = int(rng.integers(0, mudYs.size))
                 ox = int(mudXs[idx])
                 oy = int(mudYs[idx])
-                tileRunner(grid, ox, oy, 2.2, 3, tileType=CHLOROPHYTE,
-                           addTile=False, overRide=False,
-                           seed=int(rng.integers(0, 1 << 30)))
+                tileRunner(
+                    grid,
+                    ox,
+                    oy,
+                    2.2,
+                    3,
+                    tileType=CHLOROPHYTE,
+                    addTile=False,
+                    overRide=False,
+                    seed=int(rng.integers(0, 1 << 30)),
+                )
 
 
 def generateMiniWorld(
@@ -648,8 +752,7 @@ def generateMiniWorld(
     if not skipBiomes:
         centers = _miniBiomes(grid, layers, rng, evilType)
     else:
-        centers = {"spawnX": 120, "snowX": 28, "jungleX": 95,
-                   "desertX": 165, "evilX": 215}
+        centers = {"spawnX": 120, "snowX": 28, "jungleX": 95, "desertX": 165, "evilX": 215}
     if not skipOres:
         _miniOres(grid, layers, rng, altarsSmashed, oreScale=oreScale)
 
@@ -694,32 +797,40 @@ def renderMiniWorld(
 
     cmap = buildTileColormap()
     if highlightTiles is None:
-        im = ax.imshow(grid, cmap=cmap, vmin=0, vmax=200,
-                       interpolation="nearest", aspect="equal")
+        im = ax.imshow(grid, cmap=cmap, vmin=0, vmax=200, interpolation="nearest", aspect="equal")
     else:
         # Render a dim base layer + bright overlay for highlighted tiles.
-        ax.imshow(grid, cmap=cmap, vmin=0, vmax=200,
-                  interpolation="nearest", aspect="equal", alpha=dimAlpha)
+        ax.imshow(
+            grid,
+            cmap=cmap,
+            vmin=0,
+            vmax=200,
+            interpolation="nearest",
+            aspect="equal",
+            alpha=dimAlpha,
+        )
         mask = np.isin(grid, list(highlightTiles))
         overlay = np.where(mask, grid, 0)
-        im = ax.imshow(overlay, cmap=cmap, vmin=0, vmax=200,
-                       interpolation="nearest", aspect="equal", alpha=1.0)
+        im = ax.imshow(
+            overlay, cmap=cmap, vmin=0, vmax=200, interpolation="nearest", aspect="equal", alpha=1.0
+        )
 
     if showLayers and layers is not None:
         height, width = grid.shape
-        ax.axhline(layers.worldSurface, color=PALETTE["cyan"],
-                   linestyle="--", linewidth=0.8, alpha=0.55)
-        ax.axhline(layers.rockLayer, color=PALETTE["yellow"],
-                   linestyle="--", linewidth=0.8, alpha=0.55)
-        ax.axhline(layers.hellLayer, color=PALETTE["red"],
-                   linestyle="--", linewidth=0.8, alpha=0.55)
+        ax.axhline(
+            layers.worldSurface, color=PALETTE["cyan"], linestyle="--", linewidth=0.8, alpha=0.55
+        )
+        ax.axhline(
+            layers.rockLayer, color=PALETTE["yellow"], linestyle="--", linewidth=0.8, alpha=0.55
+        )
+        ax.axhline(
+            layers.hellLayer, color=PALETTE["red"], linestyle="--", linewidth=0.8, alpha=0.55
+        )
 
     ax.set_xticks([])
     ax.set_yticks([])
     for spine in ax.spines.values():
         spine.set_visible(False)
     if title:
-        ax.set_title(title, color=PALETTE["fg"], fontsize=12,
-                     pad=6, loc="center")
+        ax.set_title(title, color=PALETTE["fg"], fontsize=12, pad=6, loc="center")
     return im
-

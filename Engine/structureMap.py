@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 @dataclass
 class Rectangle:
     """Axis-aligned bounding box for a protected structure."""
+
     x: int
     y: int
     width: int
@@ -52,6 +53,7 @@ class StructureMap:
     to avoid overlap. This prevents dungeons from spawning inside temples,
     cabins from overlapping floating islands, etc.
     """
+
     protectedZones: list[Rectangle] = field(default_factory=list)
 
     def addProtectedStructure(self, rect: Rectangle, padding: int = 0) -> None:

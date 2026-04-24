@@ -12,6 +12,7 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class WorldSize:
     """Tile dimensions for each world size class."""
+
     width: int
     height: int
     area: int
@@ -42,6 +43,7 @@ class LayerDepths:
     during terrain generation. These defaults approximate a Large world.
     hellLayer is always maxTilesY - 200.
     """
+
     worldSurface: float
     rockLayer: float
     hellLayer: int
@@ -87,6 +89,7 @@ class LayerDepths:
 @dataclass(frozen=True)
 class StructureQuotas:
     """Min/max placement counts per world size, from decompiled source."""
+
     floatingIslands: int
     undergroundCabinsMin: int
     undergroundCabinsMax: int
@@ -155,6 +158,7 @@ class OreConfig:
     The game picks ONE from each alternating pair per world:
     Copper/Tin, Iron/Lead, Silver/Tungsten, Gold/Platinum.
     """
+
     # Loop count formula: int(area * 6E-05) per ore type
     DENSITY_FACTOR: float = 6e-05
 
@@ -252,10 +256,19 @@ WALL_CRIMSON: int = 19
 # ---------------------------------------------------------------------------
 # FrameImportant tile IDs (multi-tile objects that must not be overwritten)
 # ---------------------------------------------------------------------------
-FRAME_IMPORTANT_TILES: frozenset = frozenset({
-    LIFE_CRYSTAL, CHEST, POT, DART_TRAP, BOULDER_TRAP,
-    ALTAR, SUNFLOWER, FALLEN_LOG, MINECART_TRACK,
-})
+FRAME_IMPORTANT_TILES: frozenset = frozenset(
+    {
+        LIFE_CRYSTAL,
+        CHEST,
+        POT,
+        DART_TRAP,
+        BOULDER_TRAP,
+        ALTAR,
+        SUNFLOWER,
+        FALLEN_LOG,
+        MINECART_TRACK,
+    }
+)
 
 # ---------------------------------------------------------------------------
 # Biome detection thresholds (tile counts in 150-tile rectangle)
@@ -275,12 +288,14 @@ BIOME_THRESHOLDS = {
     "shimmer": 300,
 }
 
+
 # ---------------------------------------------------------------------------
 # Structure placement specific constants
 # ---------------------------------------------------------------------------
 @dataclass(frozen=True)
 class DungeonConfig:
     """Dungeon eating algorithm parameters."""
+
     minRooms: int = 15
     maxRooms: int = 30
     minRoomWidth: int = 10
@@ -289,9 +304,11 @@ class DungeonConfig:
     maxRoomHeight: int = 16
     wallTypes: tuple = (WALL_DUNGEON_BLUE, WALL_DUNGEON_GREEN, WALL_DUNGEON_PINK)
 
+
 @dataclass(frozen=True)
 class TempleConfig:
     """Jungle Temple (Lihzahrd) parameters."""
+
     minRooms: int = 10
     maxRooms: int = 20
     minRoomWidth: int = 8
@@ -300,17 +317,21 @@ class TempleConfig:
     maxRoomHeight: int = 12
     trapDensity: float = 0.15
 
+
 @dataclass(frozen=True)
 class PyramidConfig:
     """Desert pyramid parameters."""
+
     minWidth: int = 80
     maxWidth: int = 120
     corridorWidth: int = 4
     maxPerWorld: int = 2
 
+
 @dataclass(frozen=True)
 class LivingTreeConfig:
     """Living Tree parameters."""
+
     trunkWidth: int = 4
     minHeight: int = 40
     maxHeight: int = 80
@@ -318,12 +339,15 @@ class LivingTreeConfig:
     hollowChance: float = 0.5
     branchCount: int = 4
 
+
 @dataclass(frozen=True)
 class ShimmerConfig:
     """Shimmer/Aether biome parameters (post-1.4.4)."""
+
     radius: int = 30
     correlatedToJungle: bool = True
     depth: str = "cavern"
+
 
 # ---------------------------------------------------------------------------
 # Seed format: size.difficulty.evil.special.identifier
