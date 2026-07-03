@@ -44,3 +44,5 @@ audit/
 
 # Generated plot outputs are tracked so the README renders on GitHub.
 # Regenerate them locally with the scripts in Code/ and Advanced/.
+
+Jenova/
