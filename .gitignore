@@ -34,8 +34,11 @@ audit/
 
 # Tool caches
 .pytest_cache/
+.pytest-tmp/
 .mypy_cache/
 .ruff_cache/
+.coverage
+htmlcov/
 *.log
 .ipynb_checkpoints/
 

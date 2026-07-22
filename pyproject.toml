@@ -3,19 +3,41 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "terraria-generation"
-version = "0.1.0"
-description = "Accurate Terraria world generation simulation based on decompiled source analysis."
+name = "terraforge-worldgen"
+version = "1.0.0"
+description = "An educational, deterministic 2D world-generation laboratory."
+readme = "README.md"
+license = "MIT"
 requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
 dependencies = [
-    "numpy==2.2.5",
-    "matplotlib==3.10.1",
-    "seaborn==0.13.2",
-    "scipy==1.15.2",
+    "numpy>=1.26,<3",
+    "pillow>=10,<13",
 ]
 
+[project.optional-dependencies]
+dev = ["hypothesis>=6", "mypy>=1.15", "pytest>=8", "pytest-cov>=6", "ruff>=0.11"]
+build = ["build>=1.2", "pyinstaller>=6.13"]
+legacy = ["matplotlib>=3.8,<4", "scipy>=1.12,<2", "seaborn>=0.13,<1"]
+
+[project.scripts]
+terraforge = "terraforge.cli:main"
+terraforge-gui = "terraforge.gui:main"
+
+[project.urls]
+Repository = "https://github.com/IsolatedSingularity/Terraria-Generation"
+Issues = "https://github.com/IsolatedSingularity/Terraria-Generation/issues"
+
 [tool.hatch.build.targets.wheel]
-packages = ["Engine"]
+packages = ["terraforge"]
 
 [tool.ruff]
 target-version = "py311"
@@ -27,7 +49,7 @@ select = ["E", "F", "W", "I", "N", "UP"]
 ignore = ["N802", "N803", "N806", "N815", "N816", "N999"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["Engine"]
+known-first-party = ["Engine", "terraforge"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -36,3 +58,12 @@ warn_unused_configs = true
 disallow_untyped_defs = false
 warn_return_any = false
 disable_error_code = ["arg-type", "assignment", "operator", "call-overload", "var-annotated", "attr-defined"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "--strict-markers --strict-config"
+
+[tool.coverage.run]
+source = ["terraforge"]
+omit = ["terraforge/gui.py"]

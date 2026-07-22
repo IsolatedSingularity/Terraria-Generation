@@ -1,218 +1,240 @@
-# Terraria World Generation
+<p align="center">
+  <img src="docs/media/terraforge_logo.png" width="220" alt="TerraForge mechanical metal tree icon">
+</p>
 
-[![CI](https://img.shields.io/github/actions/workflow/status/IsolatedSingularity/Terraria-Generation/ci.yml?branch=main&label=CI&logo=github)](https://github.com/IsolatedSingularity/Terraria-Generation/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/python-3.11%2B-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
-[![NumPy](https://img.shields.io/badge/numpy-2.2-013243.svg?logo=numpy&logoColor=white)](https://numpy.org/)
-[![SciPy](https://img.shields.io/badge/scipy-1.15-8CAAE6.svg?logo=scipy&logoColor=white)](https://scipy.org/)
-[![Matplotlib](https://img.shields.io/badge/matplotlib-3.10-11557C.svg)](https://matplotlib.org/)
+<h1 align="center">TerraForge</h1>
 
-![Master Evolution](Plots/Advanced/terraria_master_evolution.gif)
+<p align="center">
+  A deterministic, inspectable 2D world-generation laboratory inspired by Terraria's public generation concepts.
+</p>
 
-## Overview
+<p align="center">
+  <a href="https://github.com/IsolatedSingularity/Terraria-Generation/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/IsolatedSingularity/Terraria-Generation/ci.yml?branch=main&label=CI&logo=github" alt="CI status"></a>
+  <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white" alt="Python 3.11+">
+  <img src="https://img.shields.io/badge/passes-107-63d3c1" alt="107 named passes">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-e4b85c" alt="MIT license"></a>
+</p>
 
-Every Terraria world you have ever fallen into was assembled by the same 103-pass pipeline buried inside `WorldGen.cs`. This project reverse-engineers that pipeline in Python, pass by pass, algorithm by algorithm. The `Engine/` library reproduces the game's generation logic at source-code fidelity and the visualization suite renders it in Tokyo Night dark-theme plots that feel more like a dev console than a wiki screenshot.
+![TerraForge generation milestones](docs/media/terraforge_generation.gif)
 
-These are the algorithms that put the dirt under your feet:
+TerraForge turns a seed into separate NumPy arrays for tiles, walls, liquids,
+biomes, and metadata. Its complete named pipeline follows the public vanilla
+1.4.4.9 ordering while using original Python implementations and original art.
+It is an educational simulator: it does not load or save Terraria `.wld` files,
+use Re-Logic sprites, or claim seed-for-seed/source-code compatibility.
 
-- **TileRunner** diamond-brush random walk: drills cave networks, deposits ore veins, and paints biome conversions using the exact strength-and-step formulation from the decompiled source
-- **Cellular automata smoothing**: the jagged raw voids from TileRunner get multiple rounds of majority-rule CA passes, rounding cave edges into the lacy organic shapes the game is known for
-- **Gravity-based liquid settling**: water flows down, lava pools in pockets, honey sits where it sits, and the three liquids interact by the game's own collision rules
-- **Tile-update infection spread**: Corruption, Crimson, and Hallow spread one random neighbor per cycle with surface vs. underground rate modifiers and hard air-gap blocking
-- **StructureMap exclusion zones**: dungeon, pyramid, cabin, and floating island placement all check a shared conflict map before committing
-- **Dungeon eating algorithm**: the dungeon carves interlocking rooms through solid stone with the same greedy rectangle-packing logic used in-game
+![TerraForge native desktop GUI](docs/media/gui.png)
 
-## Visualizations
+## What changed
 
-### Surface Terrain
+This repository began as a collection of disconnected visual experiments.
+TerraForge replaces the conflicting tile registries, duplicate Tiny/Small
+generators, and unsupported "source fidelity" claims with one tested package:
 
-![Surface Terrain](Plots/terraria_surface_terrain.png)
+- One canonical registry for 51 tile types, 10 wall states, four liquids, and
+  13 biome states.
+- A reproducible 107-pass pipeline with independent per-pass RNG streams,
+  progress events, timing, cooperative cancellation, snapshots, and optional
+  phase controls.
+- Meaningfully different Corruption and Crimson layouts, a post-generation
+  Hallow/evil V, biome-specific caves, alternate ore selection, a room-based
+  Dungeon, Living Trees, Shimmer, a Jungle Temple, Hives, and other structures.
+- Preview (`240 x 140`) and genuine Small (`4200 x 1200`) simulation sizes.
+- A lightweight Tk desktop app with seed/world controls, overlays, zoom/pan,
+  tile inspection, current/previous split comparison, pass telemetry, dark and
+  light interfaces, and PNG/GIF/NumPy exports.
+- A source-install CLI, reproducible media generator, PyInstaller Windows
+  build, Windows/Ubuntu CI matrix, and tagged Windows release workflow.
 
-The surface is a stack of sinusoidal octaves, the discrete form of fractional Brownian motion. Multi-octave noise generates individual frequency components and a composite waveform, rendered alongside the final tile grid. Each biome uses its own noise parameters, so the Snow biome's surface sits at a slightly different height than the Jungle across the map.
+## Quick start
 
-### Cave Systems
+Python 3.11 or newer is required. Tkinter ships with standard Windows Python;
+some Linux distributions package it separately as `python3-tk`.
 
-![Cave Systems](Plots/terraria_cave_systems.png)
+```bash
+git clone https://github.com/IsolatedSingularity/Terraria-Generation.git
+cd Terraria-Generation
+python -m pip install -e .
+python -m terraforge gui
+```
 
-TileRunner carves caves from the surface down to the cavern layer. Surface caves are small and shallow (strength 4-8, up to 30 steps), rock-layer caves grow aggressive (strength 10-22, up to 100 steps). After carving, cellular automata smoothing runs several majority-rule passes to turn the diamond-shaped TileRunner marks into rounded tunnels.
+Generate from the terminal instead:
 
-### Biome Distribution
+```bash
+terraforge generate --seed "mechanical-tree" --evil crimson --hardmode \
+  --png world.png --npz world.npz --json world.json --gif generation.gif
 
-![Biome Layouts](Plots/terraria_biome_layouts.png)
+terraforge passes
+terraforge benchmark --scale preview --iterations 7
+```
 
-Biome placement follows a fixed ruleset that locks in the world's geography before a single cave is carved:
+The tagged release workflow also produces a standalone `TerraForge.exe`. To
+build it locally on Windows:
 
-- Jungle always spawns on the side opposite the Dungeon
-- Snow biome lands on the same side as the Dungeon
-- Evil biome (Corruption or Crimson) is placed independently in either hemisphere
-- One surface Desert and one Underground Desert (the ant-hive circle) per world
-- Six Floating Islands, 16-32 Marble cave clusters, similar Granite pockets
-- Underground Mushroom biome anchored in the cavern layer
-- A 45-tile dead zone borders every edge of the map, no structures allowed
+```powershell
+./scripts/build_windows.ps1
+./dist/TerraForge.exe
+```
 
-![Biome Transition Detail](Plots/terraria_biome_transition_detail.png)
+## Native desktop workflow
 
-A 240x140 world rendered at full resolution. Five surface biomes sit side by side with caves carved through every stratum, so the tile conversion rules are visible right at the biome borders: dirt flips to mud as you cross into Jungle, stone turns to Ebonstone where Corruption claims it.
+The GUI starts with an explicit, fast Preview generation and keeps expensive
+Small worlds opt-in. Generation runs on a worker thread, so progress and cancel
+remain responsive. Terrain baseline is always enabled; the other phase groups
+can be disabled for focused experiments.
 
-### Biome Tile Conversion
+The viewer supports:
 
-![Tile Conversion](Plots/terraria_biome_tile_conversion.png)
+- seed, Preview/Small, Corruption/Crimson, difficulty, and Hardmode controls;
+- biome tint, depth guides, and original geometric map symbols;
+- wheel/button zoom, scroll/pan, and per-cell tile/wall/liquid/biome inspection;
+- previous-world and split comparison modes;
+- pass-by-pass timing and fidelity coloring;
+- PNG, 17 vanilla-milestone GIF (plus Hardmode when selected), and compressed
+  NumPy archive exports.
 
-Side-by-side tile-grid panels showing each biome's conversion pass: Snow replaces dirt with snow and ice, Jungle swaps dirt for mud, Corruption turns stone to Ebonstone and dirt to Corrupt dirt. These are the exact tile-ID swaps from the source.
+## World data
 
-### Ore Distribution
+```python
+from terraforge import Evil, WorldConfig, generate_world
 
-![Ore Distribution](Plots/ore_distribution.png)
+world = generate_world(
+    WorldConfig(seed="TerraForge", evil=Evil.CRIMSON, hardmode=True)
+)
 
-Three separate worlds at full resolution, each with a different ore tier highlighted. Pre-Hardmode generates alternating pairs: Copper or Tin for tier 1, Iron or Lead for tier 2, Silver or Tungsten for tier 3, Gold or Platinum for tier 4. Smash three altars in Hardmode and tiers 1-3 start spawning underground in the exact zones shown here.
+print(world.tiles.shape)          # (140, 240) in Preview mode
+print(world.metadata["selected_ores"])
+print(world.metadata["generation_seconds"])
 
-![Ore Density](Plots/ore_density.png)
+# Independent NumPy arrays, not overloaded tile IDs:
+tiles = world.tiles               # uint8
+walls = world.walls               # uint8
+liquid_amount = world.liquid_amount
+liquid_kind = world.liquid_kind
+biomes = world.biomes
+surface_height = world.surface    # int16
+```
 
-Depth-binned heatmap counting ore occurrences across 10 depth slices and 15 ore types from a full world. Cells use a log-scaled Tokyo Night colormap with annotated counts for anything non-zero.
+All random decisions derive from the project seed and a stable pass label.
+Adding random draws inside one pass therefore does not silently shift every
+later pass.
 
+## Visual scope
 
-## Advanced Simulations
+![TerraForge generated world](docs/media/terraforge_world.png)
 
-### Generation Pipeline
+![Seed and world-state comparison](docs/media/seed_comparison.png)
 
-![World Generation Animation](Plots/Advanced/world_generation_animation.gif)
+The largest visual effort is concentrated in five areas:
 
-The 103-pass pipeline replayed one frame at a time. A bare stone shell becomes a full world over 25 frames: surface terrain, strata boundaries, cave carving, CA smoothing, biome painting, pre-Hardmode ore scattering, V-pattern carving, and three altar tier deposits. The frame title names the active pass.
+1. Corruption/Crimson and Hardmode Hallow transformations.
+2. Surface and underground biome identity.
+3. Chasms, tunnels, chambers, and biome-specific cave networks.
+4. Dungeon rooms and corridors.
+5. Landmark readability through original structure markers.
 
-### Corruption/Crimson/Hallow Evolution
+![Biome, layer, and structure overview](docs/media/biome_overview.png)
 
-![Corruption Evolution](Plots/Advanced/corruption_evolution.png)
+The renderer uses deterministic material texture, connected-edge shading,
+depth lighting, liquid blending, and a limited pixel palette. It deliberately
+does not reproduce Terraria's proprietary spritesheets.
 
-Four snapshots tracing the Corruption lifecycle from start to late-game saturation: the Pre-Hardmode evil pocket spawned at world gen, the V-pattern diagonals carved by the Wall of Flesh defeat, early infection spread through convertible tiles, and the late-stage halo where half the world has turned. All rendered at 240x140 so the diagonal geometry is unambiguous.
+## Accuracy and fidelity
 
-![Corruption Spread](Plots/Advanced/corruption_spread.gif)
+![TerraForge fidelity summary](docs/media/fidelity.png)
 
-![Crimson Evolution](Plots/Advanced/crimson_evolution.png)
+The old README's "103 passes" and "source-code fidelity" wording was not
+supportable. The current public list contains 107 named world-generation
+steps. TerraForge retains all 107 in their public order and labels each one:
 
-The same lifecycle for Crimson. Identical TileRunner V-pattern mechanics and the same `INFECTION_SPREAD_RADIUS` infection loop, but the converter swaps in Crimstone, Crimson grass, and flesh-block tile IDs.
+| Status | Count | Meaning |
+|---|---:|---|
+| Modeled | 63 | A distinct TerraForge grid/metadata operation exists. |
+| Approximated | 43 | A visible or semantic approximation is intentionally simpler. |
+| Documented | 1 | Order/telemetry entry only; no grid mutation. |
 
-### Hardmode Transformation
+See [the full fidelity inventory](docs/FIDELITY.md). The target is best
+described as **Terraria 1.4.5-era concepts with the publicly documented
+1.4.4.9 vanilla pass order**. Terraria 1.4.5 launched on January 27, 2026, but
+TerraForge does not claim its private current implementation details.
 
-![Hardmode Transformation](Plots/Advanced/terraria_hardmode_transformation.png)
+Primary/reference material:
 
-Three panels walking through Hardmode ore generation: Cobalt/Palladium spawns first after the first altar smash, Mythril/Orichalcum after the second, Adamantite/Titanium after the third. A fourth panel shows Chlorophyte spreading through Jungle mud in the cavern layer. Biome conversion from Hallow and Corruption encroachment is overlaid on every panel.
+- [tModLoader's public Vanilla World Generation Steps](https://github.com/tModLoader/tModLoader/wiki/Vanilla-World-Generation-Steps)
+- [tModLoader `WorldGenerator` reference](https://docs.tmodloader.net/docs/stable/class_world_generator.html)
+- [tModLoader `WorldGen` reference](https://docs.tmodloader.net/docs/stable/class_world_gen.html)
+- [Official Terraria 1.4.5 launch announcement](https://forums.terraria.org/index.php?threads/terraria-1-4-5-bigger-boulder-available-now.145773/)
 
-![Hardmode Animation](Plots/Advanced/terraria_hardmode_animation.gif)
+## Performance
 
-### World Evolution
+![TerraForge generation benchmark](docs/media/performance.png)
 
-![Master Evolution](Plots/Advanced/terraria_master_evolution.gif)
+On the recorded Windows/Python 3.12 run, median generation time was about
+`82 ms` for Preview and `4.35 s` for Small. The benchmark includes all 107
+passes but excludes rendering and export. Results depend on hardware; raw
+samples and environment data live in
+[`docs/media/benchmarks.json`](docs/media/benchmarks.json).
 
-The complete lifecycle hero animation. Twenty-five frames from a blank stone rectangle to a fully-formed world with late-stage infection spread. Every frame is the full 240x140 map at ~6 px/tile with the active pass named in the title bar.
+TerraForge reduces the Small-world baseline from the legacy generator's
+roughly 6.6 seconds on the same development machine while adding a much broader
+modeled pipeline. The core installation is intentionally only NumPy + Pillow;
+the old SciPy/Matplotlib/Seaborn experiments are available through the
+`legacy` extra.
 
 ## Architecture
 
-```
-Engine/                              # Core library
-    __init__.py
-    algorithms.py                    # tileRunner, digTunnel, cavinator (all accept seed=), cellularAutomataSmooth, settleLiquids
-    constants.py                     # WorldSize (TINY/SMALL/MEDIUM/LARGE/FEATURE_PLOT/DETAIL_PLOT), LayerDepths.forTiny/forSmall/forLarge, StructureQuotas, OreConfig, tile/wall IDs
-    structures.py                    # 12 structure generators + 8 placement passes, vectorized spreadGrass
-    structureMap.py                  # Rectangle + StructureMap exclusion zones
-    spriteRenderer.py                # Crisp pixel-tile rendering + structure composers (drawDungeon/drawCabin/drawFloatingIsland/drawPyramid/...)
-    worldgen.py                      # generateSmallWorld + generateMiniWorld (240x140), renderMiniWorld
-    theme.py                         # Tokyo Night Storm PALETTE, COLORS, BIOME_COLORS, TILE_COLORS, ORE_COLORS, buildTileColormap, applyTokyoNight, saveTinyGif
-Code/                                # Static visualizations
-    terrariaBiomeAnalysis.py         # Two TINY-world biome figures
-    terrariaNoiseSystems.py          # Surface terrain noise theory + cave systems + tile conversion
-    terrariaOreDistribution.py       # 3 TINY-world ore tier panels + SMALL-world heatmap
-Advanced/                            # Animations and multi-frame simulations
-    __init__.py
-    terrariaWorldGeneration.py       # TINY pipeline pass-by-pass GIF
-    terrariaCorruptionEvolution.py   # Evolution figure + spread GIF (corruption + crimson core)
-    terrariaCrimsonEvolution.py      # Crimson wrapper
-    terrariaHardmodeStructures.py    # 3-panel hardmode transformation figure
-    terrariaHardmodeDetailedAnimation.py # Hardmode transition GIF
-    terrariaMasterEvolution.py       # 25-frame hero lifecycle GIF
-Plots/                               # Generated output (tracked so README renders on GitHub)
-    Advanced/
-References/                          # Research documentation (gitignored)
+```text
+WorldConfig
+    -> TerraForgePipeline (107 ordered PassSpec entries, isolated RNG)
+        -> pass handlers mutate GeneratedWorld
+            -> tiles / walls / liquids / biomes / metadata / structures
+                -> native GUI | CLI | PNG/GIF renderer | NPZ/JSON export
 ```
 
-## Setup
+The package lives in `terraforge/`; `Engine/`, `Code/`, and `Advanced/` remain
+as a clearly labeled legacy research archive. See
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for invariants and extension
+points.
+
+## Development
 
 ```bash
-git clone https://github.com/IsolatedSingularity/Terraria-Generation
-cd Terraria-Generation
-pip install -e .          # editable install (Engine becomes importable)
+python -m pip install -e ".[dev,build]"
+ruff check terraforge tests scripts packaging
+ruff format --check terraforge tests scripts packaging
+mypy terraforge
+pytest --cov=terraforge
+python -m build
 ```
 
-> `pip install -e .` uses the `[build-system]` in `pyproject.toml` to expose the `Engine/` package.
+Regenerate the tracked visuals and icon with:
 
-## Theory
+```bash
+python -m scripts.generate_media
+python -m scripts.capture_gui  # requires a visible desktop
+```
 
-### Surface Terrain as Fractional Brownian Motion
+CI tests Python 3.11, 3.12, and 3.13 on both Windows and Ubuntu. Packaging runs
+after all quality and test jobs pass. Tagged `v*` pushes build and attach the
+Windows executable. See [CONTRIBUTING.md](CONTRIBUTING.md),
+[CHANGELOG.md](CHANGELOG.md), and [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
 
-Terraria surface heights are synthesized as a sum of sinusoidal octaves, a
-discrete approximation of fractional Brownian motion (fBm):
+## Legacy theory gallery
 
-$$h(x) = \sum_{i=0}^{N-1} A_0 \, p^i \sin\!\bigl(2\pi f_0 \, l^i \, x + \phi_i\bigr)$$
+The following plots remain because they explain useful procedural-generation
+ideas in isolation. They are legacy teaching diagrams, not proof of Terraria
+implementation parity.
 
-where $A_0$ is the base amplitude, $p \in (0, 1)$ is the persistence, $f_0$ is
-the base frequency, $l > 1$ is the lacunarity, and $\phi_i$ are independent
-uniform random phases. The resulting power spectrum satisfies
-$S(f) \propto f^{-\beta}$ with $\beta = 2 + 2\log_2 p$, giving the pink-noise
-texture characteristic of natural terrain. In the engine implementation,
-$p \approx 0.5$, $l = 2$, and $N = 4$ octaves produce $\beta \approx 2$, a
-well-known geomorphology exponent.
+| Surface noise | Cave smoothing | Ore density |
+|---|---|---|
+| ![Surface noise theory](Plots/terraria_surface_terrain.png) | ![Cave theory](Plots/terraria_cave_systems.png) | ![Ore density theory](Plots/ore_density.png) |
 
-### Infection Spread as a Stochastic Cellular Automaton
+## Legal and project status
 
-Each tile update cycle, every infected cell $\mathbf{r}$ attempts to convert
-one neighbor $\mathbf{r}' \in B_3(\mathbf{r})$ drawn uniformly at random.
-The macroscopic dynamics approximate a stochastic reaction-diffusion equation
+TerraForge is an independent educational project and is not affiliated with,
+endorsed by, or sponsored by Re-Logic. Terraria and related marks/assets
+belong to their respective owners. The TerraForge name, metal-tree emblem,
+renderer, map symbols, and code added here are original project assets.
 
-$$\partial_t \rho = D\,\nabla^2\rho + f(\rho)$$
-
-where $\rho$ is the infected-tile density, $D$ is an effective diffusivity set
-by `INFECTION_SPREAD_RADIUS`, and $f(\rho)$ encodes logistic saturation.
-Air-gap blocking maps onto percolation: a contiguous void of width
-$w \geq 4$ tiles (one `INFECTION_GAP_TILES` quantum) constitutes a barrier
-because the path integral of $\mathbf{1}[\text{air}]$ along any geodesic
-exceeds the conduction threshold. In 2-D site percolation, the critical
-occupation probability is $p_c \approx 0.593$; a 4-tile air trench forces
-the local percolation below $p_c$ and halts spread deterministically.
-
-### Cellular Automata Cave Smoothing
-
-After cavinator carves raw voids, several majority-rule CA passes shape the
-caverns into the lacy organic look characteristic of Terraria. Each cell
-$s_i \in \{0, 1\}$ (solid / air) updates from its 8-neighbor Moore
-neighborhood $\mathcal{N}_8(i)$ via separate birth and death thresholds.
-
-A solid cell survives when it has at least $d = 4$ solid neighbors:
-
-$$s_i^{(t+1)} = 1 \quad \text{if} \quad s_i^{(t)} = 1 \text{ and } n_i^{(t)} \geq 4$$
-
-An air cell becomes solid when more than $b = 5$ neighbors are solid:
-
-$$s_i^{(t+1)} = 1 \quad \text{if} \quad s_i^{(t)} = 0 \text{ and } n_i^{(t)} > 5$$
-
-Otherwise $s_i^{(t+1)} = 0$ (air). Here $n_i^{(t)} = \sum_{j \in \mathcal{N}_8(i)} s_j^{(t)}$ is the solid
-neighbor count.
-
----
-
-## Warning
-
-> **Experimental research project.** This codebase reverse-engineers Terraria's internal world-generation pipeline from decompiled C# source. It is not affiliated with or endorsed by Re-Logic. Generation fidelity is high for core passes (terrain, caves, biomes, liquid settling, infection spread) but some late-game structure placement logic is approximate. Expect minor deviations from in-game output, especially for dungeon room layouts and underground cabin density.
-
----
-
-## Next Steps
-
-- [ ] **Full 103-pass fidelity** -- port the remaining structure-placement passes (Living Tree, Shimmer biome crevice, Gem Cave variant seeding) to close the gap with `WorldGen.cs`.
-- [ ] **Large and Expert world sizes** -- current engine targets Small; scale `LayerDepths` and `StructureQuotas` constants for Medium/Large and add the extra Evil biome arm that Expert mode spawns.
-- [ ] **Surface/underground animated fly-through** -- render a multi-frame GIF sweeping left to right across the world, suitable for embedding as a demo.
-- [ ] **Seed reproducibility tests** -- add property-based tests (Hypothesis) that verify a fixed seed always produces the same world grid, catching any RNG-state leak between passes.
-- [ ] **Tile palette overhaul** -- add proper sprite rendering with Terraria's actual tile-sheet sprite coordinates for a pixel-perfect reconstruction of the in-game look.
-
----
-
-## License
-
-MIT License. All Terraria-related content and mechanics are owned by Re-Logic.
+The project code and original TerraForge assets are available under the
+[MIT License](LICENSE).

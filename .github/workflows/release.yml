@@ -1,0 +1,41 @@
+name: Windows release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows-executable:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Build TerraForge.exe
+        shell: pwsh
+        run: ./scripts/build_windows.ps1
+      - name: Verify executable
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "dist/TerraForge.exe")) {
+            throw "PyInstaller did not produce dist/TerraForge.exe"
+          }
+          Get-Item "dist/TerraForge.exe" | Format-List Name,Length,LastWriteTime
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TerraForge-Windows
+          path: dist/TerraForge.exe
+          if-no-files-found: error
+      - name: Attach executable to tagged release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/TerraForge.exe
+          generate_release_notes: true

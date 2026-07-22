@@ -1,5 +1,9 @@
 # Code
 
+> **Legacy research archive.** New generation, rendering, tests, and CLI/GUI
+> work lives in `terraforge/`. These plots remain useful teaching aids, but
+> their older Terraria-fidelity wording should not be read as source parity.
+
 Static visualizations of Terraria worldgen primitives. Each script is a
 standalone entry point; outputs land in `../Plots/`.
 
