@@ -8,6 +8,29 @@ import numpy as np
 import numpy.typing as npt
 
 
+def fast_isin(
+    elements: npt.NDArray[np.generic],
+    test_elements: Iterable[int],
+) -> npt.NDArray[np.bool_]:
+    """Fast replacement for np.isin on small tile ID ranges."""
+    test_tuple = tuple(test_elements)
+    if not test_tuple:
+        return np.zeros(elements.shape, dtype=bool)
+    if len(test_tuple) <= 3:
+        mask = elements == test_tuple[0]
+        for val in test_tuple[1:]:
+            mask |= elements == val
+        return mask
+
+    max_val = max(256, max(test_tuple) + 1)
+    if elements.dtype == np.uint8 and max_val <= 256:
+        lut = np.zeros(256, dtype=bool)
+        lut[list(test_tuple)] = True
+        return lut[elements]
+
+    return np.isin(elements, test_tuple)
+
+
 def smooth_noise_1d(
     width: int,
     rng: np.random.Generator,
@@ -42,11 +65,12 @@ def stamp_ellipse(
     y0, y1 = max(0, center_y - radius_y), min(height, center_y + radius_y + 1)
     if x0 >= x1 or y0 >= y1:
         return 0
-    yy, xx = np.ogrid[y0:y1, x0:x1]
+    yy = np.arange(y0, y1)[:, None]
+    xx = np.arange(x0, x1)[None, :]
     mask = ((xx - center_x) / radius_x) ** 2 + ((yy - center_y) / radius_y) ** 2 <= 1.0
     view = array[y0:y1, x0:x1]
     if replace is not None:
-        mask &= np.isin(view, tuple(replace))
+        mask &= fast_isin(view, replace)
     view[mask] = value
     return int(mask.sum())
 
@@ -87,5 +111,5 @@ def surface_candidates(
     """Solid cells with air immediately above."""
 
     candidates = np.zeros_like(tiles, dtype=bool)
-    candidates[1:] = np.isin(tiles[1:], tuple(tile_ids)) & (tiles[:-1] == 0)
+    candidates[1:] = fast_isin(tiles[1:], tile_ids) & (tiles[:-1] == 0)
     return candidates
