@@ -17,13 +17,18 @@ def fast_isin(
     if not test_tuple:
         return np.zeros(elements.shape, dtype=bool)
     if len(test_tuple) <= 3:
-        mask = (elements == test_tuple[0])
+        mask = elements == test_tuple[0]
         for val in test_tuple[1:]:
-            mask |= (elements == val)
+            mask |= elements == val
         return mask
-    lut = np.zeros(256, dtype=bool)
-    lut[list(test_tuple)] = True
-    return lut[elements]
+
+    max_val = max(256, max(test_tuple) + 1)
+    if elements.dtype == np.uint8 and max_val <= 256:
+        lut = np.zeros(256, dtype=bool)
+        lut[list(test_tuple)] = True
+        return lut[elements]
+
+    return np.isin(elements, test_tuple)
 
 
 def smooth_noise_1d(
