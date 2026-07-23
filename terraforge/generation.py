@@ -12,7 +12,13 @@ from collections.abc import Callable
 import numpy as np
 
 from terraforge.config import Evil, WorldScale
-from terraforge.geometry import smooth_noise_1d, stamp_ellipse, stamp_walk, surface_candidates
+from terraforge.geometry import (
+    fast_isin,
+    smooth_noise_1d,
+    stamp_ellipse,
+    stamp_walk,
+    surface_candidates,
+)
 from terraforge.model import GeneratedWorld, StructureMarker
 from terraforge.tiles import Biome, Liquid, Tile, Wall
 
@@ -390,7 +396,7 @@ def jungle(world: GeneratedWorld, rng: np.random.Generator) -> None:
     half = int(_pick(world, 28, 520))
     x0, x1 = _band(world, center, half)
     region = world.tiles[:, x0:x1]
-    region[np.isin(region, (Tile.DIRT, Tile.GRASS))] = Tile.MUD
+    region[fast_isin(region, (Tile.DIRT, Tile.GRASS))] = Tile.MUD
     rows = np.arange(world.shape[0])[:, None]
     mask = (rows >= world.surface[None, x0:x1]) & (rows < world.layers.underworld)
     world.biomes[:, x0:x1][mask] = Biome.JUNGLE
@@ -600,8 +606,8 @@ def evil_biome(world: GeneratedWorld, rng: np.random.Generator) -> None:
     region = world.tiles[:, x0:x1]
     evil_stone = Tile.EBONSTONE if world.config.evil is Evil.CORRUPTION else Tile.CRIMSTONE
     evil_grass = Tile.CORRUPT_GRASS if world.config.evil is Evil.CORRUPTION else Tile.CRIMSON_GRASS
-    region[np.isin(region, (Tile.STONE, Tile.DIRT))] = evil_stone
-    region[np.isin(region, (Tile.GRASS, Tile.JUNGLE_GRASS))] = evil_grass
+    region[fast_isin(region, (Tile.STONE, Tile.DIRT))] = evil_stone
+    region[fast_isin(region, (Tile.GRASS, Tile.JUNGLE_GRASS))] = evil_grass
     rows = np.arange(world.shape[0])[:, None]
     biome_id = Biome.CORRUPTION if world.config.evil is Evil.CORRUPTION else Biome.CRIMSON
     mask = (rows >= world.surface[None, x0:x1]) & (rows < world.layers.underworld)
@@ -739,7 +745,7 @@ def beaches(world: GeneratedWorld, rng: np.random.Generator) -> None:
     coast = int(_pick(world, 24, 340))
     for x0, x1 in ((0, coast), (world.shape[1] - coast, world.shape[1])):
         region = world.tiles[:, x0:x1]
-        region[np.isin(region, (Tile.DIRT, Tile.GRASS, Tile.STONE))] = Tile.SAND
+        region[fast_isin(region, (Tile.DIRT, Tile.GRASS, Tile.STONE))] = Tile.SAND
 
 
 def gems(world: GeneratedWorld, rng: np.random.Generator) -> None:
@@ -925,7 +931,7 @@ def smooth_world(world: GeneratedWorld, rng: np.random.Generator) -> None:
     neighbors = np.zeros(world.shape, dtype=np.uint8)
     for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
         neighbors += np.roll(np.roll(solid, dy, axis=0), dx, axis=1)
-    natural = np.isin(world.tiles, _CARVABLE)
+    natural = fast_isin(world.tiles, _CARVABLE)
     erode = natural & (neighbors <= 1)
     erode[:2] = False
     erode[-2:] = False
@@ -1090,7 +1096,7 @@ def planting_trees(world: GeneratedWorld, rng: np.random.Generator) -> None:
 
 def vines(world: GeneratedWorld, rng: np.random.Generator) -> None:
     del rng
-    solid = np.isin(world.tiles, (Tile.JUNGLE_GRASS, Tile.MUSHROOM_GRASS))
+    solid = fast_isin(world.tiles, (Tile.JUNGLE_GRASS, Tile.MUSHROOM_GRASS))
     hanging = np.zeros_like(solid)
     hanging[:-1] = solid[:-1] & (world.tiles[1:] == Tile.AIR)
     positions = np.argwhere(hanging)
@@ -1126,7 +1132,7 @@ def coastal_plants(world: GeneratedWorld, rng: np.random.Generator) -> None:
 def stalactites(world: GeneratedWorld, rng: np.random.Generator) -> None:
     del rng
     ceiling = np.zeros(world.shape, dtype=bool)
-    ceiling[:-1] = np.isin(world.tiles[:-1], _CARVABLE) & (world.tiles[1:] == Tile.AIR)
+    ceiling[:-1] = fast_isin(world.tiles[:-1], _CARVABLE) & (world.tiles[1:] == Tile.AIR)
     positions = np.argwhere(ceiling)
     stride = max(1, len(positions) // int(_pick(world, 24, 850))) if len(positions) else 1
     selected = positions[::stride]
