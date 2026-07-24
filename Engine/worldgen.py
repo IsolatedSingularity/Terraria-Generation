@@ -148,43 +148,46 @@ def _placeBiomes(
     hell = int(layers.hellLayer)
 
     # Snow band: convert surface dirt -> snow, stone -> ice up to rockLayer.
-    for x in range(max(0, snowX - snowHalf), min(width, snowX + snowHalf)):
-        for y in range(rock):
-            t = grid[y, x]
-            if t == DIRT or t == GRASS:
-                grid[y, x] = SNOW
-            elif t == STONE:
-                grid[y, x] = ICE
+    sx_start = max(0, snowX - snowHalf)
+    sx_end = min(width, snowX + snowHalf)
+    s_region = grid[:rock, sx_start:sx_end]
+    s_region[(s_region == DIRT) | (s_region == GRASS)] = SNOW
+    s_region[s_region == STONE] = ICE
 
     # Jungle band: dirt -> mud, deeper too.
-    for x in range(max(0, jungleX - jungleHalf), min(width, jungleX + jungleHalf)):
-        for y in range(hell):
-            t = grid[y, x]
-            if t == DIRT or t == GRASS:
-                grid[y, x] = MUD
+    jx_start = max(0, jungleX - jungleHalf)
+    jx_end = min(width, jungleX + jungleHalf)
+    j_region = grid[:hell, jx_start:jx_end]
+    j_region[(j_region == DIRT) | (j_region == GRASS)] = MUD
 
     # Desert band: dirt/grass -> sand, surface stone -> hardened sand,
     # deeper stone -> sandstone for ant-hive feel.
-    for x in range(max(0, desertX - desertHalf), min(width, desertX + desertHalf)):
-        for y in range(rock + 80):
-            t = grid[y, x]
-            if t == DIRT or t == GRASS:
-                grid[y, x] = SAND
-            elif t == STONE and y < rock + 30:
-                grid[y, x] = HARDENED_SAND
-            elif t == STONE:
-                grid[y, x] = SANDSTONE_BLOCK
+    dx_start = max(0, desertX - desertHalf)
+    dx_end = min(width, desertX + desertHalf)
+    d_depth = rock + 80
+    d_region = grid[:d_depth, dx_start:dx_end]
+
+    d_region[(d_region == DIRT) | (d_region == GRASS)] = SAND
+
+    d_stone = (d_region == STONE)
+    y_indices = np.arange(d_depth)[:, None]
+
+    hardened_mask = d_stone & (y_indices < rock + 30)
+    sandstone_mask = d_stone & (y_indices >= rock + 30)
+
+    d_region[hardened_mask] = HARDENED_SAND
+    d_region[sandstone_mask] = SANDSTONE_BLOCK
 
     # Evil band: surface dirt -> corrupt/crimson dirt; stone -> ebonstone/crimstone.
     evilDirt = CORRUPT_DIRT if evilType == "corruption" else CRIMSON_DIRT
     evilStone = EBONSTONE if evilType == "corruption" else CRIMSTONE
-    for x in range(max(0, evilX - evilHalf), min(width, evilX + evilHalf)):
-        for y in range(hell):
-            t = grid[y, x]
-            if t == DIRT or t == GRASS:
-                grid[y, x] = evilDirt
-            elif t == STONE:
-                grid[y, x] = evilStone
+
+    ex_start = max(0, evilX - evilHalf)
+    ex_end = min(width, evilX + evilHalf)
+    e_region = grid[:hell, ex_start:ex_end]
+
+    e_region[(e_region == DIRT) | (e_region == GRASS)] = evilDirt
+    e_region[e_region == STONE] = evilStone
 
     return {
         "spawnX": spawnX,
@@ -585,39 +588,41 @@ def _miniBiomes(
     rock = int(layers.rockLayer)
     hell = int(layers.hellLayer)
 
-    for x in range(max(0, snowX - snowHalf), min(width, snowX + snowHalf)):
-        for y in range(rock):
-            t = grid[y, x]
-            if t == DIRT or t == GRASS:
-                grid[y, x] = SNOW
-            elif t == STONE:
-                grid[y, x] = ICE
+    sx_start = max(0, snowX - snowHalf)
+    sx_end = min(width, snowX + snowHalf)
+    s_region = grid[:rock, sx_start:sx_end]
+    s_region[(s_region == DIRT) | (s_region == GRASS)] = SNOW
+    s_region[s_region == STONE] = ICE
 
-    for x in range(max(0, jungleX - jungleHalf), min(width, jungleX + jungleHalf)):
-        for y in range(hell):
-            t = grid[y, x]
-            if t == DIRT or t == GRASS:
-                grid[y, x] = MUD
+    jx_start = max(0, jungleX - jungleHalf)
+    jx_end = min(width, jungleX + jungleHalf)
+    j_region = grid[:hell, jx_start:jx_end]
+    j_region[(j_region == DIRT) | (j_region == GRASS)] = MUD
 
-    for x in range(max(0, desertX - desertHalf), min(width, desertX + desertHalf)):
-        for y in range(rock + 12):
-            t = grid[y, x]
-            if t == DIRT or t == GRASS:
-                grid[y, x] = SAND
-            elif t == STONE and y < rock + 4:
-                grid[y, x] = HARDENED_SAND
-            elif t == STONE:
-                grid[y, x] = SANDSTONE_BLOCK
+    dx_start = max(0, desertX - desertHalf)
+    dx_end = min(width, desertX + desertHalf)
+    d_depth = rock + 12
+    d_region = grid[:d_depth, dx_start:dx_end]
+
+    d_region[(d_region == DIRT) | (d_region == GRASS)] = SAND
+
+    d_stone = (d_region == STONE)
+    y_indices = np.arange(d_depth)[:, None]
+
+    hardened_mask = d_stone & (y_indices < rock + 4)
+    sandstone_mask = d_stone & (y_indices >= rock + 4)
+
+    d_region[hardened_mask] = HARDENED_SAND
+    d_region[sandstone_mask] = SANDSTONE_BLOCK
 
     evilDirt = CORRUPT_DIRT if evilType == "corruption" else CRIMSON_DIRT
     evilStone = EBONSTONE if evilType == "corruption" else CRIMSTONE
-    for x in range(max(0, evilX - evilHalf), min(width, evilX + evilHalf)):
-        for y in range(hell):
-            t = grid[y, x]
-            if t == DIRT or t == GRASS:
-                grid[y, x] = evilDirt
-            elif t == STONE:
-                grid[y, x] = evilStone
+    ex_start = max(0, evilX - evilHalf)
+    ex_end = min(width, evilX + evilHalf)
+    e_region = grid[:hell, ex_start:ex_end]
+
+    e_region[(e_region == DIRT) | (e_region == GRASS)] = evilDirt
+    e_region[e_region == STONE] = evilStone
 
     return {
         "spawnX": spawnX,
