@@ -157,11 +157,11 @@ def _placeBiomes(
                 grid[y, x] = ICE
 
     # Jungle band: dirt -> mud, deeper too.
-    for x in range(max(0, jungleX - jungleHalf), min(width, jungleX + jungleHalf)):
-        for y in range(hell):
-            t = grid[y, x]
-            if t == DIRT or t == GRASS:
-                grid[y, x] = MUD
+    j_start = max(0, jungleX - jungleHalf)
+    j_end = min(width, jungleX + jungleHalf)
+    if j_start < j_end and hell > 0:
+        jungle_view = grid[:hell, j_start:j_end]
+        jungle_view[(jungle_view == DIRT) | (jungle_view == GRASS)] = MUD
 
     # Desert band: dirt/grass -> sand, surface stone -> hardened sand,
     # deeper stone -> sandstone for ant-hive feel.
@@ -593,11 +593,11 @@ def _miniBiomes(
             elif t == STONE:
                 grid[y, x] = ICE
 
-    for x in range(max(0, jungleX - jungleHalf), min(width, jungleX + jungleHalf)):
-        for y in range(hell):
-            t = grid[y, x]
-            if t == DIRT or t == GRASS:
-                grid[y, x] = MUD
+    j_start = max(0, jungleX - jungleHalf)
+    j_end = min(width, jungleX + jungleHalf)
+    if j_start < j_end and hell > 0:
+        jungle_view = grid[:hell, j_start:j_end]
+        jungle_view[(jungle_view == DIRT) | (jungle_view == GRASS)] = MUD
 
     for x in range(max(0, desertX - desertHalf), min(width, desertX + desertHalf)):
         for y in range(rock + 12):
