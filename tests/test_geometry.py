@@ -25,28 +25,37 @@ def test_stamp_walk_is_reproducible() -> None:
 
 
 def test_surface_candidates_identifies_exposed_tiles() -> None:
-    tiles = np.array([
-        [0, 1, 0, 2],
-        [1, 0, 1, 1],
-        [2, 1, 2, 0],
-    ], dtype=np.uint8)
+    tiles = np.array(
+        [
+            [0, 1, 0, 2],
+            [1, 0, 1, 1],
+            [2, 1, 2, 0],
+        ],
+        dtype=np.uint8,
+    )
 
     candidates = surface_candidates(tiles, [1, 2])
 
-    expected = np.array([
-        [False, False, False, False],
-        [True,  False, True,  False],
-        [False, True,  False, False],
-    ], dtype=bool)
+    expected = np.array(
+        [
+            [False, False, False, False],
+            [True, False, True, False],
+            [False, True, False, False],
+        ],
+        dtype=bool,
+    )
 
     assert np.array_equal(candidates, expected)
 
 
 def test_surface_candidates_empty_tile_ids() -> None:
-    tiles = np.array([
-        [0, 0],
-        [1, 2],
-    ], dtype=np.uint8)
+    tiles = np.array(
+        [
+            [0, 0],
+            [1, 2],
+        ],
+        dtype=np.uint8,
+    )
 
     candidates = surface_candidates(tiles, [])
 
