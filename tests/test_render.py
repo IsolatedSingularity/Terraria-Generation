@@ -6,12 +6,20 @@ from PIL import Image
 from terraforge.config import WorldConfig
 from terraforge.pipeline import generate_world
 from terraforge.render import (
+    _rgb,
     render_world,
     save_generation_gif,
     save_npz,
     save_png,
     summary_json,
 )
+
+
+def test_rgb_conversion() -> None:
+    assert _rgb("#ff0000") == (255, 0, 0)
+    assert _rgb("00ff00") == (0, 255, 0)
+    assert _rgb("#0000FF") == (0, 0, 255)
+    assert _rgb("#2e7dba") == (46, 125, 186)
 
 
 def test_renderer_and_png_export(tmp_path) -> None:
