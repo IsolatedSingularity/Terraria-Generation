@@ -165,15 +165,27 @@ def _placeBiomes(
 
     # Desert band: dirt/grass -> sand, surface stone -> hardened sand,
     # deeper stone -> sandstone for ant-hive feel.
-    for x in range(max(0, desertX - desertHalf), min(width, desertX + desertHalf)):
-        for y in range(rock + 80):
-            t = grid[y, x]
-            if t == DIRT or t == GRASS:
-                grid[y, x] = SAND
-            elif t == STONE and y < rock + 30:
-                grid[y, x] = HARDENED_SAND
-            elif t == STONE:
-                grid[y, x] = SANDSTONE_BLOCK
+    x_start = max(0, desertX - desertHalf)
+    x_end = min(width, desertX + desertHalf)
+    y_end = rock + 80
+
+    if x_start < x_end and y_end > 0:
+        region = grid[:y_end, x_start:x_end]
+
+        mask_sand = (region == DIRT) | (region == GRASS)
+        region[mask_sand] = SAND
+
+        y_split = min(y_end, max(0, rock + 30))
+
+        if y_split > 0:
+            upper_region = grid[:y_split, x_start:x_end]
+            upper_stone_mask = upper_region == STONE
+            upper_region[upper_stone_mask] = HARDENED_SAND
+
+        if y_end > y_split:
+            lower_region = grid[y_split:y_end, x_start:x_end]
+            lower_stone_mask = lower_region == STONE
+            lower_region[lower_stone_mask] = SANDSTONE_BLOCK
 
     # Evil band: surface dirt -> corrupt/crimson dirt; stone -> ebonstone/crimstone.
     evilDirt = CORRUPT_DIRT if evilType == "corruption" else CRIMSON_DIRT
@@ -599,15 +611,27 @@ def _miniBiomes(
             if t == DIRT or t == GRASS:
                 grid[y, x] = MUD
 
-    for x in range(max(0, desertX - desertHalf), min(width, desertX + desertHalf)):
-        for y in range(rock + 12):
-            t = grid[y, x]
-            if t == DIRT or t == GRASS:
-                grid[y, x] = SAND
-            elif t == STONE and y < rock + 4:
-                grid[y, x] = HARDENED_SAND
-            elif t == STONE:
-                grid[y, x] = SANDSTONE_BLOCK
+    x_start = max(0, desertX - desertHalf)
+    x_end = min(width, desertX + desertHalf)
+    y_end = rock + 12
+
+    if x_start < x_end and y_end > 0:
+        region = grid[:y_end, x_start:x_end]
+
+        mask_sand = (region == DIRT) | (region == GRASS)
+        region[mask_sand] = SAND
+
+        y_split = min(y_end, max(0, rock + 4))
+
+        if y_split > 0:
+            upper_region = grid[:y_split, x_start:x_end]
+            upper_stone_mask = upper_region == STONE
+            upper_region[upper_stone_mask] = HARDENED_SAND
+
+        if y_end > y_split:
+            lower_region = grid[y_split:y_end, x_start:x_end]
+            lower_stone_mask = lower_region == STONE
+            lower_region[lower_stone_mask] = SANDSTONE_BLOCK
 
     evilDirt = CORRUPT_DIRT if evilType == "corruption" else CRIMSON_DIRT
     evilStone = EBONSTONE if evilType == "corruption" else CRIMSTONE
