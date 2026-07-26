@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import platform
 import statistics
 import time
@@ -11,9 +12,11 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 from terraforge.config import Evil, WorldConfig, WorldScale
+from terraforge.model import GeneratedWorld
 from terraforge.passes import PASS_SPECS, Fidelity
 from terraforge.pipeline import generate_world
 from terraforge.render import add_title_bar, render_world, save_generation_gif, save_png
+from terraforge.tiles import Biome, Tile
 
 ROOT = Path(__file__).resolve().parents[1]
 MEDIA = ROOT / "docs" / "media"
@@ -96,6 +99,155 @@ def build_seed_comparison() -> None:
         canvas.paste(card, (x, 0))
         x += card.width + gap
     canvas.save(MEDIA / "seed_comparison.png", optimize=True)
+
+
+def _biome_variant(base: GeneratedWorld, biome: Biome, mapping: dict[Tile, Tile]) -> GeneratedWorld:
+    variant = GeneratedWorld(
+        config=base.config,
+        tiles=base.tiles.copy(),
+        walls=base.walls.copy(),
+        liquid_amount=base.liquid_amount.copy(),
+        liquid_kind=base.liquid_kind.copy(),
+        biomes=base.biomes.copy(),
+        surface=base.surface.copy(),
+        layers=base.layers,
+        metadata=base.metadata.copy(),
+        structures=[],
+        pass_results=base.pass_results.copy(),
+    )
+    original = variant.tiles.copy()
+    for source, target in mapping.items():
+        variant.tiles[original == source] = target
+    variant.biomes[variant.tiles != Tile.AIR] = biome
+    return variant
+
+
+def build_biome_study() -> None:
+    base = generate_world(WorldConfig(seed="One Patch of Earth"))
+    studies = (
+        (
+            "FOREST",
+            Biome.FOREST,
+            {Tile.DIRT: Tile.DIRT, Tile.STONE: Tile.STONE, Tile.GRASS: Tile.GRASS},
+        ),
+        ("SNOW", Biome.SNOW, {Tile.DIRT: Tile.SNOW, Tile.STONE: Tile.ICE, Tile.GRASS: Tile.SNOW}),
+        (
+            "DESERT",
+            Biome.DESERT,
+            {Tile.DIRT: Tile.SAND, Tile.STONE: Tile.SANDSTONE, Tile.GRASS: Tile.SAND},
+        ),
+        (
+            "JUNGLE",
+            Biome.JUNGLE,
+            {Tile.DIRT: Tile.MUD, Tile.STONE: Tile.MUD, Tile.GRASS: Tile.JUNGLE_GRASS},
+        ),
+        (
+            "CORRUPTION",
+            Biome.CORRUPTION,
+            {
+                Tile.DIRT: Tile.EBONSTONE,
+                Tile.STONE: Tile.EBONSTONE,
+                Tile.GRASS: Tile.CORRUPT_GRASS,
+                Tile.SAND: Tile.EBONSTONE,
+            },
+        ),
+        (
+            "CRIMSON",
+            Biome.CRIMSON,
+            {
+                Tile.DIRT: Tile.CRIMSTONE,
+                Tile.STONE: Tile.CRIMSTONE,
+                Tile.GRASS: Tile.CRIMSON_GRASS,
+                Tile.SAND: Tile.CRIMSTONE,
+            },
+        ),
+    )
+    cards: list[Image.Image] = []
+    scale = 3
+    crop = (42 * scale, 10 * scale, 198 * scale, 118 * scale)
+    for label, biome, mapping in studies:
+        world = _biome_variant(base, biome, mapping)
+        image = render_world(world, scale=scale, markers=False).crop(crop)
+        cards.append(add_title_bar(image, label, "same seed | same terrain | different material"))
+
+    columns = 3
+    gap = 8
+    rows = math.ceil(len(cards) / columns)
+    card_width, card_height = cards[0].size
+    canvas = Image.new(
+        "RGB",
+        (columns * card_width + (columns - 1) * gap, rows * card_height + (rows - 1) * gap),
+        BG,
+    )
+    for index, card in enumerate(cards):
+        x = (index % columns) * (card_width + gap)
+        y = (index // columns) * (card_height + gap)
+        canvas.paste(card, (x, y))
+    canvas.save(MEDIA / "biome_variants.png", optimize=True)
+
+
+def _depth_name(world: GeneratedWorld, tile_y: int) -> str:
+    if tile_y < world.layers.world_surface:
+        return "SKY AND SURFACE"
+    if tile_y < world.layers.rock_layer:
+        return "UNDERGROUND"
+    if tile_y < world.layers.underworld:
+        return "CAVERNS"
+    return "UNDERWORLD"
+
+
+def build_depth_descent() -> None:
+    world = generate_world(WorldConfig(seed="The Long Way Down", evil=Evil.CRIMSON))
+    scale = 4
+    world_image = render_world(world, scale=scale, markers=True)
+    viewport_width, viewport_height = 850, 290
+    left = (world_image.width - viewport_width) // 2
+    maximum_y = world_image.height - viewport_height
+    down = [round(maximum_y * (0.5 - 0.5 * math.cos(math.pi * step / 17))) for step in range(18)]
+    positions = [down[0]] * 3 + down + [down[-1]] * 4 + list(reversed(down[1:-1]))
+    frames: list[Image.Image] = []
+
+    for top in positions:
+        tile_y = (top + viewport_height // 2) // scale
+        layer = _depth_name(world, tile_y)
+        frame = Image.new("RGB", (960, 390), BG)
+        crop = world_image.crop((left, top, left + viewport_width, top + viewport_height))
+        frame.paste(crop, (24, 74))
+        draw = ImageDraw.Draw(frame)
+        draw.rectangle((22, 72, 876, 366), outline=GOLD, width=2)
+        draw.text((24, 18), "DESCENT OF A NEW WORLD", fill=TEXT, font=font(23, True))
+        draw.text((24, 47), f"{layer} | depth {tile_y:03d}", fill=ACCENT, font=font(15, True))
+        gauge_x = 920
+        gauge_top, gauge_bottom = 82, 356
+        draw.line((gauge_x, gauge_top, gauge_x, gauge_bottom), fill=MUTED, width=3)
+        depths = (
+            (0, "0"),
+            (world.layers.world_surface, "SURFACE"),
+            (world.layers.rock_layer, "ROCK"),
+            (world.layers.underworld, "HELL"),
+            (world.shape[0] - 1, "BOTTOM"),
+        )
+        for depth, label in depths:
+            y = gauge_top + round((gauge_bottom - gauge_top) * depth / (world.shape[0] - 1))
+            draw.line((gauge_x - 8, y, gauge_x + 7, y), fill=GOLD, width=2)
+            if label not in {"0", "BOTTOM"}:
+                draw.text((882, y - 7), label, fill=MUTED, font=font(9, True))
+        pointer_y = gauge_top + round((gauge_bottom - gauge_top) * tile_y / (world.shape[0] - 1))
+        draw.polygon(
+            ((gauge_x - 15, pointer_y), (gauge_x - 4, pointer_y - 7), (gauge_x - 4, pointer_y + 7)),
+            fill=ACCENT,
+        )
+        frames.append(frame)
+
+    frames[0].save(
+        MEDIA / "depth_descent.gif",
+        save_all=True,
+        append_images=frames[1:],
+        duration=160,
+        loop=0,
+        optimize=True,
+        disposal=2,
+    )
 
 
 def benchmark(scale: WorldScale, iterations: int) -> list[float]:
@@ -194,6 +346,8 @@ def main() -> None:
     build_icon()
     build_world_media()
     build_seed_comparison()
+    build_biome_study()
+    build_depth_descent()
     build_performance_chart()
     build_fidelity_chart()
     print(f"Wrote TerraForge media to {MEDIA}")

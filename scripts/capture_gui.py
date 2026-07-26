@@ -30,9 +30,10 @@ def main() -> None:
 
     def frame_world() -> None:
         if app.current_world is not None:
-            app._zoom(1)
-            app.canvas.xview_moveto(0.08)
-            app.canvas.yview_moveto(0.02)
+            app.display_scale = 4
+            app._render_view()
+            app.canvas.xview_moveto(0.0)
+            app.canvas.yview_moveto(0.0)
 
     root.after(1900, frame_world)
     root.after(2600, capture)

@@ -11,6 +11,8 @@ All notable project changes are documented here. This project follows
   based on the supplied silhouette reference.
 - Restyled the desktop app as a brass-and-iron world forge and refreshed its
   README screenshot.
+- Added a six-biome terrain study and animated surface-to-Underworld descent,
+  and restored the three-world comparison to the README.
 - Reworked the README with fewer lists, no benchmark or fidelity scorecards,
   clearer project scope, and restrained Terraria-inspired easter eggs.
 - Corrected stale legacy-reference documentation and removed duplicate ignore

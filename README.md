@@ -63,26 +63,90 @@ between passes.
 Preview worlds are deliberately quick to explore. Small worlds use the full
 `4200 x 1200` grid and are an explicit choice.
 
+## Three seeds, three destinies
+
+![Corruption, Crimson, and Hardmode worlds](docs/media/seed_comparison.png)
+
+Corruption cuts violet scars through stone, Crimson answers in red, and
+Hardmode drives Hallow and evil through the world in a great V. The third panel
+is not a recolor. It is a separate world after TerraForge's optional Hardmode
+transformation.
+
+The Dryad would have opinions about all three. The machine records the tile
+counts and keeps working.
+
 ## What grows underground
 
 ![TerraForge generated world](docs/media/terraforge_world.png)
 
-A seed can produce Corruption or Crimson, alternate ore sets, surface biomes,
-layered cave networks, oceans, a room-based Dungeon, Living Trees, Hives,
-Shimmer, a Jungle Temple, and an optional Hardmode transformation. These are
-original approximations of familiar world-generation ideas, not attempts to
-reproduce a Terraria world tile for tile.
+A seed can raise oceans, forests, snowfields, desert, and Jungle above a
+stack of tunnels, chambers, ore veins, and underground biomes. Floating
+Islands wait above the treeline. Living Trees send roots into the soil, while
+a Pyramid may sit beneath sand that looked perfectly innocent from the
+surface.
+
+The Dungeon claims one coast and descends through rooms and corridors. Deeper
+still, the Jungle can hide honey-filled Hives and a sealed Temple. Spider
+caves, gem caves, traps, pots, altars, Life Crystals, and an Aether pocket give
+the Caverns reasons to carry more torches than seemed sensible at spawn.
 
 ![Biome, layer, and landmark overview](docs/media/biome_overview.png)
 
-The renderer gives materials deterministic texture, connected-edge shading,
-depth lighting, liquid blending, and compact geometric landmarks. There are no
-ripped tilesheets hiding in the workshop.
+Landmark symbols are original map marks, not borrowed sprites. The renderer
+gives materials deterministic texture, connected-edge shading, depth lighting,
+and liquid blending. There are no ripped tilesheets hiding behind the walls.
+
+## One patch of earth, six possible biomes
+
+![The same terrain rendered as six biomes](docs/media/biome_variants.png)
+
+This study freezes the seed, caves, surface profile, and camera. Only the
+material identity changes. Snow seals the same cavities in ice, Desert turns
+them to sandstone, Jungle packs them with mud, and the two evil biomes disagree
+about the proper color for a chasm. It is a compact view of how biome rules can
+change a place without changing its underlying geometry.
+
+## The long way down
+
+![Animated descent from the surface to the Underworld](docs/media/depth_descent.gif)
+
+The depth gauge follows one world from daylight through the Underground and
+Caverns to the Underworld. It is the same map throughout the loop, not a stack
+of unrelated screenshots. Layer boundaries come from the world model, so the
+instrument agrees with the GUI tile probe.
+
+A new character might arrive with a copper pickaxe and confidence. TerraForge
+supplies the darkness, suspicious pressure plates, and the long walk home.
+
+## Field notes from the workshop
+
+### Above the dirt
+
+Spawn is placed near the middle of the world, but safety is never guaranteed.
+Oceans close the map at both ends, Floating Islands occupy the sky, and surface
+biomes compete for room between them. Trees and flowers arrive late in the
+pipeline, after the ground has decided where it wants to be.
+
+### Where torches earn their keep
+
+The Underground gives way to the Caverns, walls can coexist with empty tiles,
+and liquids keep both an amount and a kind. Water, lava, honey, and Shimmer are
+therefore not painted colors. They are world state. The Aether is rare by
+design; finding its marker should still feel like noticing something the map
+was trying to keep quiet.
+
+### When the old world cracks
+
+TerraForge does not stage the Wall of Flesh fight. Selecting Hardmode begins
+after that story beat and carves the familiar opposing V of Hallow and evil
+through the generated world. It is an optional post-generation event, which
+means the untouched pre-Hardmode world can still be compared with what came
+after.
 
 Seeds are strings on purpose. Familiar names such as `not-the-bees`,
 `for-the-worthy`, or `05162020` are valid inputs, but they remain ordinary
-TerraForge seeds. No secret world behavior is borrowed from the game. The
-Goblin Tinkerer would probably charge extra for that.
+TerraForge seeds. No secret-world rules are copied from the game. The Goblin
+Tinkerer would probably call that a missing feature and charge to reforge it.
 
 ## World data
 
