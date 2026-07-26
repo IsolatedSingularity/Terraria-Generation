@@ -7,9 +7,12 @@ All notable project changes are documented here. This project follows
 
 ### Changed
 
-- Replaced the project emblem with a mechanical pixel-tree icon based on the
-  supplied silhouette reference.
-- Tightened the README's scope, workflow, performance, and archive wording.
+- Replaced the project emblem with a transparent mechanical pixel-tree icon
+  based on the supplied silhouette reference.
+- Restyled the desktop app as a brass-and-iron world forge and refreshed its
+  README screenshot.
+- Reworked the README with fewer lists, no benchmark or fidelity scorecards,
+  clearer project scope, and restrained Terraria-inspired easter eggs.
 - Corrected stale legacy-reference documentation and removed duplicate ignore
   rules.
 

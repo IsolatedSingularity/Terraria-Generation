@@ -12,8 +12,11 @@ from terraforge.gui import TerraForgeApp
 
 def main() -> None:
     root = tk.Tk()
-    TerraForgeApp(root)
-    root.geometry("1480x900+20+20")
+    app = TerraForgeApp(root)
+    root.geometry("1360x820+20+20")
+    root.attributes("-topmost", True)
+    root.lift()
+    root.focus_force()
     output = Path(__file__).resolve().parents[1] / "docs" / "media" / "gui.png"
 
     def capture() -> None:
@@ -25,7 +28,14 @@ def main() -> None:
         ImageGrab.grab((left, top, right, bottom), all_screens=True).save(output, optimize=True)
         root.destroy()
 
-    root.after(2200, capture)
+    def frame_world() -> None:
+        if app.current_world is not None:
+            app._zoom(1)
+            app.canvas.xview_moveto(0.08)
+            app.canvas.yview_moveto(0.02)
+
+    root.after(1900, frame_world)
+    root.after(2600, capture)
     root.mainloop()
     print(f"Captured {output}")
 

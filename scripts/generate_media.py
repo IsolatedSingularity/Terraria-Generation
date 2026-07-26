@@ -39,7 +39,7 @@ def font(size: int, bold: bool = False) -> ImageFont.ImageFont:
 
 
 def build_icon() -> None:
-    logo = Image.open(ASSETS / "terraforge_logo.png").convert("RGB")
+    logo = Image.open(ASSETS / "terraforge_logo.png").convert("RGBA")
     logo.thumbnail((512, 512), Image.Resampling.LANCZOS)
     logo.save(ASSETS / "terraforge_logo.png", optimize=True)
     logo.save(MEDIA / "terraforge_logo.png", optimize=True)

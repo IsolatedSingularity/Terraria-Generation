@@ -19,24 +19,24 @@ from terraforge.render import render_world, save_generation_gif, save_npz, save_
 from terraforge.tiles import BIOME_NAMES, TILE_STYLES, Biome, Liquid, Tile, Wall
 
 _DARK_THEME = {
-    "bg": "#0b1220",
-    "panel": "#131d2e",
-    "panel_2": "#19263a",
-    "text": "#e7edf7",
-    "muted": "#9fb0c9",
-    "accent": "#63d3c1",
-    "danger": "#ef6262",
-    "canvas": "#080d17",
+    "bg": "#100d0a",
+    "panel": "#1c1712",
+    "panel_2": "#2a2118",
+    "text": "#f1e5c8",
+    "muted": "#b5a27f",
+    "accent": "#d09a45",
+    "danger": "#bd4d3d",
+    "canvas": "#07101a",
 }
 _LIGHT_THEME = {
-    "bg": "#e8edf2",
-    "panel": "#f5f7f9",
-    "panel_2": "#dde5eb",
-    "text": "#182535",
-    "muted": "#596a7d",
-    "accent": "#197f80",
-    "danger": "#a73c4b",
-    "canvas": "#cbd6df",
+    "bg": "#d8cbb1",
+    "panel": "#f0e5cf",
+    "panel_2": "#d2bea0",
+    "text": "#2c1f15",
+    "muted": "#6f5b3e",
+    "accent": "#8a5a20",
+    "danger": "#9a3e32",
+    "canvas": "#b6d2dc",
 }
 
 
@@ -45,8 +45,8 @@ class TerraForgeApp:
         self.root = root
         self.light_mode_var = tk.BooleanVar(value=False)
         self.colors = _DARK_THEME
-        self.root.title("TerraForge - World Generation Laboratory")
-        self.root.geometry("1480x900")
+        self.root.title("TerraForge | Clockwork World Forge")
+        self.root.geometry("1440x860")
         self.root.minsize(1120, 700)
         self.root.configure(bg=self.colors["bg"])
         self._configure_styles()
@@ -69,7 +69,7 @@ class TerraForgeApp:
         self.markers_var = tk.BooleanVar(value=True)
         self.compare_var = tk.StringVar(value="Current")
         self.status_var = tk.StringVar(
-            value="Ready - explicit generation keeps previews predictable"
+            value="The forge is cold. Choose a seed and wake the machine."
         )
         self.inspector_var = tk.StringVar(value="Click a tile to inspect it")
         self.phase_vars = {phase.value: tk.BooleanVar(value=True) for phase in Phase}
@@ -89,6 +89,12 @@ class TerraForgeApp:
             fieldbackground=colors["panel_2"],
         )
         style.configure("TFrame", background=colors["panel"])
+        style.configure(
+            "Section.TLabel",
+            background=colors["panel"],
+            foreground=colors["accent"],
+            font=("Georgia", 10, "bold"),
+        )
         style.configure("Card.TFrame", background=colors["panel_2"])
         style.configure("TLabel", background=colors["panel"], foreground=colors["text"])
         style.configure("Muted.TLabel", background=colors["panel"], foreground=colors["muted"])
@@ -96,16 +102,21 @@ class TerraForgeApp:
             "Title.TLabel",
             background=colors["bg"],
             foreground=colors["text"],
-            font=("Segoe UI Semibold", 20),
+            font=("Georgia", 21, "bold"),
         )
         style.configure(
             "Brand.TLabel",
             background=colors["bg"],
             foreground=colors["accent"],
-            font=("Segoe UI Semibold", 13),
+            font=("Georgia", 11, "italic"),
         )
         style.configure(
-            "TButton", background=colors["panel_2"], foreground=colors["text"], padding=(10, 7)
+            "TButton",
+            background=colors["panel_2"],
+            foreground=colors["text"],
+            borderwidth=1,
+            padding=(10, 7),
+            font=("Georgia", 9, "bold"),
         )
         style.map("TButton", background=[("active", colors["accent"])])
         style.configure(
@@ -139,7 +150,13 @@ class TerraForgeApp:
         style.map("Treeview", background=[("selected", colors["accent"])])
 
     def _build_layout(self) -> None:
-        self.header = tk.Frame(self.root, bg=self.colors["bg"], height=68)
+        self.header = tk.Frame(
+            self.root,
+            bg=self.colors["bg"],
+            height=72,
+            highlightthickness=1,
+            highlightbackground=self.colors["accent"],
+        )
         self.header.pack(fill="x", padx=18, pady=(12, 8))
         self._build_brand(self.header)
         ttk.Label(self.header, text="TerraForge", style="Title.TLabel").pack(
@@ -147,12 +164,12 @@ class TerraForgeApp:
         )
         ttk.Label(
             self.header,
-            text="mechanical worlds, transparent fidelity",
+            text="seeded worlds, forged one pass at a time",
             style="Brand.TLabel",
         ).pack(side="left", pady=(8, 0))
         ttk.Label(
             self.header,
-            text="1.4.5-era | 107-pass public order",
+            text="DEPTH 0 | where every adventure begins",
             style="Muted.TLabel",
         ).pack(side="right", padx=8)
 
@@ -183,7 +200,8 @@ class TerraForgeApp:
             parent,
             width=244,
             bg=self.colors["panel"],
-            highlightthickness=0,
+            highlightthickness=1,
+            highlightbackground=self.colors["accent"],
         )
         scrollbar = ttk.Scrollbar(parent, orient="vertical", command=self.controls_canvas.yview)
         controls = ttk.Frame(self.controls_canvas)
@@ -216,7 +234,7 @@ class TerraForgeApp:
 
     def _build_brand(self, parent: tk.Widget) -> None:
         logo_path = Path(__file__).parent / "assets" / "terraforge_logo.png"
-        logo = Image.open(logo_path).convert("RGB").resize((52, 52), Image.Resampling.LANCZOS)
+        logo = Image.open(logo_path).convert("RGBA").resize((56, 56), Image.Resampling.LANCZOS)
         self.logo_photo = ImageTk.PhotoImage(logo)
         self.logo_label = tk.Label(
             parent,
@@ -228,7 +246,7 @@ class TerraForgeApp:
         self.logo_label.pack(side="left")
 
     def _section(self, parent: tk.Widget, title: str) -> ttk.Frame:
-        ttk.Label(parent, text=title, font=("Segoe UI Semibold", 10)).pack(
+        ttk.Label(parent, text=title, style="Section.TLabel").pack(
             anchor="w", padx=10, pady=(13, 5)
         )
         frame = ttk.Frame(parent)
@@ -236,10 +254,10 @@ class TerraForgeApp:
         return frame
 
     def _build_controls(self, parent: ttk.Frame) -> None:
-        world = self._section(parent, "WORLD")
+        world = self._section(parent, "WORLD FORGE")
         ttk.Label(world, text="Seed", style="Muted.TLabel").pack(anchor="w")
         ttk.Entry(world, textvariable=self.seed_var).pack(fill="x", pady=(2, 7))
-        ttk.Button(world, text="Randomize seed", command=self.randomize_seed).pack(fill="x")
+        ttk.Button(world, text="Roll a new seed", command=self.randomize_seed).pack(fill="x")
 
         for label, variable, values in (
             ("Size", self.scale_var, [item.value for item in WorldScale]),
@@ -254,7 +272,7 @@ class TerraForgeApp:
             anchor="w", pady=(8, 0)
         )
 
-        phases = self._section(parent, "GENERATION PHASES")
+        phases = self._section(parent, "WORLD LAYERS")
         for phase in Phase:
             state = "disabled" if phase is Phase.TERRAIN else "normal"
             ttk.Checkbutton(
@@ -264,7 +282,7 @@ class TerraForgeApp:
                 state=state,
             ).pack(anchor="w")
 
-        view = self._section(parent, "VIEW")
+        view = self._section(parent, "LOOKOUT")
         ttk.Checkbutton(
             view, text="Layer guides", variable=self.layers_var, command=self._render_view
         ).pack(anchor="w")
@@ -288,13 +306,17 @@ class TerraForgeApp:
         ).pack(fill="x", pady=(6, 0))
         self.compare_var.trace_add("write", lambda *_: self._render_view())
 
-        actions = self._section(parent, "ACTIONS")
+        actions = self._section(parent, "FORGE CONTROLS")
         self.generate_button = ttk.Button(
-            actions, text="Generate", style="Accent.TButton", command=self.generate
+            actions, text="Forge world", style="Accent.TButton", command=self.generate
         )
         self.generate_button.pack(fill="x", pady=(0, 5))
         self.cancel_button = ttk.Button(
-            actions, text="Cancel", style="Danger.TButton", command=self.cancel, state="disabled"
+            actions,
+            text="Quench forge",
+            style="Danger.TButton",
+            command=self.cancel,
+            state="disabled",
         )
         self.cancel_button.pack(fill="x", pady=(0, 5))
         ttk.Button(actions, text="Export PNG", command=self.export_png).pack(fill="x", pady=2)
@@ -308,7 +330,7 @@ class TerraForgeApp:
     def _build_viewer(self, parent: ttk.Frame) -> None:
         toolbar = ttk.Frame(parent)
         toolbar.pack(fill="x", padx=7, pady=(7, 4))
-        ttk.Label(toolbar, text="WORLD VIEW", font=("Segoe UI Semibold", 10)).pack(side="left")
+        ttk.Label(toolbar, text="WORLD WINDOW", style="Section.TLabel").pack(side="left")
         ttk.Button(toolbar, text="-", width=3, command=lambda: self._zoom(-1)).pack(
             side="right", padx=2
         )
@@ -319,7 +341,12 @@ class TerraForgeApp:
 
         canvas_frame = ttk.Frame(parent, style="Card.TFrame")
         canvas_frame.pack(fill="both", expand=True, padx=7, pady=(0, 7))
-        self.canvas = tk.Canvas(canvas_frame, bg=self.colors["canvas"], highlightthickness=0)
+        self.canvas = tk.Canvas(
+            canvas_frame,
+            bg=self.colors["canvas"],
+            highlightthickness=2,
+            highlightbackground=self.colors["accent"],
+        )
         xbar = ttk.Scrollbar(canvas_frame, orient="horizontal", command=self.canvas.xview)
         ybar = ttk.Scrollbar(canvas_frame, orient="vertical", command=self.canvas.yview)
         self.canvas.configure(xscrollcommand=xbar.set, yscrollcommand=ybar.set)
@@ -334,7 +361,7 @@ class TerraForgeApp:
         self.canvas.bind("<MouseWheel>", self._mouse_zoom)
 
     def _build_details(self, parent: ttk.Frame) -> None:
-        ttk.Label(parent, text="PASS TELEMETRY", font=("Segoe UI Semibold", 10)).pack(
+        ttk.Label(parent, text="GENERATION LOG", style="Section.TLabel").pack(
             anchor="w", padx=8, pady=(9, 5)
         )
         columns = ("index", "name", "time")
@@ -353,7 +380,7 @@ class TerraForgeApp:
         self.pass_tree.pack(side="top", fill="both", expand=True, padx=(8, 22))
         tree_scroll.place(relx=1.0, rely=0.04, relheight=0.68, x=-10, anchor="ne")
 
-        ttk.Label(parent, text="TILE INSPECTOR", font=("Segoe UI Semibold", 10)).pack(
+        ttk.Label(parent, text="TILE PROBE", style="Section.TLabel").pack(
             anchor="w", padx=8, pady=(12, 4)
         )
         ttk.Label(
@@ -369,7 +396,10 @@ class TerraForgeApp:
             bg=self.colors["panel_2"],
             fg=self.colors["text"],
             insertbackground=self.colors["text"],
-            relief="flat",
+            relief="solid",
+            borderwidth=1,
+            highlightthickness=1,
+            highlightbackground=self.colors["accent"],
             font=("Cascadia Mono", 9),
             padx=8,
             pady=8,
@@ -395,15 +425,18 @@ class TerraForgeApp:
     def _toggle_theme(self) -> None:
         self.colors = _LIGHT_THEME if self.light_mode_var.get() else _DARK_THEME
         self.root.configure(bg=self.colors["bg"])
-        self.header.configure(bg=self.colors["bg"])
+        self.header.configure(bg=self.colors["bg"], highlightbackground=self.colors["accent"])
         self.footer.configure(bg=self.colors["bg"])
         self.logo_label.configure(bg=self.colors["bg"])
-        self.canvas.configure(bg=self.colors["canvas"])
-        self.controls_canvas.configure(bg=self.colors["panel"])
+        self.canvas.configure(bg=self.colors["canvas"], highlightbackground=self.colors["accent"])
+        self.controls_canvas.configure(
+            bg=self.colors["panel"], highlightbackground=self.colors["accent"]
+        )
         self.metrics.configure(
             bg=self.colors["panel_2"],
             fg=self.colors["text"],
             insertbackground=self.colors["text"],
+            highlightbackground=self.colors["accent"],
         )
         self._configure_styles()
 
@@ -416,7 +449,7 @@ class TerraForgeApp:
         self.pass_tree.delete(*self.pass_tree.get_children())
         self.generate_button.configure(state="disabled")
         self.cancel_button.configure(state="normal")
-        self.status_var.set("Preparing pass pipeline...")
+        self.status_var.set("Heating the world forge...")
 
         def run() -> None:
             try:
@@ -476,8 +509,8 @@ class TerraForgeApp:
         self.generate_button.configure(state="normal")
         self.cancel_button.configure(state="disabled")
         self.status_var.set(
-            f"Complete | {world.metadata['generation_seconds']:.2f}s | "
-            f"{len(world.structures)} structures"
+            f"World sealed | {world.metadata['generation_seconds']:.2f}s | "
+            f"{len(world.structures)} landmarks discovered"
         )
         self._update_metrics()
         self._render_view()
@@ -580,8 +613,8 @@ class TerraForgeApp:
             f"memory     {world.memory_bytes / 1024 / 1024:.2f} MiB\n"
             f"air        {world.metadata['air_fraction'] * 100:.1f}%\n"
             f"structures {len(world.structures)}\n"
-            f"fidelity   {world.metadata['modeled_passes']} modeled\n"
-            f"           {world.metadata['approximated_passes']} approximate"
+            f"evil       {world.config.evil.value}\n"
+            f"depth      {world.layers.underworld} to Underworld"
         )
         self.metrics.configure(state="normal")
         self.metrics.delete("1.0", "end")
