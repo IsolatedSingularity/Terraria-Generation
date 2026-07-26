@@ -104,9 +104,9 @@ seeds (seeds live next to each `__main__` block).
 
 ## Theory references
 
-Cellular automata smoothing rules and infection spread mechanics are
-documented in the project root `README.md` Theory section. Layer depths
-for the TINY primitive are defined in
-[Engine/constants.py](../Engine/constants.py) as
-`LayerDepths.forTiny()` (worldSurface=28, rockLayer=70, hellLayer=125,
-maxTilesY=140).
+The supported package design is documented in
+[`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md), and implementation fidelity
+is tracked in [`docs/FIDELITY.md`](../docs/FIDELITY.md). Legacy TINY-world
+layer depths remain defined in [`Engine/constants.py`](../Engine/constants.py)
+as `LayerDepths.forTiny()` (`worldSurface=28`, `rockLayer=70`,
+`hellLayer=125`, `maxTilesY=140`).

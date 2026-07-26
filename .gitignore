@@ -45,14 +45,7 @@ htmlcov/
 # Ephemeral agent briefs (per-repo persona, never push)
 .copilot/
 
-# Generated plot outputs are tracked so the README renders on GitHub.
-# Regenerate them locally with the scripts in Code/ and Advanced/.
-
-Jenova/
-
-# Kilo Code / Agent Configuration
+# Kilo Code / agent configuration
 .kilo/
 .kilocodeignore
 AGENTS.md
-Jenova/
-

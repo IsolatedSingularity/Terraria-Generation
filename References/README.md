@@ -1,11 +1,12 @@
 # References
 
-Source material and research for the Terraria world generation simulation.
+This directory holds local research notes used while developing TerraForge.
+They are supplementary context, not project dependencies or evidence of
+source-code parity with Terraria.
 
-## Files
+`worldgen-research.md` is intentionally gitignored because it contains
+tool-generated working notes. Some of its early pass-count terminology is
+obsolete. The maintained 107-pass inventory and its public sources live in
+[`docs/FIDELITY.md`](../docs/FIDELITY.md).
 
-- **worldgen-research.md** (gitignored): Comprehensive 42KB deep research on Terraria's 103-pass GenPass pipeline, TileRunner/digTunnel/Cavinator algorithms, biome seeding, structure placement, ore density formulas, secret seeds, .wld format. Generated via Gemini deep research + Jenova agent analysis (2026-04-16). Local reference only, never pushed to remote.
-
-## Why is worldgen-research.md missing?
-
-It is gitignored. If you cloned this repo, you will not have it. It is a local-only reference file maintained by the Jenova agent system. The simulation code itself contains all necessary logic; the research file is supplementary context for the agent.
+A fresh clone is complete without the local research file.

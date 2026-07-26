@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/media/terraforge_logo.png" width="220" alt="TerraForge mechanical metal tree icon">
+  <img src="docs/media/terraforge_logo.png" width="260" alt="TerraForge mechanical tree icon">
 </p>
 
 <h1 align="center">TerraForge</h1>
@@ -18,18 +18,16 @@
 ![TerraForge generation milestones](docs/media/terraforge_generation.gif)
 
 TerraForge turns a seed into separate NumPy arrays for tiles, walls, liquids,
-biomes, and metadata. Its complete named pipeline follows the public vanilla
-1.4.4.9 ordering while using original Python implementations and original art.
-It is an educational simulator: it does not load or save Terraria `.wld` files,
-use Re-Logic sprites, or claim seed-for-seed/source-code compatibility.
+biomes, and metadata. Its named pipeline follows the publicly documented
+Terraria 1.4.4.9 vanilla ordering while using independent Python
+implementations and original art.
+
+This is an educational simulator. It does not read or write Terraria `.wld`
+files, include Re-Logic assets, or claim seed-for-seed or source compatibility.
 
 ![TerraForge native desktop GUI](docs/media/gui.png)
 
-## What changed
-
-This repository began as a collection of disconnected visual experiments.
-TerraForge replaces the conflicting tile registries, duplicate Tiny/Small
-generators, and unsupported "source fidelity" claims with one tested package:
+## Highlights
 
 - One canonical registry for 51 tile types, 10 wall states, four liquids, and
   13 biome states.
@@ -58,7 +56,7 @@ python -m pip install -e .
 python -m terraforge gui
 ```
 
-Generate from the terminal instead:
+Generate and export a world from the terminal:
 
 ```bash
 terraforge generate --seed "mechanical-tree" --evil crimson --hardmode \
@@ -68,8 +66,8 @@ terraforge passes
 terraforge benchmark --scale preview --iterations 7
 ```
 
-The tagged release workflow also produces a standalone `TerraForge.exe`. To
-build it locally on Windows:
+Tagged releases can include a standalone `TerraForge.exe`. To build it locally
+on Windows:
 
 ```powershell
 ./scripts/build_windows.ps1
@@ -90,8 +88,8 @@ The viewer supports:
 - wheel/button zoom, scroll/pan, and per-cell tile/wall/liquid/biome inspection;
 - previous-world and split comparison modes;
 - pass-by-pass timing and fidelity coloring;
-- PNG, 17 vanilla-milestone GIF (plus Hardmode when selected), and compressed
-  NumPy archive exports.
+- PNG, 17-frame generation GIF (18 with Hardmode), and compressed NumPy archive
+  exports.
 
 ## World data
 
@@ -143,9 +141,8 @@ does not reproduce Terraria's proprietary spritesheets.
 
 ![TerraForge fidelity summary](docs/media/fidelity.png)
 
-The old README's "103 passes" and "source-code fidelity" wording was not
-supportable. The current public list contains 107 named world-generation
-steps. TerraForge retains all 107 in their public order and labels each one:
+The public 1.4.4.9 list contains 107 named world-generation steps. TerraForge
+retains all 107 in their documented order and labels each implementation:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -158,7 +155,7 @@ described as **Terraria 1.4.5-era concepts with the publicly documented
 1.4.4.9 vanilla pass order**. Terraria 1.4.5 launched on January 27, 2026, but
 TerraForge does not claim its private current implementation details.
 
-Primary/reference material:
+Reference material:
 
 - [tModLoader's public Vanilla World Generation Steps](https://github.com/tModLoader/tModLoader/wiki/Vanilla-World-Generation-Steps)
 - [tModLoader `WorldGenerator` reference](https://docs.tmodloader.net/docs/stable/class_world_generator.html)
@@ -175,11 +172,10 @@ passes but excludes rendering and export. Results depend on hardware; raw
 samples and environment data live in
 [`docs/media/benchmarks.json`](docs/media/benchmarks.json).
 
-TerraForge reduces the Small-world baseline from the legacy generator's
-roughly 6.6 seconds on the same development machine while adding a much broader
-modeled pipeline. The core installation is intentionally only NumPy + Pillow;
-the old SciPy/Matplotlib/Seaborn experiments are available through the
-`legacy` extra.
+The recorded Small-world median is about 34% lower than the legacy generator's
+roughly 6.6-second result on the same development machine. This is a local
+before/after observation, not a cross-machine guarantee. The core installation
+uses only NumPy and Pillow; the archived experiments use the `legacy` extra.
 
 ## Architecture
 
@@ -191,10 +187,10 @@ WorldConfig
                 -> native GUI | CLI | PNG/GIF renderer | NPZ/JSON export
 ```
 
-The package lives in `terraforge/`; `Engine/`, `Code/`, and `Advanced/` remain
-as a clearly labeled legacy research archive. See
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for invariants and extension
-points.
+The supported package lives in `terraforge/`. `Engine/`, `Code/`, and
+`Advanced/` are retained as a labeled research archive and are excluded from
+the runtime package. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for
+invariants and extension points.
 
 ## Development
 
@@ -207,7 +203,7 @@ pytest --cov=terraforge
 python -m build
 ```
 
-Regenerate the tracked visuals and icon with:
+Regenerate tracked world visuals and icon derivatives with:
 
 ```bash
 python -m scripts.generate_media
@@ -236,5 +232,6 @@ endorsed by, or sponsored by Re-Logic. Terraria and related marks/assets
 belong to their respective owners. The TerraForge name, metal-tree emblem,
 renderer, map symbols, and code added here are original project assets.
 
-The project code and original TerraForge assets are available under the
-[MIT License](LICENSE).
+Project code and original TerraForge assets are available under the
+[MIT License](LICENSE). The supplied tree reference is not distributed as a
+runtime asset.

@@ -3,6 +3,16 @@
 All notable project changes are documented here. This project follows
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- Replaced the project emblem with a mechanical pixel-tree icon based on the
+  supplied silhouette reference.
+- Tightened the README's scope, workflow, performance, and archive wording.
+- Corrected stale legacy-reference documentation and removed duplicate ignore
+  rules.
+
 ## [1.0.0] - 2026-07-21
 
 ### Added
