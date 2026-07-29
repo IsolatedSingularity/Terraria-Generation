@@ -20,18 +20,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: pip
       - run: python -m pip install -e ".[dev]"
       - name: Ruff lint
-        run: ruff check terraforge tests scripts packaging
+        run: ruff check terraexplorer terraforge tests scripts packaging
       - name: Ruff format
-        run: ruff format --check terraforge tests scripts packaging
+        run: ruff format --check terraexplorer terraforge tests scripts packaging
       - name: Type check
-        run: mypy terraforge
+        run: mypy terraexplorer
 
   test:
     name: ${{ matrix.os }} / Python ${{ matrix.python }}
@@ -43,15 +43,17 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         python: ["3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
           cache: pip
       - run: python -m pip install -e ".[dev]"
       - name: Test with coverage
-        run: python -m pytest --cov=terraforge --cov-report=term-missing --cov-fail-under=75
+        run: python -m pytest --cov=terraexplorer --cov-report=term-missing --cov-fail-under=75
       - name: CLI smoke test
+        run: python -m terraexplorer passes
+      - name: Compatibility CLI smoke test
         run: python -m terraforge passes
 
   package:
@@ -60,8 +62,8 @@ jobs:
     needs: [quality, test]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: pip
@@ -69,6 +71,6 @@ jobs:
       - run: python -m build
       - uses: actions/upload-artifact@v4
         with:
-          name: terraforge-python
+          name: terraexplorer-python
           path: dist/*
           if-no-files-found: error

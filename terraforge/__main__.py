@@ -1,3 +1,5 @@
-from terraforge.cli import main
+"""Run the TerraExplorer CLI through the historical package name."""
 
-raise SystemExit(main())
+from terraexplorer.cli import main
+
+main()

@@ -13,29 +13,29 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
-      - name: Build TerraForge.exe
+      - name: Build TerraExplorer.exe
         shell: pwsh
         run: ./scripts/build_windows.ps1
       - name: Verify executable
         shell: pwsh
         run: |
-          if (-not (Test-Path "dist/TerraForge.exe")) {
-            throw "PyInstaller did not produce dist/TerraForge.exe"
+          if (-not (Test-Path "dist/TerraExplorer.exe")) {
+            throw "PyInstaller did not produce dist/TerraExplorer.exe"
           }
-          Get-Item "dist/TerraForge.exe" | Format-List Name,Length,LastWriteTime
+          Get-Item "dist/TerraExplorer.exe" | Format-List Name,Length,LastWriteTime
       - uses: actions/upload-artifact@v4
         with:
-          name: TerraForge-Windows
-          path: dist/TerraForge.exe
+          name: TerraExplorer-Windows
+          path: dist/TerraExplorer.exe
           if-no-files-found: error
       - name: Attach executable to tagged release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/TerraForge.exe
+          files: dist/TerraExplorer.exe
           generate_release_notes: true

@@ -3,9 +3,9 @@ import json
 import numpy as np
 from PIL import Image
 
-from terraforge.config import WorldConfig
-from terraforge.pipeline import generate_world
-from terraforge.render import (
+from terraexplorer.config import WorldConfig
+from terraexplorer.pipeline import generate_world
+from terraexplorer.render import (
     render_world,
     save_generation_gif,
     save_npz,
@@ -50,12 +50,13 @@ def test_generation_gif_contains_real_milestones(tmp_path) -> None:
     output = save_generation_gif(WorldConfig(seed="animation"), tmp_path / "generation.gif")
 
     with Image.open(output) as animation:
-        assert animation.n_frames == 17
+        assert animation.n_frames == 25
         animation.seek(0)
         first = np.asarray(animation.convert("RGB"))
         animation.seek(animation.n_frames - 1)
         last = np.asarray(animation.convert("RGB"))
         assert not np.array_equal(first, last)
+        assert animation.info["duration"] == 2000
 
 
 def test_hardmode_gif_includes_post_generation_transformation(tmp_path) -> None:
@@ -65,4 +66,4 @@ def test_hardmode_gif_includes_post_generation_transformation(tmp_path) -> None:
     )
 
     with Image.open(output) as animation:
-        assert animation.n_frames == 18
+        assert animation.n_frames == 26

@@ -1,7 +1,7 @@
 # Advanced
 
 > **Legacy research archive.** The supported 107-pass implementation and its
-> real milestone GIF now live in `terraforge/` and `docs/media/`. These scripts
+> real milestone GIF now live in `terraexplorer/` and `docs/media/`. These scripts
 > are retained for historical simulation experiments only.
 
 Long-running simulations and animated visualizations of Terraria world

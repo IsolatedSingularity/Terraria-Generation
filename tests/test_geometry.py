@@ -1,6 +1,6 @@
 import numpy as np
 
-from terraforge.geometry import stamp_ellipse, stamp_walk
+from terraexplorer.geometry import stamp_ellipse, stamp_walk
 
 
 def test_stamp_ellipse_clips_at_edges_and_respects_replace_filter() -> None:

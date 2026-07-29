@@ -1,6 +1,6 @@
 # Benchmarks
 
-TerraForge benchmarks generation only: no PNG/GIF rendering, compression, or
+TerraExplorer benchmarks generation only: no PNG/GIF rendering, compression, or
 GUI startup. The tracked samples were recorded on Windows 11 with Python 3.12.
 
 | Scale | Dimensions | Iterations | Median |
@@ -19,8 +19,8 @@ CPU, power plan, Python, NumPy, and background load.
 Quick CLI measurements:
 
 ```bash
-terraforge benchmark --scale preview --iterations 7
-terraforge benchmark --scale small --iterations 3
+terraexplorer benchmark --scale preview --iterations 7
+terraexplorer benchmark --scale small --iterations 3
 ```
 
 Regenerate the tracked chart and JSON (this also regenerates README media):
@@ -39,6 +39,6 @@ python -m scripts.generate_media
 - Renderer dependencies are excluded from the Windows executable when unused.
 
 The previous Small generator measured roughly 6.6 seconds during the audit on
-the same development machine. TerraForge's measured 4.35-second median is about
+the same development machine. TerraExplorer's measured 4.35-second median is about
 34% faster while executing the complete named pass catalogue. Treat that as a
 local before/after observation, not a cross-machine promise.

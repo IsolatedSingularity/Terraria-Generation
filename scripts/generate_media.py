@@ -9,18 +9,19 @@ import statistics
 import time
 from pathlib import Path
 
+import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from terraforge.config import Evil, WorldConfig, WorldScale
-from terraforge.model import GeneratedWorld
-from terraforge.passes import PASS_SPECS, Fidelity
-from terraforge.pipeline import generate_world
-from terraforge.render import add_title_bar, render_world, save_generation_gif, save_png
-from terraforge.tiles import Biome, Tile
+from terraexplorer.config import Evil, WorldConfig, WorldScale
+from terraexplorer.generation import advance_biome_spread, apply_hardmode
+from terraexplorer.model import GeneratedWorld
+from terraexplorer.passes import PASS_SPECS, Fidelity
+from terraexplorer.pipeline import generate_world
+from terraexplorer.render import add_title_bar, render_world, save_generation_gif
 
 ROOT = Path(__file__).resolve().parents[1]
 MEDIA = ROOT / "docs" / "media"
-ASSETS = ROOT / "terraforge" / "assets"
+ASSETS = ROOT / "terraexplorer" / "assets"
 BG = "#0b1220"
 PANEL = "#131d2e"
 TEXT = "#e7edf7"
@@ -42,51 +43,149 @@ def font(size: int, bold: bool = False) -> ImageFont.ImageFont:
 
 
 def build_icon() -> None:
-    logo = Image.open(ASSETS / "terraforge_logo.png").convert("RGBA")
+    logo = Image.open(ASSETS / "terraexplorer_logo.png").convert("RGBA")
     logo.thumbnail((512, 512), Image.Resampling.LANCZOS)
-    logo.save(ASSETS / "terraforge_logo.png", optimize=True)
-    logo.save(MEDIA / "terraforge_logo.png", optimize=True)
+    logo.save(ASSETS / "terraexplorer_logo.png", optimize=True)
+    logo.save(MEDIA / "terraexplorer_logo.png", optimize=True)
     logo.save(
-        ASSETS / "terraforge.ico",
+        ASSETS / "terraexplorer.ico",
         sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)],
     )
     logo.resize((256, 256), Image.Resampling.LANCZOS).save(
-        MEDIA / "terraforge_icon.png", optimize=True
+        MEDIA / "terraexplorer_icon.png", optimize=True
     )
 
 
 def build_world_media() -> None:
-    config = WorldConfig(seed="TerraForge", evil=Evil.CORRUPTION, hardmode=True)
-    world = generate_world(config)
-    save_png(world, MEDIA / "terraforge_world.png", scale=4, markers=True)
-    save_generation_gif(config, MEDIA / "terraforge_generation.gif", scale=4)
+    config = WorldConfig(seed="TerraExplorer", evil=Evil.CORRUPTION, hardmode=True)
+    save_generation_gif(config, MEDIA / "terraexplorer_generation.gif", scale=4)
 
+    deep_world = generate_world(
+        WorldConfig(seed="TerraExplorer Atlas", scale=WorldScale.SMALL, evil=Evil.CORRUPTION)
+    )
     overview = render_world(
-        world,
-        scale=4,
+        deep_world,
+        scale=1,
         biome_overlay=True,
         layer_lines=True,
         markers=True,
     )
+    overview = overview.resize((1400, 400), Image.Resampling.NEAREST)
     add_title_bar(
         overview,
-        "Biome, layer, and structure overview",
-        "Biome tint + layer guides + original geometric map symbols",
+        "One world, from Space to the Underworld",
+        "Biome tint, layer guides, and original landmark symbols",
     ).save(MEDIA / "biome_overview.png", optimize=True)
+
+    image = render_world(deep_world, scale=1, markers=True)
+    studies = (
+        (
+            "Floating island",
+            "SKY LAKE & HOUSE",
+            "sky brick, reservoir, and waterfall",
+            220,
+            110,
+            28,
+        ),
+        (
+            "Dungeon",
+            "DUNGEON KEEP",
+            "surface tower and descending rooms",
+            170,
+            95,
+            0,
+        ),
+        (
+            "Pyramid",
+            "BURIED PYRAMID",
+            "shaft, chamber, and desert shell",
+            260,
+            130,
+            0,
+        ),
+        (
+            "Aether",
+            "AETHER",
+            "gem-ringed cavern and Shimmer pool",
+            260,
+            130,
+            0,
+        ),
+        (
+            "Jungle temple",
+            "JUNGLE TEMPLE",
+            "sealed brick maze and trap corridors",
+            320,
+            160,
+            0,
+        ),
+        (
+            "Underworld city",
+            "UNDERWORLD CITY",
+            "obsidian ruins, bridges, and Hellforge",
+            190,
+            105,
+            0,
+        ),
+    )
+    cards = []
+    for kind, label, subtitle, crop_width, crop_height, offset_y in studies:
+        matching = [item for item in deep_world.structures if item.kind == kind]
+        marker = (
+            max(matching, key=lambda item: item.width * item.height)
+            if kind == "Underworld city"
+            else matching[0]
+        )
+        center_x = marker.x + marker.width // 2
+        center_y = marker.y + marker.height // 2 + offset_y
+        if kind == "Dungeon":
+            center_x = int(deep_world.metadata["dungeon_x"])
+            center_y = int(deep_world.surface[center_x])
+        left = int(np.clip(center_x - crop_width // 2, 0, image.width - crop_width))
+        top = int(np.clip(center_y - crop_height // 2, 0, image.height - crop_height))
+        crop = image.crop((left, top, left + crop_width, top + crop_height))
+        panel = crop.resize((440, 220), Image.Resampling.NEAREST)
+        cards.append(add_title_bar(panel, label, subtitle))
+
+    gap = 8
+    card_width, card_height = cards[0].size
+    atlas = Image.new(
+        "RGB",
+        (card_width * 3 + gap * 2, card_height * 2 + gap),
+        BG,
+    )
+    for index, card in enumerate(cards):
+        atlas.paste(
+            card,
+            (
+                (index % 3) * (card_width + gap),
+                (index // 3) * (card_height + gap),
+            ),
+        )
+    atlas.save(MEDIA / "terraexplorer_world.png", optimize=True)
 
 
 def build_seed_comparison() -> None:
     configs = (
-        WorldConfig(seed="Clockwork Dawn", evil=Evil.CORRUPTION),
-        WorldConfig(seed="Copper Canopy", evil=Evil.CRIMSON),
-        WorldConfig(seed="Hallowed Circuit", evil=Evil.CORRUPTION, hardmode=True),
+        WorldConfig(seed="One Seed, Three Futures", evil=Evil.CORRUPTION),
+        WorldConfig(seed="One Seed, Three Futures", evil=Evil.CRIMSON),
+        WorldConfig(
+            seed="One Seed, Three Futures",
+            evil=Evil.CORRUPTION,
+            hardmode=True,
+        ),
     )
     labels = ("CORRUPTION", "CRIMSON", "HARDMODE V")
+    subtitles = (
+        "same seed | violet chasms",
+        "same seed | crimson chambers",
+        "same seed | evil and Hallow",
+    )
     cards: list[Image.Image] = []
-    for config, label in zip(configs, labels, strict=True):
+    for config, label, subtitle in zip(configs, labels, subtitles, strict=True):
         world = generate_world(config)
         image = render_world(world, scale=2, markers=True)
-        cards.append(add_title_bar(image, label, f"seed: {config.seed}"))
+        cards.append(add_title_bar(image, label, subtitle))
 
     gap = 8
     canvas = Image.new(
@@ -101,74 +200,33 @@ def build_seed_comparison() -> None:
     canvas.save(MEDIA / "seed_comparison.png", optimize=True)
 
 
-def _biome_variant(base: GeneratedWorld, biome: Biome, mapping: dict[Tile, Tile]) -> GeneratedWorld:
-    variant = GeneratedWorld(
-        config=base.config,
-        tiles=base.tiles.copy(),
-        walls=base.walls.copy(),
-        liquid_amount=base.liquid_amount.copy(),
-        liquid_kind=base.liquid_kind.copy(),
-        biomes=base.biomes.copy(),
-        surface=base.surface.copy(),
-        layers=base.layers,
-        metadata=base.metadata.copy(),
-        structures=[],
-        pass_results=base.pass_results.copy(),
-    )
-    original = variant.tiles.copy()
-    for source, target in mapping.items():
-        variant.tiles[original == source] = target
-    variant.biomes[variant.tiles != Tile.AIR] = biome
-    return variant
-
-
 def build_biome_study() -> None:
-    base = generate_world(WorldConfig(seed="One Patch of Earth"))
     studies = (
-        (
-            "FOREST",
-            Biome.FOREST,
-            {Tile.DIRT: Tile.DIRT, Tile.STONE: Tile.STONE, Tile.GRASS: Tile.GRASS},
-        ),
-        ("SNOW", Biome.SNOW, {Tile.DIRT: Tile.SNOW, Tile.STONE: Tile.ICE, Tile.GRASS: Tile.SNOW}),
-        (
-            "DESERT",
-            Biome.DESERT,
-            {Tile.DIRT: Tile.SAND, Tile.STONE: Tile.SANDSTONE, Tile.GRASS: Tile.SAND},
-        ),
-        (
-            "JUNGLE",
-            Biome.JUNGLE,
-            {Tile.DIRT: Tile.MUD, Tile.STONE: Tile.MUD, Tile.GRASS: Tile.JUNGLE_GRASS},
-        ),
-        (
-            "CORRUPTION",
-            Biome.CORRUPTION,
-            {
-                Tile.DIRT: Tile.EBONSTONE,
-                Tile.STONE: Tile.EBONSTONE,
-                Tile.GRASS: Tile.CORRUPT_GRASS,
-                Tile.SAND: Tile.EBONSTONE,
-            },
-        ),
-        (
-            "CRIMSON",
-            Biome.CRIMSON,
-            {
-                Tile.DIRT: Tile.CRIMSTONE,
-                Tile.STONE: Tile.CRIMSTONE,
-                Tile.GRASS: Tile.CRIMSON_GRASS,
-                Tile.SAND: Tile.CRIMSTONE,
-            },
-        ),
+        ("FOREST", "Mapmaker's Home", Evil.CORRUPTION, "spawn_x", "trees and open caves"),
+        ("SNOW", "Frost Lens", Evil.CORRUPTION, "snow_x", "ice shelves and frozen chambers"),
+        ("DESERT", "Buried Gold", Evil.CRIMSON, "desert_x", "sandstone and hardened sand"),
+        ("JUNGLE", "Green Depths", Evil.CRIMSON, "jungle_x", "mud, vines, and dense caves"),
+        ("CORRUPTION", "Violet Scar", Evil.CORRUPTION, "evil_x", "branching ebonstone chasms"),
+        ("CRIMSON", "Red Descent", Evil.CRIMSON, "evil_x", "linked crimstone chambers"),
     )
     cards: list[Image.Image] = []
-    scale = 3
-    crop = (42 * scale, 10 * scale, 198 * scale, 118 * scale)
-    for label, biome, mapping in studies:
-        world = _biome_variant(base, biome, mapping)
-        image = render_world(world, scale=scale, markers=False).crop(crop)
-        cards.append(add_title_bar(image, label, "same seed | same terrain | different material"))
+    scale = 4
+    crop_width, crop_height = 108, 78
+    for label, seed, evil, center_key, subtitle in studies:
+        world = generate_world(WorldConfig(seed=seed, evil=evil))
+        center = int(world.metadata[center_key])
+        surface_y = int(world.surface[center])
+        left = int(np.clip(center - crop_width // 2, 0, world.shape[1] - crop_width))
+        top = int(np.clip(surface_y - 12, 0, world.shape[0] - crop_height))
+        image = render_world(world, scale=scale, markers=False).crop(
+            (
+                left * scale,
+                top * scale,
+                (left + crop_width) * scale,
+                (top + crop_height) * scale,
+            )
+        )
+        cards.append(add_title_bar(image, label, subtitle))
 
     columns = 3
     gap = 8
@@ -183,7 +241,43 @@ def build_biome_study() -> None:
         x = (index % columns) * (card_width + gap)
         y = (index // columns) * (card_height + gap)
         canvas.paste(card, (x, y))
-    canvas.save(MEDIA / "biome_variants.png", optimize=True)
+    canvas.save(MEDIA / "biome_atlas.png", optimize=True)
+
+
+def build_spread_animation() -> None:
+    config = WorldConfig(seed="The World Breathes", evil=Evil.CORRUPTION)
+    world = generate_world(config)
+    frames: list[Image.Image] = []
+
+    def capture(title: str, subtitle: str) -> None:
+        frames.append(
+            add_title_bar(
+                render_world(world, scale=4, markers=True),
+                title,
+                subtitle,
+            )
+        )
+
+    capture("Pre-Hardmode", "evil pockets established during world creation")
+    rng = np.random.default_rng(config.seed_value ^ 0x5EED5EED)
+    for cycle in range(1, 4):
+        advance_biome_spread(world, rng, iterations=3)
+        capture("Natural spread", f"growth cycle {cycle}")
+    apply_hardmode(world, rng)
+    capture("Hardmode V", "Hallow and evil break through the Caverns")
+    for cycle in range(1, 5):
+        advance_biome_spread(world, rng, iterations=4)
+        capture("Hardmode spread", f"growth cycle {cycle}")
+
+    frames[0].save(
+        MEDIA / "biome_spread.gif",
+        save_all=True,
+        append_images=frames[1:],
+        duration=[700] * (len(frames) - 1) + [1800],
+        loop=0,
+        optimize=True,
+        disposal=2,
+    )
 
 
 def _depth_name(world: GeneratedWorld, tile_y: int) -> str:
@@ -197,41 +291,60 @@ def _depth_name(world: GeneratedWorld, tile_y: int) -> str:
 
 
 def build_depth_descent() -> None:
-    world = generate_world(WorldConfig(seed="The Long Way Down", evil=Evil.CRIMSON))
-    scale = 4
+    world = generate_world(
+        WorldConfig(
+            seed="The Long Way Down",
+            scale=WorldScale.SMALL,
+            evil=Evil.CRIMSON,
+        )
+    )
+    scale = 1
     world_image = render_world(world, scale=scale, markers=True)
-    viewport_width, viewport_height = 850, 290
-    left = (world_image.width - viewport_width) // 2
+    viewport_width, viewport_height = 1080, 540
+    focus_x = int(world.metadata["jungle_x"])
+    left = int(np.clip(focus_x - viewport_width // 2, 0, world_image.width - viewport_width))
     maximum_y = world_image.height - viewport_height
-    down = [round(maximum_y * (0.5 - 0.5 * math.cos(math.pi * step / 17))) for step in range(18)]
-    positions = [down[0]] * 3 + down + [down[-1]] * 4 + list(reversed(down[1:-1]))
+    down = [round(maximum_y * (0.5 - 0.5 * math.cos(math.pi * step / 21))) for step in range(22)]
+    positions = [down[0]] * 3 + down + [down[-1]] * 5 + list(reversed(down[1:-1]))
     frames: list[Image.Image] = []
 
     for top in positions:
         tile_y = (top + viewport_height // 2) // scale
         layer = _depth_name(world, tile_y)
-        frame = Image.new("RGB", (960, 390), BG)
+        frame = Image.new("RGB", (1280, 590), BG)
         crop = world_image.crop((left, top, left + viewport_width, top + viewport_height))
-        frame.paste(crop, (24, 74))
+        frame.paste(crop, (24, 24))
         draw = ImageDraw.Draw(frame)
-        draw.rectangle((22, 72, 876, 366), outline=GOLD, width=2)
-        draw.text((24, 18), "DESCENT OF A NEW WORLD", fill=TEXT, font=font(23, True))
-        draw.text((24, 47), f"{layer} | depth {tile_y:03d}", fill=ACCENT, font=font(15, True))
-        gauge_x = 920
-        gauge_top, gauge_bottom = 82, 356
+        draw.rectangle((22, 22, 1106, 568), outline=GOLD, width=2)
+        label = f"{layer}  |  depth {tile_y:04d}"
+        label_width = round(draw.textlength(label, font=font(15, True)))
+        draw.rounded_rectangle((38, 36, 58 + label_width, 64), radius=7, fill=BG, outline=GOLD)
+        draw.text((48, 41), label, fill=ACCENT, font=font(15, True))
+        gauge_x = 1140
+        gauge_top, gauge_bottom = 34, 556
         draw.line((gauge_x, gauge_top, gauge_x, gauge_bottom), fill=MUTED, width=3)
         depths = (
-            (0, "0"),
+            (0, "SPACE"),
             (world.layers.world_surface, "SURFACE"),
+            (
+                (world.layers.world_surface + world.layers.rock_layer) // 2,
+                "UNDERGROUND",
+            ),
             (world.layers.rock_layer, "ROCK"),
-            (world.layers.underworld, "HELL"),
+            (
+                (world.layers.rock_layer + world.layers.underworld) // 2,
+                "DEEP CAVERNS",
+            ),
+            (world.layers.underworld, "UNDERWORLD"),
             (world.shape[0] - 1, "BOTTOM"),
         )
         for depth, label in depths:
             y = gauge_top + round((gauge_bottom - gauge_top) * depth / (world.shape[0] - 1))
             draw.line((gauge_x - 8, y, gauge_x + 7, y), fill=GOLD, width=2)
-            if label not in {"0", "BOTTOM"}:
-                draw.text((882, y - 7), label, fill=MUTED, font=font(9, True))
+            draw.text((1154, y - 7), label, fill=MUTED, font=font(10, True))
+        for depth in range(100, world.shape[0] - 1, 100):
+            y = gauge_top + round((gauge_bottom - gauge_top) * depth / (world.shape[0] - 1))
+            draw.line((gauge_x - 4, y, gauge_x + 4, y), fill=MUTED, width=1)
         pointer_y = gauge_top + round((gauge_bottom - gauge_top) * tile_y / (world.shape[0] - 1))
         draw.polygon(
             ((gauge_x - 15, pointer_y), (gauge_x - 4, pointer_y - 7), (gauge_x - 4, pointer_y + 7)),
@@ -243,7 +356,7 @@ def build_depth_descent() -> None:
         MEDIA / "depth_descent.gif",
         save_all=True,
         append_images=frames[1:],
-        duration=160,
+        duration=150,
         loop=0,
         optimize=True,
         disposal=2,
@@ -312,7 +425,7 @@ def build_fidelity_chart() -> None:
     draw.text((48, 30), "Pass fidelity is explicit", fill=TEXT, font=font(28, True))
     draw.text(
         (48, 70),
-        "Every public pass is labeled; TerraForge does not claim source parity.",
+        "Every public pass is labeled; TerraExplorer does not claim source parity.",
         fill=MUTED,
         font=font(16),
     )
@@ -347,10 +460,11 @@ def main() -> None:
     build_world_media()
     build_seed_comparison()
     build_biome_study()
+    build_spread_animation()
     build_depth_descent()
     build_performance_chart()
     build_fidelity_chart()
-    print(f"Wrote TerraForge media to {MEDIA}")
+    print(f"Wrote TerraExplorer media to {MEDIA}")
 
 
 if __name__ == "__main__":

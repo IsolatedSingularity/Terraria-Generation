@@ -1,19 +1,22 @@
-"""TerraForge: an educational, deterministic world-generation laboratory.
+"""Compatibility aliases for the former TerraForge package name."""
 
-The package models the public shape of Terraria's vanilla generation pipeline
-without using Re-Logic art or claiming seed-for-seed compatibility.
-"""
+from terraexplorer import (
+    Evil,
+    GeneratedWorld,
+    GenerationCancelledError,
+    TerraExplorerPipeline,
+    WorldConfig,
+    WorldScale,
+    generate_world,
+)
 
-from terraforge.config import Evil, WorldConfig, WorldScale
-from terraforge.model import GeneratedWorld
-from terraforge.pipeline import GenerationCancelledError, TerraForgePipeline, generate_world
-
-__version__ = "1.0.0"
+TerraForgePipeline = TerraExplorerPipeline
 
 __all__ = [
     "Evil",
     "GeneratedWorld",
     "GenerationCancelledError",
+    "TerraExplorerPipeline",
     "TerraForgePipeline",
     "WorldConfig",
     "WorldScale",

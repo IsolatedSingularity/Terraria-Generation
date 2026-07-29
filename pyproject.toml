@@ -3,16 +3,14 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "terraforge-worldgen"
+name = "terraexplorer-worldgen"
 version = "1.0.0"
 description = "An educational, deterministic 2D world-generation laboratory."
 readme = "README.md"
-license = "MIT"
 requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Education",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -29,15 +27,17 @@ build = ["build>=1.2", "pyinstaller>=6.13"]
 legacy = ["matplotlib>=3.8,<4", "scipy>=1.12,<2", "seaborn>=0.13,<1"]
 
 [project.scripts]
-terraforge = "terraforge.cli:main"
-terraforge-gui = "terraforge.gui:main"
+terraexplorer = "terraexplorer.cli:main"
+terraexplorer-gui = "terraexplorer.gui:main"
+terraforge = "terraexplorer.cli:main"
+terraforge-gui = "terraexplorer.gui:main"
 
 [project.urls]
 Repository = "https://github.com/IsolatedSingularity/Terraria-Generation"
 Issues = "https://github.com/IsolatedSingularity/Terraria-Generation/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["terraforge"]
+packages = ["terraexplorer", "terraforge"]
 
 [tool.ruff]
 target-version = "py311"
@@ -49,7 +49,7 @@ select = ["E", "F", "W", "I", "N", "UP"]
 ignore = ["N802", "N803", "N806", "N815", "N816", "N999"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["Engine", "terraforge"]
+known-first-party = ["Engine", "terraexplorer", "terraforge"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -65,5 +65,5 @@ pythonpath = ["."]
 addopts = "--strict-markers --strict-config"
 
 [tool.coverage.run]
-source = ["terraforge"]
-omit = ["terraforge/gui.py"]
+source = ["terraexplorer"]
+omit = ["terraexplorer/gui.py"]

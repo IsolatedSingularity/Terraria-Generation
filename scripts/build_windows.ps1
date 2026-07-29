@@ -5,8 +5,8 @@ param(
 $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $RepoRoot
-$BuildPath = Join-Path $RepoRoot "build\terraforge"
-$ExecutablePath = Join-Path $RepoRoot "dist\TerraForge.exe"
+$BuildPath = Join-Path $RepoRoot "build\terraexplorer"
+$ExecutablePath = Join-Path $RepoRoot "dist\TerraExplorer.exe"
 
 if ($Clean) {
     $ResolvedRoot = [System.IO.Path]::GetFullPath($RepoRoot)
@@ -22,11 +22,11 @@ python -m pip install -e ".[build]"
 if ($LASTEXITCODE -ne 0) {
     throw "Dependency installation failed with exit code $LASTEXITCODE"
 }
-python -m PyInstaller --noconfirm --clean "packaging\terraforge.spec"
+python -m PyInstaller --noconfirm --clean "packaging\terraexplorer.spec"
 if ($LASTEXITCODE -ne 0) {
     throw "PyInstaller failed with exit code $LASTEXITCODE"
 }
 if (-not (Test-Path -LiteralPath $ExecutablePath -PathType Leaf)) {
-    throw "PyInstaller completed without creating dist\TerraForge.exe"
+    throw "PyInstaller completed without creating dist\TerraExplorer.exe"
 }
-Write-Host "Built dist\TerraForge.exe" -ForegroundColor Green
+Write-Host "Built dist\TerraExplorer.exe" -ForegroundColor Green

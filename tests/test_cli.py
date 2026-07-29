@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from terraforge.cli import main
+from terraexplorer.cli import main
 
 
 def test_passes_command_reports_full_catalogue(capsys) -> None:

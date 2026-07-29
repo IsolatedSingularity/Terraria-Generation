@@ -1,4 +1,4 @@
-# Contributing to TerraForge
+# Contributing to TerraExplorer
 
 Thanks for improving the generator. Changes are easiest to review when they
 preserve determinism, keep fidelity claims explicit, and include a focused
@@ -9,9 +9,9 @@ test.
 ```bash
 python -m pip install -e ".[dev,build]"
 pytest
-ruff check terraforge tests scripts packaging
-ruff format --check terraforge tests scripts packaging
-mypy terraforge
+ruff check terraexplorer tests scripts packaging
+ruff format --check terraexplorer tests scripts packaging
+mypy terraexplorer
 ```
 
 Use Python 3.11 or newer. The core must stay usable with only NumPy and Pillow;
@@ -19,8 +19,8 @@ large visualization dependencies belong in the `legacy` optional extra.
 
 ## Generation changes
 
-- Add or change a handler in `terraforge/generation.py`.
-- Register it in `terraforge/passes.py` with an honest `modeled`,
+- Add or change a handler in `terraexplorer/generation.py`.
+- Register it in `terraexplorer/passes.py` with an honest `modeled`,
   `approximated`, or `documented` label.
 - Consume only the RNG passed to the handler. Do not use global NumPy/Python
   random state.
@@ -31,7 +31,7 @@ large visualization dependencies belong in the `legacy` optional extra.
 ## Visual and branding changes
 
 Do not add Terraria sprites, ripped tilesheets, logos, or other copyrighted
-game assets. TerraForge's renderer and metal-tree identity must remain
+game assets. TerraExplorer's renderer and metal-tree identity must remain
 original. Run `python -m scripts.generate_media` after meaningful visual or
 performance changes; only commit media that the README uses.
 

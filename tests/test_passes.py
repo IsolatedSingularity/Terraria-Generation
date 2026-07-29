@@ -1,7 +1,7 @@
 from collections import Counter
 
-from terraforge.generation import PASS_HANDLERS
-from terraforge.passes import PASS_SPECS, VANILLA_PASS_ORDER, Fidelity
+from terraexplorer.generation import PASS_HANDLERS
+from terraexplorer.passes import PASS_SPECS, VANILLA_PASS_ORDER, Fidelity
 
 
 def test_public_pass_catalogue_is_complete_unique_and_ordered() -> None:
@@ -21,6 +21,6 @@ def test_every_mutating_spec_has_a_registered_handler() -> None:
 def test_fidelity_status_is_explicit_for_every_pass() -> None:
     counts = Counter(spec.fidelity for spec in PASS_SPECS)
 
-    assert counts[Fidelity.MODELED] == 63
-    assert counts[Fidelity.APPROXIMATED] == 43
+    assert counts[Fidelity.MODELED] == 67
+    assert counts[Fidelity.APPROXIMATED] == 39
     assert counts[Fidelity.DOCUMENTED] == 1

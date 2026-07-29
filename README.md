@@ -1,166 +1,147 @@
 <p align="center">
-  <img src="docs/media/terraforge_logo.png" width="250" alt="TerraForge mechanical tree icon">
+  <img src="docs/media/terraexplorer_logo.png" width="250" alt="TerraExplorer mechanical tree">
 </p>
 
-<h1 align="center">TerraForge</h1>
+<h1 align="center">TerraExplorer</h1>
 
 <p align="center">
-  A deterministic 2D world forge inspired by Terraria's public generation concepts.
+  <strong>A deterministic, explorable 2D world-generation laboratory.</strong><br>
+  Original pixel maps, 107 named passes, and rather more lava than workplace safety recommends.
 </p>
 
 <p align="center">
   <a href="https://github.com/IsolatedSingularity/Terraria-Generation/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/IsolatedSingularity/Terraria-Generation/ci.yml?branch=main&label=CI&logo=github" alt="CI status"></a>
-  <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white" alt="Python 3.11+">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-d09a45" alt="MIT license"></a>
+  <img src="https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13-3776AB?logo=python&logoColor=white" alt="Python 3.11 through 3.13">
+  <img src="https://img.shields.io/badge/worlds-deterministic-d09a45" alt="Deterministic worlds">
 </p>
 
-![A TerraForge world taking shape](docs/media/terraforge_generation.gif)
+![A TerraExplorer world taking shape](docs/media/terraexplorer_generation.gif)
 
-TerraForge takes a seed and builds a complete tile world that can be watched,
-inspected, rendered, and exported. Terrain, walls, liquids, biomes, landmarks,
-and generation notes remain separate, so the result is useful as both a map
-and a small procedural-generation laboratory.
+TerraExplorer turns one text seed into a complete tile world that can be watched,
+scrubbed through, inspected, rendered, and exported. Terrain, walls, liquids,
+biomes, structures, and generation notes remain separate, which makes the
+result useful as both a map and a procedural-generation workbench.
 
-> The Guide was unavailable, so the machine learned to grow its own forests.
+The animation above follows the actual pipeline. Its final world pauses for two
+seconds so there is time to spot the Dungeon keep, buried Pyramid, Jungle
+Temple, Shimmer-filled Aether, floating-island waterfall, spreading biomes, and
+Underworld cities.
 
-The generator is an independent educational project. It uses original Python
-code and original art, does not read or write Terraria ".wld" files, and does
-not include Re-Logic sprites or private game code.
+> The Guide was unavailable. The machine grew a forest and marked spawn anyway.
 
-## Light the forge
+This is an independent educational project built with original Python code and
+original art. It does not read or write Terraria `.wld` files, copy private
+game code, or ship Re-Logic sprites.
 
-Python 3.11 or newer is required. Tkinter ships with standard Windows Python;
-some Linux distributions provide it separately as `python3-tk`.
+## Open the workshop
+
+Python 3.11 or newer is required. Tkinter is included with standard Windows
+Python; some Linux distributions provide it separately as `python3-tk`.
 
 ```bash
 git clone https://github.com/IsolatedSingularity/Terraria-Generation.git
 cd Terraria-Generation
 python -m pip install -e .
-python -m terraforge gui
+python -m terraexplorer gui
 ```
 
-A world can also be made without opening the desktop app:
+![TerraExplorer desktop workshop](docs/media/gui.png)
+
+The desktop app keeps the whole forge in frame. Its center map is deliberately
+wide, the generation log is narrow, and the window title and export controls
+remain visible. The evolution rail contains 26 meaningful milestones with
+previous, next, play, and pause controls. Playback reverses at each end, so the
+world can grow and un-grow without restarting generation.
+
+You can also pan and zoom, inspect individual tiles, switch biome and depth
+overlays, compare against the previous world, and export PNG, GIF, NPZ, or JSON.
+Generation runs off the Tk event loop and can be cancelled between passes.
+
+For a headless run:
 
 ```bash
-terraforge generate --seed "mechanical-tree" --evil crimson --hardmode \
+terraexplorer generate --seed "mechanical-tree" --evil crimson --hardmode \
   --png world.png --npz world.npz --json world.json --gif generation.gif
 ```
 
-Windows builds use `./scripts/build_windows.ps1` and produce
-`dist/TerraForge.exe`.
+Preview worlds are quick `240 x 140` experiments. Small worlds use the much
+deeper `4200 x 1200` grid. Windows packaging produces
+`dist/TerraExplorer.exe`.
 
-## The workshop
+## One seed, three futures
 
-![TerraForge clockwork world forge](docs/media/gui.png)
+![One seed under Corruption, Crimson, and Hardmode rules](docs/media/seed_comparison.png)
 
-The desktop app keeps generation, exploration, and export in one place. Choose
-a seed, world size, evil biome, difficulty, and phase set; then pan and zoom the
-result, inspect individual tiles, compare it with the previous world, or export
-PNG, GIF, and compressed NumPy data. Generation runs away from the Tk event
-loop, so the window stays responsive and the active forge can be quenched
-between passes.
+All three panels begin with the exact same seed. Only the selected world rules
+change: Corruption cuts branching violet chasms, Crimson builds linked red
+chambers, and Hardmode drives opposing Hallow and evil bands through the
+Caverns. This is a controlled comparison, not three fortunate screenshots.
 
-Preview worlds are deliberately quick to explore. Small worlds use the full
-`4200 x 1200` grid and are an explicit choice.
+The Dryad would have opinions. TerraExplorer keeps the arrays and tile counts.
 
-## Three seeds, three destinies
+## Six places worth packing for
 
-![Corruption, Crimson, and Hardmode worlds](docs/media/seed_comparison.png)
+![TerraExplorer landmark atlas](docs/media/terraexplorer_world.png)
 
-Corruption cuts violet scars through stone, Crimson answers in red, and
-Hardmode drives Hallow and evil through the world in a great V. The third panel
-is not a recolor. It is a separate world after TerraForge's optional Hardmode
-transformation.
+The landmark atlas shows six distinct generated systems:
 
-The Dryad would have opinions about all three. The machine records the tile
-counts and keeps working.
+| Above and below | What is modeled |
+|---|---|
+| Floating island | Sky-brick shelter, lake, and a water outlet that falls from the island |
+| Dungeon | A crenellated surface keep connected to descending rooms and corridors |
+| Buried Pyramid | Sandstone shell, entrance shaft, treasure chamber, and buried profile |
+| Aether | Stone and gem shell around a pool whose liquid kind is Shimmer |
+| Jungle Temple | Sealed brick footprint, multiple corridors, traps, and altar chamber |
+| Underworld city | Obsidian-brick ruins, rooms, bridges, lava gaps, and Hellforge placement |
 
-## What grows underground
-
-![TerraForge generated world](docs/media/terraforge_world.png)
-
-A seed can raise oceans, forests, snowfields, desert, and Jungle above a
-stack of tunnels, chambers, ore veins, and underground biomes. Floating
-Islands wait above the treeline. Living Trees send roots into the soil, while
-a Pyramid may sit beneath sand that looked perfectly innocent from the
-surface.
-
-The Dungeon claims one coast and descends through rooms and corridors. Deeper
-still, the Jungle can hide honey-filled Hives and a sealed Temple. Spider
-caves, gem caves, traps, pots, altars, Life Crystals, and an Aether pocket give
-the Caverns reasons to carry more torches than seemed sensible at spawn.
+The overview below puts those landmarks back into a full Small world. The
+biome tint and layer guides are diagnostic overlays; the symbols are original
+map marks rather than borrowed sprites.
 
 ![Biome, layer, and landmark overview](docs/media/biome_overview.png)
 
-Landmark symbols are original map marks, not borrowed sprites. The renderer
-gives materials deterministic texture, connected-edge shading, depth lighting,
-and liquid blending. There are no ripped tilesheets hiding behind the walls.
+## Biomes should not all tell the same story
 
-## One patch of earth, six possible biomes
+![Six independently generated biome studies](docs/media/biome_atlas.png)
 
-![The same terrain rendered as six biomes](docs/media/biome_variants.png)
+These are six independent, biome-centered crops rather than the same three
+landmarks repeated under different colors. Forest exposes open surface caves;
+Snow forms ice shelves; Desert layers sand, hardened sand, and sandstone;
+Jungle packs mud and vines around denser cavities; Corruption branches through
+ebonstone; Crimson joins rounded chambers through a descending spine.
 
-This study freezes the seed, caves, surface profile, and camera. Only the
-material identity changes. Snow seals the same cavities in ice, Desert turns
-them to sandstone, Jungle packs them with mud, and the two evil biomes disagree
-about the proper color for a chasm. It is a compact view of how biome rules can
-change a place without changing its underlying geometry.
+## The world does not stay still
+
+![Corruption and Hallow spreading through a world](docs/media/biome_spread.gif)
+
+The spreading study starts with a generated pre-Hardmode world, advances
+deterministic natural spread, applies the Hardmode V, and continues both evil
+and Hallow growth. Spread changes tile and biome state, respects natural host
+materials, and does not wrap across world boundaries.
 
 ## The long way down
 
 ![Animated descent from the surface to the Underworld](docs/media/depth_descent.gif)
 
-The depth gauge follows one world from daylight through the Underground and
-Caverns to the Underworld. It is the same map throughout the loop, not a stack
-of unrelated screenshots. Layer boundaries come from the world model, so the
-instrument agrees with the GUI tile probe.
+This descent travels through one `4200 x 1200` world. It has no decorative
+title competing with the terrain: a compact live depth label stays over the
+map, while the separate gauge marks Space, Surface, Underground, Rock, Deep
+Caverns, Underworld, and Bottom with intermediate ticks.
 
-A new character might arrive with a copper pickaxe and confidence. TerraForge
-supplies the darkness, suspicious pressure plates, and the long walk home.
+It is a longer trip than the preview used to imply. Bring rope.
 
-## Field notes from the workshop
-
-### Above the dirt
-
-Spawn is placed near the middle of the world, but safety is never guaranteed.
-Oceans close the map at both ends, Floating Islands occupy the sky, and surface
-biomes compete for room between them. Trees and flowers arrive late in the
-pipeline, after the ground has decided where it wants to be.
-
-### Where torches earn their keep
-
-The Underground gives way to the Caverns, walls can coexist with empty tiles,
-and liquids keep both an amount and a kind. Water, lava, honey, and Shimmer are
-therefore not painted colors. They are world state. The Aether is rare by
-design; finding its marker should still feel like noticing something the map
-was trying to keep quiet.
-
-### When the old world cracks
-
-TerraForge does not stage the Wall of Flesh fight. Selecting Hardmode begins
-after that story beat and carves the familiar opposing V of Hallow and evil
-through the generated world. It is an optional post-generation event, which
-means the untouched pre-Hardmode world can still be compared with what came
-after.
-
-Seeds are strings on purpose. Familiar names such as `not-the-bees`,
-`for-the-worthy`, or `05162020` are valid inputs, but they remain ordinary
-TerraForge seeds. No secret-world rules are copied from the game. The Goblin
-Tinkerer would probably call that a missing feature and charge to reforge it.
-
-## World data
+## What the world remembers
 
 ```python
-from terraforge import Evil, WorldConfig, generate_world
+from terraexplorer import Evil, WorldConfig, generate_world
 
 world = generate_world(
-    WorldConfig(seed="TerraForge", evil=Evil.CRIMSON, hardmode=True)
+    WorldConfig(seed="TerraExplorer", evil=Evil.CRIMSON, hardmode=True)
 )
 
 print(world.tiles.shape)                 # (140, 240) in Preview mode
 print(world.metadata["selected_ores"])
 
-# Separate arrays allow walls and liquids to coexist with empty tiles.
 tiles = world.tiles                      # uint8
 walls = world.walls                      # uint8
 liquid_amount = world.liquid_amount      # uint8
@@ -170,63 +151,77 @@ surface_height = world.surface           # int16
 ```
 
 Every random decision derives from the project seed and a stable pass label.
-Changing one generation handler therefore does not quietly reshuffle every
-later decision.
-
-## Inside the machine
+Changing `Dungeon` therefore cannot silently reshuffle `Living Trees` or every
+later pass. Separate arrays also let a wall or liquid coexist with an air tile.
 
 ```text
 WorldConfig
-    -> TerraForgePipeline
-        -> isolated random stream for each named pass
-            -> tiles, walls, liquids, biomes, metadata, landmarks
+    -> TerraExplorerPipeline
+        -> isolated RNG stream for each named pass
+            -> tiles + walls + liquids + biomes + metadata + landmarks
                 -> desktop app | CLI | PNG/GIF | NPZ/JSON
 ```
 
-The supported package lives in `terraforge/`. Its boundaries and invariants are
-documented in [the architecture guide](docs/ARCHITECTURE.md). The complete pass
-inventory remains available in [the generation notes](docs/FIDELITY.md) for
-contributors who need it, but it is not part of the sales pitch.
+The supported package is `terraexplorer`. The former `terraforge` imports and
+console commands remain as compatibility aliases, but new code should use the
+new name.
+
+## Accuracy without pretending
+
+TerraExplorer follows the public 107-step Terraria 1.4.4.9 generation order as
+a reference, with its own IDs, algorithms, random streams, and art. The current
+inventory contains 67 modeled passes, 39 approximated passes, and one documented
+pass. Modeled means a distinct operation changes the world or metadata. It does
+not mean byte-for-byte compatibility.
+
+Recent improvements include biome spread, floating-island waterfalls and
+houses, a stronger Dungeon exterior, buried Pyramids, a multi-room Temple,
+Shimmer in the Aether, and Underworld ruins with Hellforges. Remaining
+approximations are listed plainly in the
+[fidelity inventory](docs/FIDELITY.md). Data boundaries and extension rules
+live in the [architecture guide](docs/ARCHITECTURE.md).
 
 `Engine/`, `Code/`, and `Advanced/` are a labeled research archive. They are
-not included in the runtime package.
+not part of the runtime package.
 
 ## Development
 
 ```bash
 python -m pip install -e ".[dev,build]"
-ruff check terraforge tests scripts packaging
-ruff format --check terraforge tests scripts packaging
-mypy terraforge
-pytest --cov=terraforge
+ruff check terraexplorer terraforge tests scripts packaging
+ruff format --check terraexplorer terraforge tests scripts packaging
+mypy terraexplorer
+pytest --cov=terraexplorer
 python -m build
 ```
 
-Tracked world media and icon derivatives are reproducible:
+Rebuild the tracked original media with:
 
 ```bash
 python -m scripts.generate_media
-python -m scripts.capture_gui  # requires a visible desktop
+python -m scripts.capture_gui  # requires a visible Windows desktop
 ```
 
-CI covers Python 3.11, 3.12, and 3.13 on Windows and Ubuntu. Contributor and
-release details live in [CONTRIBUTING.md](CONTRIBUTING.md) and
-[CHANGELOG.md](CHANGELOG.md).
+CI tests Python 3.11, 3.12, and 3.13 on Windows and Ubuntu. Windows release
+packaging builds `TerraExplorer.exe`. See [CONTRIBUTING.md](CONTRIBUTING.md)
+and [CHANGELOG.md](CHANGELOG.md) before sending a patch.
 
-## Notes from older worlds
+<details>
+<summary><strong>Earlier teaching plots</strong></summary>
 
 The repository began as a set of procedural-generation experiments. These
-three teaching diagrams remain useful, even though new work belongs in the
-supported package.
+three diagrams remain useful background, while new work belongs in
+`terraexplorer/`.
 
 | Surface noise | Cave smoothing | Ore distribution |
 |---|---|---|
 | ![Surface noise study](Plots/terraria_surface_terrain.png) | ![Cave smoothing study](Plots/terraria_cave_systems.png) | ![Ore distribution study](Plots/ore_density.png) |
 
+</details>
+
 ## Legal
 
-TerraForge is not affiliated with, endorsed by, or sponsored by Re-Logic.
+TerraExplorer is not affiliated with, endorsed by, or sponsored by Re-Logic.
 Terraria and its related names and assets belong to their respective owners.
-TerraForge code and original project assets are available under the
-[MIT License](LICENSE). The supplied tree reference is not distributed as a
-runtime asset.
+No license is granted for this repository. All rights are reserved by the
+project copyright holder.

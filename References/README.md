@@ -1,6 +1,6 @@
 # References
 
-This directory holds local research notes used while developing TerraForge.
+This directory holds local research notes used while developing TerraExplorer.
 They are supplementary context, not project dependencies or evidence of
 source-code parity with Terraria.
 

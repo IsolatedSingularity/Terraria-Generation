@@ -1,12 +1,12 @@
-# TerraForge architecture
+# TerraExplorer architecture
 
-TerraForge is a deterministic grid simulation with three surfaces: Python API,
+TerraExplorer is a deterministic grid simulation with three surfaces: Python API,
 CLI, and a native Tk desktop application. All three call the same pipeline and
 renderer.
 
 ```mermaid
 flowchart LR
-    C["WorldConfig"] --> P["TerraForgePipeline"]
+    C["WorldConfig"] --> P["TerraExplorerPipeline"]
     S["107 PassSpec entries"] --> P
     P --> R["Per-pass Blake2 RNG"]
     R --> H["Generation handlers"]

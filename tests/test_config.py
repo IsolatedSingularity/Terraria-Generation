@@ -1,8 +1,8 @@
-from terraforge.config import WorldConfig, WorldScale, seed_to_uint32
+from terraexplorer.config import WorldConfig, WorldScale, seed_to_uint32
 
 
 def test_seed_conversion_is_stable_and_numeric_strings_match_integers() -> None:
-    assert seed_to_uint32("TerraForge") == seed_to_uint32("TerraForge")
+    assert seed_to_uint32("TerraExplorer") == seed_to_uint32("TerraExplorer")
     assert seed_to_uint32("42") == seed_to_uint32(42) == 42
     assert seed_to_uint32(-1) == 0xFFFFFFFF
 
