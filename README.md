@@ -55,7 +55,9 @@ world can grow and un-grow without restarting generation.
 
 You can also pan and zoom, inspect individual tiles, switch biome and depth
 overlays, compare against the previous world, and export PNG, GIF, NPZ, or JSON.
-Generation runs off the Tk event loop and can be cancelled between passes.
+The automatic cover-fit fills the map table and centers the small amount cropped
+at its edges instead of surrounding the world with empty canvas. Generation
+runs off the Tk event loop and can be cancelled between passes.
 
 For a headless run:
 
@@ -91,8 +93,8 @@ The landmark atlas shows six distinct generated systems:
 | Dungeon | A crenellated surface keep connected to descending rooms and corridors |
 | Buried Pyramid | Sandstone shell, entrance shaft, treasure chamber, and buried profile |
 | Aether | Stone and gem shell around a pool whose liquid kind is Shimmer |
-| Jungle Temple | Sealed brick footprint, multiple corridors, traps, and altar chamber |
-| Underworld city | Obsidian-brick ruins, rooms, bridges, lava gaps, and Hellforge placement |
+| Jungle Temple | Asymmetric stepped shell, alternating maze corridors, traps, and altar chamber |
+| Underworld city | Obsidian-brick ruins, bridges, Hellforges, and foundations descending through lava |
 
 The overview below puts those landmarks back into a full Small world. The
 biome tint and layer guides are diagnostic overlays; the symbols are original
@@ -123,10 +125,12 @@ materials, and does not wrap across world boundaries.
 
 ![Animated descent from the surface to the Underworld](docs/media/depth_descent.gif)
 
-This descent travels through one `4200 x 1200` world. It has no decorative
-title competing with the terrain: a compact live depth label stays over the
-map, while the separate gauge marks Space, Surface, Underground, Rock, Deep
-Caverns, Underworld, and Bottom with intermediate ticks.
+This descent travels through the snowy Dungeon coast of one `4200 x 1200`
+world. Its fixed route keeps the beach, ocean edge, Snow biome, and Dungeon in
+view before following their caves into the Underworld. It has no decorative
+title competing with the terrain: a compact live depth label stays over the map,
+while the separate gauge marks Space, Surface, Underground, Rock, Deep Caverns,
+Underworld, and Bottom with intermediate ticks.
 
 It is a longer trip than the preview used to imply. Bring rope.
 
@@ -176,8 +180,8 @@ not mean byte-for-byte compatibility.
 
 Recent improvements include biome spread, floating-island waterfalls and
 houses, a stronger Dungeon exterior, buried Pyramids, a multi-room Temple,
-Shimmer in the Aether, and Underworld ruins with Hellforges. Remaining
-approximations are listed plainly in the
+Shimmer in the Aether, and Underworld ruins supported through a deeper lava sea.
+Remaining approximations are listed plainly in the
 [fidelity inventory](docs/FIDELITY.md). Data boundaries and extension rules
 live in the [architecture guide](docs/ARCHITECTURE.md).
 

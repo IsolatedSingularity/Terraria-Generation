@@ -8,7 +8,7 @@ from terraexplorer.config import Evil, WorldConfig
 from terraexplorer.generation import advance_biome_spread
 from terraexplorer.passes import Phase
 from terraexplorer.pipeline import GenerationCancelledError, TerraExplorerPipeline, generate_world
-from terraexplorer.tiles import Biome, Liquid, Tile
+from terraexplorer.tiles import Biome, Liquid, Tile, Wall
 
 
 def test_generation_is_deterministic_and_uses_independent_arrays() -> None:
@@ -99,6 +99,30 @@ def test_showcase_structures_are_real_world_state() -> None:
     pyramid = next(marker for marker in world.structures if marker.kind == "Pyramid")
     pyramid_x = pyramid.x + pyramid.width // 2
     assert pyramid.y > world.surface[pyramid_x]
+
+    temple = next(marker for marker in world.structures if marker.kind == "Jungle temple")
+    temple_state = np.isin(
+        world.tiles[
+            temple.y : temple.y + temple.height,
+            temple.x : temple.x + temple.width,
+        ],
+        (Tile.LIHZAHRD_BRICK, Tile.TRAP, Tile.ALTAR),
+    ) | (
+        world.walls[
+            temple.y : temple.y + temple.height,
+            temple.x : temple.x + temple.width,
+        ]
+        == Wall.LIHZAHRD
+    )
+    assert np.count_nonzero(temple_state[0]) < np.count_nonzero(temple_state[-2])
+
+    lava_level = int(world.metadata["underworld_lava_level"])
+    underworld_lava = (world.liquid_kind[lava_level:] == Liquid.LAVA) & (
+        world.liquid_amount[lava_level:] > 0
+    )
+    assert np.count_nonzero(underworld_lava) > world.shape[1]
+    submerged_city = (world.tiles == Tile.OBSIDIAN_BRICK) & (rows >= lava_level)
+    assert np.any(submerged_city)
 
 
 def test_biome_spread_stops_at_world_boundaries() -> None:

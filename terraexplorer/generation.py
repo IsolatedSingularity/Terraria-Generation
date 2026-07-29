@@ -576,21 +576,52 @@ def webs(world: GeneratedWorld, rng: np.random.Generator) -> None:
 def underworld(world: GeneratedWorld, rng: np.random.Generator) -> None:
     height, width = world.shape
     top = world.layers.underworld
-    world.tiles[top:, :] = Tile.ASH
-    world.tiles[height - max(3, (height - top) // 4) :, :] = Tile.HELLSTONE
+    depth = height - top
+    columns = np.arange(width)
+    noise = rng.normal(0.0, 1.0, width)
+    smoothing = max(3, int(_pick(world, 5, 55)))
+    noise = np.convolve(noise, np.ones(smoothing) / smoothing, mode="same")
+    floor_profile = (
+        top
+        + depth * 0.74
+        + np.sin(columns / max(4, _pick(world, 10, 130))) * depth * 0.09
+        + np.sin(columns / max(3, _pick(world, 4, 47))) * depth * 0.04
+        + noise * depth * 0.12
+    ).astype(np.int16)
+    floor_profile = np.clip(
+        floor_profile,
+        top + max(5, round(depth * 0.56)),
+        height - 3,
+    )
+    lava_level = top + round(depth * 0.58)
+    world.metadata["underworld_lava_level"] = lava_level
+
+    world.tiles[top:, :] = Tile.AIR
     world.biomes[top:, :] = Biome.UNDERWORLD
     world.walls[top:, :] = Wall.STONE
-    for _ in range(int(_pick(world, 10, 110))):
+    world.liquid_kind[top:, :] = Liquid.NONE
+    world.liquid_amount[top:, :] = 0
+    for x, floor_y in enumerate(floor_profile):
+        world.tiles[floor_y:, x] = Tile.ASH
+        hellstone_y = floor_y + max(2, (height - int(floor_y)) // 2)
+        world.tiles[hellstone_y:, x] = Tile.HELLSTONE
+
+    for _ in range(int(_pick(world, 8, 65))):
         x = int(rng.integers(4, width - 4))
-        y = int(rng.integers(top + 2, height - 3))
+        y = int(rng.integers(top + 3, max(top + 4, lava_level + 1)))
+        rx, ry = tuple(_pick(world, (4, 2), (22, 10)))
+        material = Tile.HELLSTONE if rng.random() < 0.25 else Tile.ASH
+        stamp_ellipse(world.tiles, x, y, int(rx), int(ry), material, (Tile.AIR,))
+
+    for _ in range(int(_pick(world, 12, 120))):
+        x = int(rng.integers(4, width - 4))
+        y = int(rng.integers(lava_level, height - 3))
         rx, ry = tuple(_pick(world, (5, 3), (18, 9)))
         stamp_ellipse(world.tiles, x, y, int(rx), int(ry), Tile.AIR, (Tile.ASH, Tile.HELLSTONE))
-        if y > top + (height - top) // 2:
-            y0, y1 = y, min(height, y + max(1, int(ry) // 2))
-            x0, x1 = max(0, x - int(rx) // 2), min(width, x + int(rx) // 2)
-            air = world.tiles[y0:y1, x0:x1] == Tile.AIR
-            world.liquid_kind[y0:y1, x0:x1][air] = Liquid.LAVA
-            world.liquid_amount[y0:y1, x0:x1][air] = 255
+
+    lava_region = world.tiles[lava_level:, :] == Tile.AIR
+    world.liquid_kind[lava_level:, :][lava_region] = Liquid.LAVA
+    world.liquid_amount[lava_level:, :][lava_region] = 255
 
     city_count = int(_pick(world, 2, 8))
     city_span = int(_pick(world, 42, 360))
@@ -600,8 +631,13 @@ def underworld(world: GeneratedWorld, rng: np.random.Generator) -> None:
         cursor = start_x
         city_top = height
         city_bottom = top
-        street_min = min(height - 5, top + int(_pick(world, 18, 80)))
-        street_y = int(rng.integers(max(top + 5, street_min), height - 3))
+        street_y = int(
+            np.clip(
+                lava_level + rng.integers(-int(_pick(world, 1, 7)), int(_pick(world, 2, 9))),
+                top + 8,
+                height - 5,
+            )
+        )
         for _house in range(house_count):
             room_w = int(_pick(world, rng.integers(9, 15), rng.integers(28, 48)))
             room_h = int(_pick(world, rng.integers(7, 11), rng.integers(16, 28)))
@@ -617,6 +653,8 @@ def underworld(world: GeneratedWorld, rng: np.random.Generator) -> None:
                 Tile.OBSIDIAN_BRICK,
                 Wall.OBSIDIAN,
             )
+            world.liquid_kind[room_y:street_y, cursor : cursor + room_w] = Liquid.NONE
+            world.liquid_amount[room_y:street_y, cursor : cursor + room_w] = 0
             if room_h >= int(_pick(world, 9, 22)):
                 shelf_y = room_y + room_h // 2
                 world.tiles[shelf_y, cursor + 1 : cursor + room_w - 1] = Tile.PLATFORM
@@ -633,6 +671,16 @@ def underworld(world: GeneratedWorld, rng: np.random.Generator) -> None:
             bridge_y = room_y + room_h - 1
             bridge_end = min(width - 1, cursor + room_w + int(_pick(world, 3, 16)))
             world.tiles[bridge_y, cursor + room_w : bridge_end] = Tile.PLATFORM
+            world.liquid_kind[bridge_y, cursor + room_w : bridge_end] = Liquid.NONE
+            world.liquid_amount[bridge_y, cursor + room_w : bridge_end] = 0
+            support_columns = (cursor + 1, cursor + room_w // 2, cursor + room_w - 2)
+            for support_x in support_columns:
+                support_bottom = max(street_y + 2, int(floor_profile[support_x]) + 1)
+                support_bottom = min(height - 1, support_bottom)
+                world.tiles[street_y:support_bottom, support_x] = Tile.OBSIDIAN_BRICK
+                world.liquid_kind[street_y:support_bottom, support_x] = Liquid.NONE
+                world.liquid_amount[street_y:support_bottom, support_x] = 0
+                city_bottom = max(city_bottom, support_bottom)
             city_top = min(city_top, room_y)
             city_bottom = max(city_bottom, room_y + room_h)
             cursor = bridge_end
@@ -646,6 +694,9 @@ def underworld(world: GeneratedWorld, rng: np.random.Generator) -> None:
                 city_bottom - city_top,
                 "▥",
             )
+    solid = world.tiles != Tile.AIR
+    world.liquid_kind[solid] = Liquid.NONE
+    world.liquid_amount[solid] = 0
 
 
 def evil_biome(world: GeneratedWorld, rng: np.random.Generator) -> None:
@@ -1073,26 +1124,66 @@ def jungle_temple(world: GeneratedWorld, rng: np.random.Generator) -> None:
             max(world.layers.rock_layer + 1, world.layers.underworld - height - 4),
         )
     )
-    world.tiles[y : y + height, x : x + width] = Tile.LIHZAHRD_BRICK
     corridor_h = max(2, int(_pick(world, 2, 5)))
     level_step = max(5, int(_pick(world, 5, 14)))
+    step_width = max(2, int(_pick(world, 2, 8)))
+    maximum_inset = max(4, width // 5)
+    silhouette = np.zeros((height, width), dtype=bool)
+    for local_y in range(height):
+        progress = local_y / max(1, height - 1)
+        raw_inset = round((1.0 - progress) * maximum_inset)
+        inset = (raw_inset // step_width) * step_width
+        shift = 0
+        if local_y < height // 3:
+            shift = step_width
+        elif local_y > 2 * height // 3:
+            shift = -step_width
+        left = int(np.clip(inset + shift, 1, width - 5))
+        right = int(np.clip(width - inset + shift, left + 4, width - 1))
+        silhouette[local_y, left:right] = True
+    silhouette[-max(3, level_step // 2) :, 1 : width - 1] = True
+    temple_region = world.tiles[y : y + height, x : x + width]
+    temple_region[silhouette] = Tile.LIHZAHRD_BRICK
+
     direction = 1
     for level_y in range(y + 2, y + height - 3, level_step):
-        world.tiles[
-            level_y : min(y + height - 2, level_y + corridor_h),
-            x + 2 : x + width - 2,
-        ] = Tile.AIR
-        connector_x = x + width - 4 if direction > 0 else x + 2
-        world.tiles[
-            level_y : min(y + height - 2, level_y + level_step + corridor_h),
-            connector_x : connector_x + 2,
-        ] = Tile.AIR
+        corridor_bottom = min(y + height - 2, level_y + corridor_h)
+        local_level = level_y - y
+        row_columns = np.flatnonzero(silhouette[local_level])
+        if row_columns.size < 6:
+            continue
+        corridor_left = int(row_columns[0] + 2)
+        corridor_right = int(row_columns[-1] - 1)
+        for corridor_y in range(level_y, corridor_bottom):
+            local_row = corridor_y - y
+            row_columns = np.flatnonzero(silhouette[local_row])
+            if row_columns.size >= 6:
+                left = max(corridor_left, int(row_columns[0] + 2))
+                right = min(corridor_right, int(row_columns[-1] - 1))
+                world.tiles[corridor_y, x + left : x + right] = Tile.AIR
+        connector_local_x = corridor_right - 2 if direction > 0 else corridor_left
+        connector_x = x + connector_local_x
+        for connector_y in range(level_y, min(y + height - 2, level_y + level_step + 1)):
+            if silhouette[connector_y - y, connector_local_x]:
+                world.tiles[connector_y, connector_x : connector_x + 2] = Tile.AIR
         direction *= -1
+
+    chamber_y = y + height - max(7, level_step)
+    chamber_left = x + width // 3
+    chamber_right = x + 2 * width // 3
+    world.tiles[chamber_y : y + height - 3, chamber_left:chamber_right] = Tile.AIR
     interior = world.tiles[y + 1 : y + height - 1, x + 1 : x + width - 1] == Tile.AIR
     world.walls[y + 1 : y + height - 1, x + 1 : x + width - 1][interior] = Wall.LIHZAHRD
     doorway_y = y + height - max(5, level_step)
-    world.tiles[doorway_y : y + height - 2, x : x + 3] = Tile.AIR
-    world.walls[doorway_y : y + height - 2, x : x + 3] = Wall.LIHZAHRD
+    doorway_local_x = int(np.flatnonzero(silhouette[doorway_y - y])[0])
+    world.tiles[
+        doorway_y : y + height - 2,
+        x + doorway_local_x : x + doorway_local_x + 3,
+    ] = Tile.AIR
+    world.walls[
+        doorway_y : y + height - 2,
+        x + doorway_local_x : x + doorway_local_x + 3,
+    ] = Wall.LIHZAHRD
     _place_marker(world, "Jungle temple", x, y, width, height, "T")
 
 

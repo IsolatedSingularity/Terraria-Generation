@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import queue
 import secrets
 import threading
@@ -640,7 +641,7 @@ class TerraExplorerApp:
             f"{len(world.structures)} landmarks discovered"
         )
         self._update_metrics()
-        self._render_view()
+        self.root.after_idle(self._fit)
 
     def _generation_stopped(self, status: str) -> None:
         self.generate_button.configure(state="normal")
@@ -777,9 +778,24 @@ class TerraExplorerApp:
         available_w = max(1, self.canvas.winfo_width() - 4)
         available_h = max(1, self.canvas.winfo_height() - 4)
         self.display_scale = max(
-            1, min(8, int(min(available_w / world.shape[1], available_h / world.shape[0])))
+            1,
+            min(
+                8,
+                math.ceil(max(available_w / world.shape[1], available_h / world.shape[0])),
+            ),
         )
         self._render_view()
+        self.root.after_idle(self._center_view)
+
+    def _center_view(self) -> None:
+        if self.photo is None:
+            return
+        available_w = max(1, self.canvas.winfo_width() - 4)
+        available_h = max(1, self.canvas.winfo_height() - 4)
+        image_w = self.photo.width()
+        image_h = self.photo.height()
+        self.canvas.xview_moveto(max(0.0, (image_w - available_w) / max(1, 2 * image_w)))
+        self.canvas.yview_moveto(max(0.0, (image_h - available_h) / max(1, 2 * image_h)))
 
     def _zoom(self, delta: int) -> None:
         self.display_scale = max(1, min(8, self.display_scale + delta))

@@ -301,7 +301,7 @@ def build_depth_descent() -> None:
     scale = 1
     world_image = render_world(world, scale=scale, markers=True)
     viewport_width, viewport_height = 1080, 540
-    focus_x = int(world.metadata["jungle_x"])
+    focus_x = round((int(world.metadata["snow_x"]) + int(world.metadata["dungeon_x"])) / 2)
     left = int(np.clip(focus_x - viewport_width // 2, 0, world_image.width - viewport_width))
     maximum_y = world_image.height - viewport_height
     down = [round(maximum_y * (0.5 - 0.5 * math.cos(math.pi * step / 21))) for step in range(22)]

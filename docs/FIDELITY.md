@@ -58,13 +58,13 @@ Guide.
 - Dungeon generation now builds a visible surface keep before descending into
   clipped rooms and corridors.
 - Floating islands can carry sky-brick houses, reservoirs, and falling water.
-- Jungle Temples use a sealed multi-level brick maze with corridors, traps, and
-  an altar chamber.
+- Jungle Temples use an asymmetric stepped shell around a multi-level maze,
+  traps, and an altar chamber.
 - Pyramids sit mostly below the desert surface and include a shaft and treasure
   chamber.
 - The Aether has a stone and gem shell around an actual Shimmer liquid pool.
 - Underworld cities form obsidian-brick ruins, bridges, rooms, and Hellforge
-  placements.
+  placements with foundations descending through a varied lava sea.
 - Corruption, Crimson, and Hallow can advance into adjacent natural materials
   without wrapping across map edges.
 

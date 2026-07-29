@@ -20,6 +20,9 @@ All notable project changes are documented here. This project follows
   reserved.
 - Replaced the shared-runner-sensitive 1.5-second test with a runaway-regression
   guard, and moved both workflows to the Node 24-based official actions.
+- Changed the workshop fit mode to fill and center the map table, reshaped the
+  Temple into an asymmetric stepped complex, deepened and varied the Underworld
+  lava terrain, and moved the descent study to the snowy Dungeon coast.
 - Replaced the project emblem with a transparent mechanical pixel-tree icon
   based on the supplied silhouette reference.
 - Restyled the desktop app as a brass-and-iron world forge and refreshed its

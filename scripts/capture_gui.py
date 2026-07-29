@@ -47,8 +47,7 @@ def main() -> None:
     def frame_world() -> None:
         if app.current_world is not None:
             app._fit()
-            app.canvas.xview_moveto(0.0)
-            app.canvas.yview_moveto(0.0)
+            app._center_view()
 
     root.after(3200, frame_world)
     root.after(4300, capture)
