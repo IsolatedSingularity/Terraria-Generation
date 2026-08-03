@@ -1,39 +1,81 @@
-# Open Problems: Terraria-Generation (TerraExplorer)
+# Open problems
 
-This document catalogs open problems, algorithmic challenges, and maintenance tasks for the **Terraria-Generation** (TerraExplorer) 107-pass procedural world generation and visualization engine (`Engine/worldgen.py`, `Engine/theme.py`, `terraexplorer/`).
+This list covers active questions in the supported `terraexplorer/` runtime.
+The `Engine/`, `Code/`, and `Advanced/` directories are historical research
+archives and are not implementation targets.
 
----
+## Versioned fidelity
 
-## 1. Algorithmic & Implementation Problems
+TerraExplorer deliberately retains the documented Terraria 1.4.4.9 generation
+order as its 107-pass baseline. Terraria itself has moved beyond that version,
+so newer structures, secret-seed branches, and placement rules need an explicit
+compatibility policy before they can enter the baseline. A future migration
+should distinguish updated source-inspired behavior from TerraExplorer's stable
+seed reproducibility; secret-seed support is intentionally deferred.
 
-- **Multi-Scale Density Invariance across TINY, SMALL, and LARGE Worlds**
-  - **Problem**: Scaling the 107 world-generation passes between `TINY` (240x140 tiles at ~6 px/tile), `SMALL` (4200x1200), and `LARGE` (8400x2400) without distorting per-tile ore vein density (`6e-05`), biome structure sizes, or cave percolation thresholds.
-  - **Context**: Tracked in `audit/audit-2026-04-23-mini-world-redesign.md`. Fixed-probability spawns calibrated for LARGE worlds produce sparse, unreadable visualizations on small crop windows.
-- **Tkinter GUI Event Loop Decoupling**
-  - **Problem**: `terraexplorer gui` executes world generation passes on the primary Tkinter event loop. While cancellable between passes, long-running passes on LARGE worlds cause temporary interface freezes.
-  - **Context**: Requires decoupling the generator into a background worker thread with asynchronous progress queues.
+## Multi-scale density invariance
 
----
+Preview (`240 x 140`) and Small (`4200 x 1200`) worlds need materially similar
+ore density, cave connectivity, biome occupancy, and structure frequency without
+making Preview landmarks microscopic or Small worlds excessively dense. Fixed
+per-tile probabilities and fixed tile dimensions solve opposite ends of this
+problem. The next step is a documented set of dimensionless scale rules plus
+statistical acceptance ranges across a seed corpus.
 
-## 2. Bugs & Unresolved Issues
+## Structure topology and protection
 
-- **GIF Compression and Palette Banding (`saveTinyGif`)**
-  - **Problem**: Maintaining compact GIF footprints (< 1.5 MB in `Plots/`) via `Engine/theme.py::saveTinyGif` using adaptive 128-color P-mode palette downsampling without introducing color banding or palette flickering across 107 dynamic passes.
-- **LaTeX Math Rendering Stability in README**
-  - **Problem**: Ensuring cellular automata equations (`\quad \text{if} \quad` chains) render cleanly across GitHub KaTeX without syntax parser regressions.
+The Dungeon, Pyramid, Jungle Temple, Aether, Floating Islands, and Ruined Houses
+now have more representative silhouettes and internal layouts. Their validation
+is still mostly local: bounds, required materials, marker positions, and a few
+topological checks. Useful future properties include guaranteed room
+reachability, minimum wall thickness, protected-region non-overlap, usable
+entrances, and stable landmark frequency over many seeds.
 
----
+## Full-world liquid and granular simulation
 
-## 3. Theoretical & Scientific Problems
+The catastrophe laboratory models deterministic meteor excavation, falling Sand
+and Silt, conservative liquid transport, and all four supported liquid-contact
+products on a Preview world. It is intentionally bounded rather than a live
+solver over every generation frame. Open work includes pressure, pumps, larger
+connected basins, viscosity differences, settling convergence, performance on
+Small worlds, and invariant tests for total liquid volume around reactions.
 
-- **Cave Cellular Automata Percolation Thresholds**
-  - **Problem**: Quantifying exact percolation thresholds and topological genus invariants for Terraria's Moore-neighborhood cellular automata cave-carving algorithms (`_carveCaves`, `cavinator`) across stratified depth layers (Surface, Underground, Cavern, Underworld).
-- **Inhomogeneous Biome Spread Kinetics**
-  - **Problem**: Formulating analytical differential models for the V-shaped Corruption, Crimson, and Hallow Hardmode conversion fronts propagating through mixed dirt, stone, sand, and mud soil matrices.
+## Biome-spread calibration
 
----
+The containment laboratory exposes three-tile reach, faster surface attempts,
+and deterministic intervention comparisons. It does not yet claim calibrated
+Terraria time. Spread rates should be estimated against documented behavior,
+separated by host material and depth, and tested statistically over multiple
+seeds. Sunflower and Chlorophyte effects also need finer spatial rules before
+the lab can be treated as a quantitative emulator.
 
-## 4. Code Maintenance & Refactoring Opportunities
+## Cave connectivity
 
-- **Audit Archive Indexing**
-  - **Opportunity**: `audit/` contains 17 deep audit reports from historical revision sprints. Consolidating key takeaways into `docs/architecture.md` and archiving superseded audit logs will streamline repository onboarding.
+Void fraction alone does not describe a playable cave network. The generator
+still lacks explicit targets for percolation, connected-component size,
+vertical traversal, loop count, dead ends, and access from the surface. These
+metrics should be gathered by depth band and world scale before changing the
+cave-carving distributions.
+
+## Animated-media size and palette stability
+
+Tracked GIFs must balance readable tiles, coherent global palettes, and a
+reasonable repository footprint. A shared palette or modern video alternative
+could reduce flicker and banding, but any change needs GitHub README support and
+visual regression checks. The generation script should eventually enforce
+media dimensions and file-size budgets.
+
+## Scientific verification
+
+Numerical changes need more than snapshot tests. The project would benefit from
+a reproducible seed corpus, analytic-limit checks where possible, distribution
+comparisons, topology metrics, and machine-readable experiment reports. This is
+especially important for scale-dependent generation and post-generation
+simulations.
+
+## Historical audit indexing
+
+The `audit/` directory contains useful but partly superseded investigations.
+An index mapping each conclusion to current code, documentation, or a closed
+decision would make it easier to separate live risks from historical context
+without changing the archive itself.

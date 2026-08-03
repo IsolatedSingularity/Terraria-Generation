@@ -66,6 +66,16 @@ class Tile(IntEnum):
     SKY_BRICK = 51
     OBSIDIAN_BRICK = 52
     HELLFORGE = 53
+    CLOUD = 54
+    RAIN_CLOUD = 55
+    METEORITE = 56
+    OBSIDIAN = 57
+    HONEY_BLOCK = 58
+    CRISPY_HONEY_BLOCK = 59
+    AETHERIUM = 60
+    GEM_TREE = 61
+    HELLSTONE_BRICK = 62
+    CHLOROPHYTE = 63
 
 
 class Wall(IntEnum):
@@ -81,6 +91,7 @@ class Wall(IntEnum):
     LIHZAHRD = 9
     SKY = 10
     OBSIDIAN = 11
+    HELLSTONE = 12
 
 
 class Liquid(IntEnum):
@@ -169,6 +180,16 @@ TILE_STYLES: dict[Tile, TileStyle] = {
     Tile.SKY_BRICK: TileStyle("Sky brick", "#c8d7cf", "brick"),
     Tile.OBSIDIAN_BRICK: TileStyle("Obsidian brick", "#3d314c", "brick"),
     Tile.HELLFORGE: TileStyle("Hellforge", "#f18a36", "symbol"),
+    Tile.CLOUD: TileStyle("Cloud", "#e8edf2", "cloud"),
+    Tile.RAIN_CLOUD: TileStyle("Rain cloud", "#91a4b5", "cloud"),
+    Tile.METEORITE: TileStyle("Meteorite", "#77546f", "ore"),
+    Tile.OBSIDIAN: TileStyle("Obsidian", "#2f2943", "stone"),
+    Tile.HONEY_BLOCK: TileStyle("Honey block", "#d7a434", "solid"),
+    Tile.CRISPY_HONEY_BLOCK: TileStyle("Crispy honey block", "#b9682f", "solid"),
+    Tile.AETHERIUM: TileStyle("Aetherium", "#9777bd", "crystal"),
+    Tile.GEM_TREE: TileStyle("Gem tree", "#62d6c7", "crystal"),
+    Tile.HELLSTONE_BRICK: TileStyle("Hellstone brick", "#8f3e37", "brick"),
+    Tile.CHLOROPHYTE: TileStyle("Chlorophyte", "#60b84f", "ore"),
 }
 
 WALL_COLORS: dict[Wall, str] = {
@@ -184,6 +205,7 @@ WALL_COLORS: dict[Wall, str] = {
     Wall.LIHZAHRD: "#5b422a",
     Wall.SKY: "#596d76",
     Wall.OBSIDIAN: "#281f33",
+    Wall.HELLSTONE: "#542c2c",
 }
 
 BIOME_NAMES = {biome: biome.name.replace("_", " ").title() for biome in Biome}

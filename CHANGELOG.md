@@ -7,9 +7,18 @@ All notable project changes are documented here. This project follows
 
 ### Changed
 
+- Corrected Floating Island, Dungeon, Pyramid, Aether, Jungle Temple, and
+  Underworld landmark generation, including the public `Ruined house` marker.
+- Added deterministic biome-containment and meteor/granular/four-liquid
+  catastrophe laboratories with generated README animations and tests.
+- Replaced legacy README plots with clean active-runtime diagnostics, used
+  Preview-world landmark crops, retained the full Small-world overview, and
+  removed the logo's README-only bottom gap.
+- Normalized README section titles, moved flavor text into subtitles, and
+  refreshed fidelity and open-problem documentation.
 - Renamed the supported product and package from TerraForge to TerraExplorer,
   with compatibility aliases for existing imports and console commands.
-- Expanded modeled world generation with Underworld cities and Hellforges,
+- Expanded modeled world generation with Underworld Ruined Houses and Hellforges,
   floating-island houses and waterfalls, spreading evil and Hallow, a buried
   Pyramid, a multi-level Jungle Temple, Shimmer, and a stronger Dungeon facade.
 - Added a 26-stop GUI evolution rail with reversible playback, widened the map

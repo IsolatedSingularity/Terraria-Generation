@@ -51,22 +51,30 @@ Guide.
   difficulty- or secret-seed-specific generation branches.
 - Hardmode V is an optional post-generation event and not counted among the 107
   vanilla creation passes.
+- Biome containment and catastrophe-chain experiments are optional
+  post-generation simulations and are not counted among the 107 passes.
 - Simulation IDs in `tiles.py` are TerraExplorer IDs, never claimed Terraria IDs.
 
 ## Recent modeled improvements
 
-- Dungeon generation now builds a visible surface keep before descending into
-  clipped rooms and corridors.
-- Floating islands can carry sky-brick houses, reservoirs, and falling water.
-- Jungle Temples use an asymmetric stepped shell around a multi-level maze,
-  traps, and an altar chamber.
-- Pyramids sit mostly below the desert surface and include a shaft and treasure
-  chamber.
-- The Aether has a stone and gem shell around an actual Shimmer liquid pool.
-- Underworld cities form obsidian-brick ruins, bridges, rooms, and Hellforge
-  placements with foundations descending through a varied lava sea.
+- Dungeon generation builds a weathered entrance hall connected to branching
+  rooms, corridors, and platforms.
+- Floating Islands use Cloud and Rain Cloud foundations beneath forested caps
+  and compact sky-brick houses.
+- Waterfalls use steep natural surface breaks rather than turning Floating
+  Islands into sky lakes.
+- Jungle Temples use irregular connected Lihzahrd-brick rooms, traps, and a deep
+  altar chamber.
+- Pyramids sit mostly below the desert surface and include a zigzag passage and
+  treasure chamber.
+- The Aether appears in the Jungle-side outer fifth with a stone shell, Shimmer
+  pool, and Gem Trees.
+- Individual multi-floor Ruined Houses occupy the central Underworld, use
+  obsidian or Hellstone brick, can be lava-flooded, and carry Hellforges.
 - Corruption, Crimson, and Hallow can advance into adjacent natural materials
   without wrapping across map edges.
+- Controlled laboratories compare biome-containment strategies and couple a
+  meteor impact to granular motion, four liquids, and contact products.
 
 ## References
 

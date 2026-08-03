@@ -16,6 +16,8 @@ flowchart LR
     A --> V["Pixel renderer"]
     M --> V
     W --> N["NPZ / JSON"]
+    W --> S2["Post-generation simulations"]
+    S2 --> A
     V --> G["GUI"]
     V --> L["CLI PNG / GIF"]
 ```
@@ -32,6 +34,7 @@ flowchart LR
 | `generation.py` | Stateless pass handlers that receive world + local RNG. |
 | `pipeline.py` | Ordering, RNG isolation, events, cancellation, snapshots, timing. |
 | `render.py` | Original pixel map, overlays, symbols, and file exporters. |
+| `simulations.py` | Deterministic containment and catastrophe experiments over copied state. |
 | `gui.py` | Tk worker-thread UI over the shared API. |
 | `cli.py` | Generate, pass inventory, benchmark, and GUI commands. |
 
@@ -66,3 +69,7 @@ between passes.
 To add a new modeled behavior, write a handler accepting `(world, rng)`, route
 it from `passes.py`, add a deterministic test, and update the fidelity inventory.
 Avoid dependencies on render/GUI code from generation modules.
+
+Post-generation experiments belong in `simulations.py`. They must copy input
+arrays, keep deterministic random streams, expose their physical and numerical
+assumptions, and test conservation or boundary invariants where applicable.

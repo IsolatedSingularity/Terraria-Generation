@@ -445,22 +445,41 @@ def full_desert(world: GeneratedWorld, rng: np.random.Generator) -> None:
 
 
 def floating_islands(world: GeneratedWorld, rng: np.random.Generator) -> None:
-    count = int(_pick(world, 2, 3))
+    count = 3
     coast = int(_pick(world, 25, 420))
-    for _ in range(count):
-        x = int(rng.integers(coast, world.config.width - coast))
+    available = world.config.width - coast * 2
+    for index in range(count):
+        segment_center = coast + round(available * (index + 0.5) / count)
+        jitter = max(2, available // (count * 7))
+        x = int(
+            np.clip(
+                segment_center + rng.integers(-jitter, jitter + 1),
+                coast,
+                world.config.width - coast,
+            )
+        )
         y = int(
             rng.integers(max(8, world.layers.world_surface // 4), world.layers.world_surface - 5)
         )
-        rx, ry = tuple(_pick(world, (9, 4), (45, 16)))
-        stamp_ellipse(world.tiles, x, y, int(rx), int(ry), Tile.DIRT, (Tile.AIR,))
-        top = max(1, y - int(ry))
-        world.tiles[top, max(0, x - int(rx) + 2) : min(world.config.width, x + int(rx) - 1)] = (
-            Tile.GRASS
+        rx = int(_pick(world, rng.integers(10, 15), rng.integers(38, 56)))
+        ry = int(_pick(world, rng.integers(5, 8), rng.integers(14, 21)))
+        stamp_ellipse(world.tiles, x, y, rx, ry, Tile.CLOUD, (Tile.AIR,))
+        stamp_ellipse(
+            world.tiles,
+            x,
+            y + max(1, ry // 3),
+            max(3, round(rx * 0.72)),
+            max(2, round(ry * 0.62)),
+            Tile.RAIN_CLOUD,
+            (Tile.CLOUD,),
         )
-        _place_marker(
-            world, "Floating island", x - int(rx), y - int(ry), int(rx * 2), int(ry * 2), "◇"
-        )
+        top = max(1, y - ry)
+        x0, x1 = max(0, x - rx), min(world.config.width, x + rx + 1)
+        cap = world.tiles[top : y + 1, x0:x1]
+        cap[np.isin(cap, (Tile.CLOUD, Tile.RAIN_CLOUD))] = Tile.DIRT
+        exposed = surface_candidates(cap, (Tile.DIRT,))
+        cap[exposed] = Tile.GRASS
+        _place_marker(world, "Floating island", x - rx, y - ry, rx * 2 + 1, ry * 2 + 1, "◇")
 
 
 def mushroom_patches(world: GeneratedWorld, rng: np.random.Generator) -> None:
@@ -623,77 +642,61 @@ def underworld(world: GeneratedWorld, rng: np.random.Generator) -> None:
     world.liquid_kind[lava_level:, :][lava_region] = Liquid.LAVA
     world.liquid_amount[lava_level:, :][lava_region] = 255
 
-    city_count = int(_pick(world, 2, 8))
-    city_span = int(_pick(world, 42, 360))
-    for _ in range(city_count):
-        start_x = int(rng.integers(4, max(5, width - city_span - 4)))
-        house_count = int(rng.integers(3, 6))
-        cursor = start_x
-        city_top = height
-        city_bottom = top
-        street_y = int(
+    house_count = int(_pick(world, 4, 18))
+    left_limit, right_limit = width // 4, width * 3 // 4
+    centers = np.linspace(left_limit, right_limit, house_count + 2, dtype=int)[1:-1]
+    for center_x in centers:
+        room_w = int(_pick(world, rng.integers(12, 18), rng.integers(30, 52)))
+        floor_count = int(rng.integers(2, 5))
+        floor_h = int(_pick(world, rng.integers(5, 8), rng.integers(10, 16)))
+        room_h = floor_count * floor_h + 2
+        jitter = int(_pick(world, 3, 18))
+        x = int(
             np.clip(
-                lava_level + rng.integers(-int(_pick(world, 1, 7)), int(_pick(world, 2, 9))),
-                top + 8,
-                height - 5,
+                center_x + rng.integers(-jitter, jitter + 1) - room_w // 2, 2, width - room_w - 2
             )
         )
-        for _house in range(house_count):
-            room_w = int(_pick(world, rng.integers(9, 15), rng.integers(28, 48)))
-            room_h = int(_pick(world, rng.integers(7, 11), rng.integers(16, 28)))
-            if cursor + room_w >= min(width - 2, start_x + city_span):
-                break
-            room_y = max(top + 2, street_y - room_h)
-            _carve_room(
-                world,
-                cursor,
-                room_y,
-                room_w,
-                room_h,
-                Tile.OBSIDIAN_BRICK,
-                Wall.OBSIDIAN,
+        base_y = int(
+            np.clip(
+                lava_level + rng.integers(-int(_pick(world, 1, 8)), int(_pick(world, 3, 13))),
+                top + room_h + 2,
+                height - 4,
             )
-            world.liquid_kind[room_y:street_y, cursor : cursor + room_w] = Liquid.NONE
-            world.liquid_amount[room_y:street_y, cursor : cursor + room_w] = 0
-            if room_h >= int(_pick(world, 9, 22)):
-                shelf_y = room_y + room_h // 2
-                world.tiles[shelf_y, cursor + 1 : cursor + room_w - 1] = Tile.PLATFORM
-                stair_x = cursor + room_w // 2
-                world.tiles[shelf_y, stair_x - 1 : stair_x + 2] = Tile.AIR
-            merlon_width = max(1, int(_pick(world, 1, 3)))
-            for merlon_x in range(cursor, cursor + room_w, merlon_width * 3):
-                world.tiles[
-                    max(top + 1, room_y - merlon_width) : room_y,
-                    merlon_x : merlon_x + merlon_width,
-                ] = Tile.OBSIDIAN_BRICK
-            doorway_y = room_y + room_h - int(_pick(world, 3, 5))
-            world.tiles[doorway_y : room_y + room_h - 1, cursor] = Tile.AIR
-            bridge_y = room_y + room_h - 1
-            bridge_end = min(width - 1, cursor + room_w + int(_pick(world, 3, 16)))
-            world.tiles[bridge_y, cursor + room_w : bridge_end] = Tile.PLATFORM
-            world.liquid_kind[bridge_y, cursor + room_w : bridge_end] = Liquid.NONE
-            world.liquid_amount[bridge_y, cursor + room_w : bridge_end] = 0
-            support_columns = (cursor + 1, cursor + room_w // 2, cursor + room_w - 2)
-            for support_x in support_columns:
-                support_bottom = max(street_y + 2, int(floor_profile[support_x]) + 1)
-                support_bottom = min(height - 1, support_bottom)
-                world.tiles[street_y:support_bottom, support_x] = Tile.OBSIDIAN_BRICK
-                world.liquid_kind[street_y:support_bottom, support_x] = Liquid.NONE
-                world.liquid_amount[street_y:support_bottom, support_x] = 0
-                city_bottom = max(city_bottom, support_bottom)
-            city_top = min(city_top, room_y)
-            city_bottom = max(city_bottom, room_y + room_h)
-            cursor = bridge_end
-        if cursor > start_x and city_top < height:
-            _place_marker(
-                world,
-                "Underworld city",
-                start_x,
-                city_top,
-                cursor - start_x,
-                city_bottom - city_top,
-                "▥",
-            )
+        )
+        y = base_y - room_h
+        rare_hellstone = rng.random() < 0.24
+        brick = Tile.HELLSTONE_BRICK if rare_hellstone else Tile.OBSIDIAN_BRICK
+        wall = Wall.HELLSTONE if rare_hellstone else Wall.OBSIDIAN
+
+        world.tiles[y : base_y + 1, x : x + room_w] = brick
+        world.tiles[y + 1 : base_y, x + 1 : x + room_w - 1] = Tile.AIR
+        world.walls[y + 1 : base_y, x + 1 : x + room_w - 1] = wall
+        for floor_index in range(1, floor_count):
+            floor_y = y + floor_index * floor_h
+            world.tiles[floor_y, x + 1 : x + room_w - 1] = Tile.PLATFORM
+            opening_x = x + 2 if floor_index % 2 else x + room_w - 4
+            world.tiles[floor_y, opening_x : opening_x + 2] = Tile.AIR
+        door_y = base_y - max(3, floor_h // 2)
+        door_x = x if rng.integers(0, 2) == 0 else x + room_w - 1
+        world.tiles[door_y:base_y, door_x] = Tile.AIR
+
+        roof_step = max(1, int(_pick(world, 1, 3)))
+        for roof_x in range(x + roof_step, x + room_w - roof_step, roof_step * 3):
+            world.tiles[max(top + 1, y - roof_step) : y, roof_x : roof_x + roof_step] = brick
+
+        support_bottom = min(height - 1, max(base_y + 2, int(floor_profile[x + room_w // 2]) + 1))
+        for support_x in (x + 1, x + room_w // 2, x + room_w - 2):
+            world.tiles[base_y:support_bottom, support_x] = brick
+
+        world.liquid_kind[y:base_y, x : x + room_w] = Liquid.NONE
+        world.liquid_amount[y:base_y, x : x + room_w] = 0
+        flooded_y = max(y + 1, lava_level)
+        flooded = world.tiles[flooded_y:base_y, x + 1 : x + room_w - 1] == Tile.AIR
+        world.liquid_kind[flooded_y:base_y, x + 1 : x + room_w - 1][flooded] = Liquid.LAVA
+        world.liquid_amount[flooded_y:base_y, x + 1 : x + room_w - 1][flooded] = 255
+        _place_marker(world, "Ruined house", x, y, room_w, support_bottom - y, "▥")
+
+    world.metadata["ruined_house_count"] = house_count
     solid = world.tiles != Tile.AIR
     world.liquid_kind[solid] = Liquid.NONE
     world.liquid_amount[solid] = 0
@@ -870,90 +873,84 @@ def _carve_room(
     world.walls[y0 + 1 : y1 - 1, x0 + 1 : x1 - 1] = wall
 
 
+def _carve_corridor(
+    world: GeneratedWorld,
+    start: tuple[int, int],
+    end: tuple[int, int],
+    width: int,
+    wall: Wall,
+) -> None:
+    """Carve a clipped L-shaped passage between room centers."""
+
+    start_x, start_y = start
+    end_x, end_y = end
+    half = max(1, width // 2)
+    x0, x1 = sorted((start_x, end_x))
+    y0, y1 = sorted((start_y, end_y))
+    horizontal_y0 = max(1, start_y - half)
+    horizontal_y1 = min(world.shape[0] - 1, start_y + half + 1)
+    horizontal_x0 = max(1, x0)
+    horizontal_x1 = min(world.shape[1] - 1, x1 + 1)
+    world.tiles[horizontal_y0:horizontal_y1, horizontal_x0:horizontal_x1] = Tile.AIR
+    world.walls[horizontal_y0:horizontal_y1, horizontal_x0:horizontal_x1] = wall
+    vertical_x0 = max(1, end_x - half)
+    vertical_x1 = min(world.shape[1] - 1, end_x + half + 1)
+    vertical_y0 = max(1, y0)
+    vertical_y1 = min(world.shape[0] - 1, y1 + 1)
+    world.tiles[vertical_y0:vertical_y1, vertical_x0:vertical_x1] = Tile.AIR
+    world.walls[vertical_y0:vertical_y1, vertical_x0:vertical_x1] = wall
+
+
 def dungeon(world: GeneratedWorld, rng: np.random.Generator) -> None:
     entrance_x = int(world.metadata["dungeon_x"])
     surface_y = int(world.surface[entrance_x])
-    tower_w = int(_pick(world, 11, 38))
-    tower_h = int(_pick(world, 12, 52))
-    tower_x = int(np.clip(entrance_x - tower_w // 2, 2, world.shape[1] - tower_w - 2))
-    tower_y = max(2, surface_y - tower_h + int(_pick(world, 3, 10)))
-    _carve_room(
-        world,
-        tower_x,
-        tower_y,
-        tower_w,
-        surface_y - tower_y + int(_pick(world, 5, 16)),
-        Tile.DUNGEON_BRICK,
-        Wall.DUNGEON,
-    )
-    battlement = max(2, int(_pick(world, 2, 5)))
-    for battlement_x in range(tower_x, tower_x + tower_w, battlement * 2):
-        world.tiles[
-            max(1, tower_y - battlement) : tower_y,
-            battlement_x : battlement_x + battlement,
-        ] = Tile.DUNGEON_BRICK
-    wing_w = max(6, tower_w // 3)
-    wing_h = max(6, tower_h // 3)
-    for wing_x in (tower_x - wing_w + 1, tower_x + tower_w - 1):
-        clipped_x = int(np.clip(wing_x, 2, world.shape[1] - wing_w - 2))
-        wing_y = max(2, surface_y - wing_h + 2)
-        _carve_room(
-            world,
-            clipped_x,
-            wing_y,
-            wing_w,
-            wing_h + 3,
-            Tile.DUNGEON_BRICK,
-            Wall.DUNGEON,
+    hall_w = int(_pick(world, 13, 34))
+    hall_h = int(_pick(world, 9, 26))
+    hall_x = int(np.clip(entrance_x - hall_w // 2, 2, world.shape[1] - hall_w - 2))
+    hall_y = max(2, surface_y - hall_h + int(_pick(world, 2, 6)))
+    _carve_room(world, hall_x, hall_y, hall_w, hall_h, Tile.DUNGEON_BRICK, Wall.DUNGEON)
+    roof_y = max(1, hall_y - 1)
+    world.tiles[roof_y, hall_x + 2 : hall_x + hall_w - 2] = Tile.DUNGEON_BRICK
+    if hall_w >= 10:
+        world.tiles[roof_y - 1 : roof_y + 1, hall_x + hall_w // 3 : hall_x + hall_w // 3 + 2] = (
+            Tile.DUNGEON_BRICK
         )
-        for merlon_x in range(clipped_x, clipped_x + wing_w, battlement * 2):
-            world.tiles[
-                max(1, wing_y - battlement) : wing_y,
-                merlon_x : merlon_x + battlement,
-            ] = Tile.DUNGEON_BRICK
-    for floor_y in (
-        tower_y + (surface_y - tower_y) // 3,
-        tower_y + 2 * (surface_y - tower_y) // 3,
-    ):
-        world.tiles[floor_y, tower_x + 1 : tower_x + tower_w - 1] = Tile.DUNGEON_BRICK
-        world.tiles[floor_y, entrance_x - 1 : entrance_x + 2] = Tile.AIR
-    door_top = max(tower_y + 2, surface_y - int(_pick(world, 3, 8)))
-    door_x = tower_x + tower_w // 2
-    world.tiles[door_top : surface_y + 2, door_x - 1 : door_x + 2] = Tile.AIR
-    world.walls[door_top : surface_y + 2, door_x - 1 : door_x + 2] = Wall.DUNGEON
+    door_x = hall_x + hall_w // 2
+    world.tiles[surface_y - 3 : surface_y + 2, door_x - 1 : door_x + 2] = Tile.AIR
+    world.walls[surface_y - 3 : surface_y + 2, door_x - 1 : door_x + 2] = Wall.DUNGEON
 
-    start_y = surface_y + int(_pick(world, 3, 12))
-    room_w, room_h = tuple(_pick(world, (11, 7), (28, 16)))
-    room_count = int(_pick(world, 10, 28))
-    x, y = entrance_x - room_w // 2, start_y
-    min_x, min_y = min(x, tower_x), tower_y
-    max_x, max_y = x + room_w, y + room_h
+    room_count = int(_pick(world, 9, 32))
+    corridor_w = int(_pick(world, 3, 7))
+    previous_center = (door_x, surface_y)
+    x = entrance_x
+    y = surface_y + int(_pick(world, 5, 18))
+    min_x, min_y = hall_x, hall_y
+    max_x, max_y = hall_x + hall_w, hall_y + hall_h
     for index in range(room_count):
-        _carve_room(world, x, y, room_w, room_h, Tile.DUNGEON_BRICK, Wall.DUNGEON)
-        world.biomes[
-            max(0, y) : min(world.shape[0], y + room_h), max(0, x) : min(world.shape[1], x + room_w)
-        ] = Biome.DUNGEON
-        if index > 0:
-            corridor_x = x + room_w // 2
-            world.tiles[
-                max(1, y - room_h // 2) : min(world.shape[0] - 1, y + 2),
-                corridor_x - 1 : corridor_x + 2,
-            ] = Tile.AIR
-            world.walls[
-                max(1, y - room_h // 2) : min(world.shape[0] - 1, y + 2),
-                corridor_x - 1 : corridor_x + 2,
-            ] = Wall.DUNGEON
+        room_w = int(_pick(world, rng.integers(10, 17), rng.integers(24, 46)))
+        room_h = int(_pick(world, rng.integers(6, 11), rng.integers(12, 24)))
+        room_x = int(np.clip(x - room_w // 2, 2, world.shape[1] - room_w - 2))
+        room_y = int(np.clip(y, surface_y + 2, world.layers.underworld - room_h - 2))
+        _carve_room(world, room_x, room_y, room_w, room_h, Tile.DUNGEON_BRICK, Wall.DUNGEON)
+        center = (room_x + room_w // 2, room_y + room_h // 2)
+        _carve_corridor(world, previous_center, center, corridor_w, Wall.DUNGEON)
+        world.biomes[room_y : room_y + room_h, room_x : room_x + room_w] = Biome.DUNGEON
+        if room_w >= int(_pick(world, 13, 34)) and index % 3 == 1:
+            shelf_y = room_y + room_h // 2
+            world.tiles[shelf_y, room_x + 2 : room_x + room_w - 2] = Tile.PLATFORM
+            world.tiles[shelf_y, center[0] - 1 : center[0] + 2] = Tile.AIR
+        min_x, min_y = min(min_x, room_x), min(min_y, room_y)
+        max_x, max_y = max(max_x, room_x + room_w), max(max_y, room_y + room_h)
+        previous_center = center
         direction = -1 if rng.integers(0, 2) == 0 else 1
         x = int(
             np.clip(
-                x + direction * rng.integers(room_w // 3, room_w), 2, world.shape[1] - room_w - 2
+                center[0] + direction * rng.integers(room_w // 2, room_w + 3), 8, world.shape[1] - 8
             )
         )
-        y += int(rng.integers(max(3, room_h // 2), room_h + 2))
+        y = center[1] + int(rng.integers(max(4, room_h // 2), room_h + 3))
         if y + room_h >= world.layers.underworld:
             break
-        min_x, min_y = min(min_x, x), min(min_y, y)
-        max_x, max_y = max(max_x, x + room_w), max(max_y, y + room_h)
     _place_marker(world, "Dungeon", min_x, min_y, max_x - min_x, max_y - min_y, "▦")
 
 
@@ -994,18 +991,20 @@ def ocean_caves(world: GeneratedWorld, rng: np.random.Generator) -> None:
 
 
 def shimmer(world: GeneratedWorld, rng: np.random.Generator) -> None:
-    center = int(world.metadata["jungle_x"])
-    direction = -1 if center > world.shape[1] // 2 else 1
-    x = int(np.clip(center + direction * _pick(world, 18, 260), 10, world.shape[1] - 10))
+    jungle_x = int(world.metadata["jungle_x"])
+    jungle_on_left = jungle_x < world.shape[1] // 2
+    zone = (0.12, 0.20) if jungle_on_left else (0.80, 0.88)
+    x = int(rng.integers(round(world.shape[1] * zone[0]), round(world.shape[1] * zone[1])))
     y = int(
         rng.integers(world.layers.rock_layer, world.layers.underworld - int(_pick(world, 10, 70)))
     )
-    rx, ry = tuple(_pick(world, (11, 7), (65, 34)))
+    rx = int(_pick(world, rng.integers(11, 15), rng.integers(105, 121)))
+    ry = int(_pick(world, rng.integers(7, 10), rng.integers(55, 71)))
     stamp_ellipse(world.tiles, x, y, int(rx), int(ry), Tile.STONE, _CARVABLE)
     stamp_ellipse(
         world.tiles,
-        x,
-        y,
+        x + int(_pick(world, 1, 8)),
+        y - int(_pick(world, 1, 5)),
         max(3, int(rx) - int(_pick(world, 2, 8))),
         max(3, int(ry) - int(_pick(world, 2, 6))),
         Tile.AIR,
@@ -1022,6 +1021,21 @@ def shimmer(world: GeneratedWorld, rng: np.random.Generator) -> None:
         gy = round(y + np.sin(angle) * max(2, int(ry) - 1))
         if 0 <= gx < world.shape[1] and 0 <= gy < world.shape[0]:
             world.tiles[gy, gx] = Tile.GEM
+    pool_top = y + max(1, ry // 4)
+    for tree_x in (x - rx // 2, x + rx // 2):
+        ground = None
+        for tree_y in range(pool_top - 1, min(world.shape[0] - 1, y + ry)):
+            if world.tiles[tree_y, tree_x] != Tile.AIR:
+                ground = tree_y
+                break
+        if ground is None:
+            continue
+        tree_height = int(_pick(world, 3, 10))
+        trunk_top = max(1, ground - tree_height)
+        world.tiles[trunk_top:ground, tree_x] = Tile.GEM_TREE
+        stamp_ellipse(
+            world.tiles, tree_x, trunk_top, int(_pick(world, 2, 5)), 2, Tile.GEM, (Tile.AIR,)
+        )
     _place_marker(world, "Aether", x0, y - int(ry), x1 - x0, int(ry * 2), "A")
 
 
@@ -1029,18 +1043,28 @@ def pyramids(world: GeneratedWorld, rng: np.random.Generator) -> None:
     if rng.random() > 0.70:
         return
     x = int(world.metadata["desert_x"])
-    y = int(world.surface[x]) + int(_pick(world, 2, 8))
-    height = int(_pick(world, 18, 78))
+    y = int(world.surface[x]) + int(_pick(world, 2, rng.integers(13, 20)))
+    height = int(_pick(world, 24, rng.integers(70, 90)))
+    segment_height = int(_pick(world, 5, 14))
+    tunnel_half = int(_pick(world, 1, 2))
     for row in range(height):
         half = max(2, round(2 + row * 0.72))
         yy = y + row
         if yy >= world.shape[0]:
             break
         world.tiles[yy, max(0, x - half) : min(world.shape[1], x + half + 1)] = Tile.PYRAMID_BRICK
-        if row > int(height * 0.18):
-            world.tiles[yy, max(0, x - 1) : min(world.shape[1], x + 2)] = Tile.AIR
-            world.walls[yy, max(0, x - 1) : min(world.shape[1], x + 2)] = Wall.SANDSTONE
-    chamber_y = min(world.shape[0] - 6, y + round(height * 0.68))
+        if row > int(height * 0.14):
+            segment = row // segment_height
+            local = (row % segment_height) / max(1, segment_height - 1)
+            direction = -1 if segment % 2 == 0 else 1
+            maximum_offset = max(0, half - tunnel_half - 2)
+            offset = round(direction * maximum_offset * (1.0 - local * 2.0))
+            passage_x = x + offset
+            x0 = max(0, passage_x - tunnel_half)
+            x1 = min(world.shape[1], passage_x + tunnel_half + 1)
+            world.tiles[yy, x0:x1] = Tile.AIR
+            world.walls[yy, x0:x1] = Wall.SANDSTONE
+    chamber_y = min(world.shape[0] - 6, y + round(height * 0.58))
     chamber_w = max(7, round(height * 0.42))
     chamber_h = max(5, round(height * 0.16))
     _carve_room(
@@ -1116,7 +1140,7 @@ def altars(world: GeneratedWorld, rng: np.random.Generator) -> None:
 
 def jungle_temple(world: GeneratedWorld, rng: np.random.Generator) -> None:
     center = int(world.metadata["jungle_x"])
-    width, height = tuple(_pick(world, (26, 18), (180, 110)))
+    width, height = tuple(_pick(world, (34, 24), (190, 120)))
     x = int(np.clip(center + rng.integers(-width, width + 1), 2, world.shape[1] - width - 2))
     y = int(
         rng.integers(
@@ -1124,66 +1148,78 @@ def jungle_temple(world: GeneratedWorld, rng: np.random.Generator) -> None:
             max(world.layers.rock_layer + 1, world.layers.underworld - height - 4),
         )
     )
-    corridor_h = max(2, int(_pick(world, 2, 5)))
-    level_step = max(5, int(_pick(world, 5, 14)))
-    step_width = max(2, int(_pick(world, 2, 8)))
-    maximum_inset = max(4, width // 5)
     silhouette = np.zeros((height, width), dtype=bool)
     for local_y in range(height):
-        progress = local_y / max(1, height - 1)
-        raw_inset = round((1.0 - progress) * maximum_inset)
-        inset = (raw_inset // step_width) * step_width
-        shift = 0
-        if local_y < height // 3:
-            shift = step_width
-        elif local_y > 2 * height // 3:
-            shift = -step_width
-        left = int(np.clip(inset + shift, 1, width - 5))
-        right = int(np.clip(width - inset + shift, left + 4, width - 1))
+        band = local_y // max(3, height // 7)
+        left = 1 + (band % 3)
+        right = width - 1 - ((band + 1) % 3)
         silhouette[local_y, left:right] = True
-    silhouette[-max(3, level_step // 2) :, 1 : width - 1] = True
+    silhouette[-max(3, height // 10) :, 1 : width - 1] = True
     temple_region = world.tiles[y : y + height, x : x + width]
     temple_region[silhouette] = Tile.LIHZAHRD_BRICK
 
-    direction = 1
-    for level_y in range(y + 2, y + height - 3, level_step):
-        corridor_bottom = min(y + height - 2, level_y + corridor_h)
-        local_level = level_y - y
-        row_columns = np.flatnonzero(silhouette[local_level])
-        if row_columns.size < 6:
-            continue
-        corridor_left = int(row_columns[0] + 2)
-        corridor_right = int(row_columns[-1] - 1)
-        for corridor_y in range(level_y, corridor_bottom):
-            local_row = corridor_y - y
-            row_columns = np.flatnonzero(silhouette[local_row])
-            if row_columns.size >= 6:
-                left = max(corridor_left, int(row_columns[0] + 2))
-                right = min(corridor_right, int(row_columns[-1] - 1))
-                world.tiles[corridor_y, x + left : x + right] = Tile.AIR
-        connector_local_x = corridor_right - 2 if direction > 0 else corridor_left
-        connector_x = x + connector_local_x
-        for connector_y in range(level_y, min(y + height - 2, level_y + level_step + 1)):
-            if silhouette[connector_y - y, connector_local_x]:
-                world.tiles[connector_y, connector_x : connector_x + 2] = Tile.AIR
-        direction *= -1
+    rows = int(_pick(world, 3, 5))
+    rooms_per_row = int(_pick(world, 2, 3))
+    row_height = max(6, (height - 6) // rows)
+    previous_center: tuple[int, int] | None = None
+    for row in range(rows):
+        room_y = y + 3 + row * row_height
+        if room_y + row_height >= y + height - 3:
+            break
+        usable_width = width - 8
+        room_width = max(8, usable_width // rooms_per_row)
+        order = range(rooms_per_row) if row % 2 == 0 else reversed(range(rooms_per_row))
+        for column in order:
+            room_x = x + 4 + column * room_width
+            carved_width = min(room_width + 1, x + width - 3 - room_x)
+            carved_height = min(row_height - 1, y + height - 3 - room_y)
+            _carve_room(
+                world,
+                room_x,
+                room_y,
+                carved_width,
+                carved_height,
+                Tile.LIHZAHRD_BRICK,
+                Wall.LIHZAHRD,
+            )
+            room_center = (room_x + carved_width // 2, room_y + carved_height // 2)
+            if previous_center is not None:
+                _carve_corridor(
+                    world,
+                    previous_center,
+                    room_center,
+                    int(_pick(world, 2, 4)),
+                    Wall.LIHZAHRD,
+                )
+            previous_center = room_center
 
-    chamber_y = y + height - max(7, level_step)
-    chamber_left = x + width // 3
-    chamber_right = x + 2 * width // 3
-    world.tiles[chamber_y : y + height - 3, chamber_left:chamber_right] = Tile.AIR
-    interior = world.tiles[y + 1 : y + height - 1, x + 1 : x + width - 1] == Tile.AIR
-    world.walls[y + 1 : y + height - 1, x + 1 : x + width - 1][interior] = Wall.LIHZAHRD
-    doorway_y = y + height - max(5, level_step)
-    doorway_local_x = int(np.flatnonzero(silhouette[doorway_y - y])[0])
-    world.tiles[
-        doorway_y : y + height - 2,
-        x + doorway_local_x : x + doorway_local_x + 3,
-    ] = Tile.AIR
-    world.walls[
-        doorway_y : y + height - 2,
-        x + doorway_local_x : x + doorway_local_x + 3,
-    ] = Wall.LIHZAHRD
+    chamber_y = y + height - max(8, row_height)
+    chamber_x = x + width // 4
+    chamber_width = width // 2
+    _carve_room(
+        world,
+        chamber_x,
+        chamber_y,
+        chamber_width,
+        y + height - 2 - chamber_y,
+        Tile.LIHZAHRD_BRICK,
+        Wall.LIHZAHRD,
+    )
+    chamber_center = (chamber_x + chamber_width // 2, chamber_y + 3)
+    if previous_center is not None:
+        _carve_corridor(
+            world,
+            previous_center,
+            chamber_center,
+            int(_pick(world, 2, 4)),
+            Wall.LIHZAHRD,
+        )
+
+    door_on_left = center < world.shape[1] // 2
+    door_x = x + 1 if door_on_left else x + width - 3
+    door_y = y + 4
+    world.tiles[door_y : door_y + int(_pick(world, 4, 8)), door_x : door_x + 2] = Tile.AIR
+    world.walls[door_y : door_y + int(_pick(world, 4, 8)), door_x : door_x + 2] = Wall.LIHZAHRD
     _place_marker(world, "Jungle temple", x, y, width, height, "T")
 
 
@@ -1471,54 +1507,34 @@ def final_cleanup(world: GeneratedWorld, rng: np.random.Generator) -> None:
 
 
 def waterfalls(world: GeneratedWorld, rng: np.random.Generator) -> None:
-    """Cut visible sky-lake outlets from a subset of floating islands."""
+    """Place falling water at steep natural surface breaks, not Floating Islands."""
 
-    islands = [marker for marker in world.structures if marker.kind == "Floating island"]
-    if not islands:
+    differences = np.abs(np.diff(world.surface.astype(np.int32)))
+    threshold = int(_pick(world, 3, 14))
+    candidates = np.flatnonzero(differences >= threshold)
+    if candidates.size == 0:
         return
-    selected = rng.permutation(len(islands))[: max(1, (len(islands) + 1) // 2)]
-    for index in selected:
-        marker = islands[int(index)]
-        basin_x = int(
-            np.clip(
-                marker.x + round(marker.width * 0.62),
-                2,
-                world.shape[1] - 3,
-            )
-        )
-        basin_y = max(2, marker.y + int(_pick(world, 2, 5)))
-        basin_half = int(_pick(world, 2, 8))
-        basin_bottom = min(world.shape[0] - 1, basin_y + int(_pick(world, 2, 4)))
-        world.tiles[
-            basin_y:basin_bottom,
-            max(1, basin_x - basin_half) : min(world.shape[1] - 1, basin_x + basin_half + 1),
-        ] = Tile.AIR
-        outlet_width = int(_pick(world, 1, 2))
-        channel_bottom = min(
-            int(world.surface[basin_x]) - 1,
-            marker.y + marker.height + int(_pick(world, 28, 190)),
-        )
-        for stream_x in range(basin_x, min(world.shape[1], basin_x + outlet_width)):
-            world.tiles[basin_y:channel_bottom, stream_x] = Tile.AIR
-            world.liquid_kind[basin_y:channel_bottom, stream_x] = Liquid.WATER
-            world.liquid_amount[basin_y:channel_bottom, stream_x] = 255
-        pool = (
-            world.tiles[
-                basin_y:basin_bottom,
-                max(1, basin_x - basin_half) : min(world.shape[1] - 1, basin_x + basin_half + 1),
-            ]
-            == Tile.AIR
-        )
-        liquid_kind = world.liquid_kind[
-            basin_y:basin_bottom,
-            max(1, basin_x - basin_half) : min(world.shape[1] - 1, basin_x + basin_half + 1),
-        ]
-        liquid_amount = world.liquid_amount[
-            basin_y:basin_bottom,
-            max(1, basin_x - basin_half) : min(world.shape[1] - 1, basin_x + basin_half + 1),
-        ]
-        liquid_kind[pool] = Liquid.WATER
-        liquid_amount[pool] = 255
+    shuffled = rng.permutation(candidates)
+    ranked = shuffled[np.argsort(differences[shuffled], kind="stable")][::-1]
+    count = min(len(ranked), int(_pick(world, 2, 12)))
+    for boundary in ranked[:count]:
+        left_y = int(world.surface[boundary])
+        right_y = int(world.surface[boundary + 1])
+        if left_y < right_y:
+            source_x, fall_x = int(boundary), int(boundary + 1)
+            top, bottom = left_y - 1, right_y
+        else:
+            source_x, fall_x = int(boundary + 1), int(boundary)
+            top, bottom = right_y - 1, left_y
+        top = max(1, top)
+        bottom = min(world.shape[0] - 1, bottom)
+        world.tiles[top:bottom, fall_x] = Tile.AIR
+        world.liquid_kind[top:bottom, fall_x] = Liquid.WATER
+        world.liquid_amount[top:bottom, fall_x] = 255
+        source_y = max(1, int(world.surface[source_x]) - 1)
+        world.tiles[source_y, source_x] = Tile.AIR
+        world.liquid_kind[source_y, source_x] = Liquid.WATER
+        world.liquid_amount[source_y, source_x] = 255
 
 
 def temple_polish(world: GeneratedWorld, rng: np.random.Generator) -> None:
@@ -1564,19 +1580,20 @@ def island_houses(world: GeneratedWorld, rng: np.random.Generator) -> None:
 
 
 def hellforge(world: GeneratedWorld, rng: np.random.Generator) -> None:
-    """Place Hellforges on floors inside generated Underworld cities."""
+    """Place Hellforges on floors inside generated Underworld Ruined Houses."""
 
-    floor = surface_candidates(world.tiles, (Tile.OBSIDIAN_BRICK,))
+    floor = surface_candidates(world.tiles, (Tile.OBSIDIAN_BRICK, Tile.HELLSTONE_BRICK))
     interior = np.zeros(world.shape, dtype=bool)
-    for marker in (item for item in world.structures if item.kind == "Underworld city"):
+    for marker in (item for item in world.structures if item.kind == "Ruined house"):
         x0, x1 = max(1, marker.x), min(world.shape[1] - 1, marker.x + marker.width)
         y0, y1 = max(1, marker.y), min(world.shape[0] - 1, marker.y + marker.height)
         interior[y0:y1, x0:x1] = True
-    candidates = np.argwhere(floor & interior & (np.roll(world.walls, 1, axis=0) == Wall.OBSIDIAN))
+    house_wall = np.isin(np.roll(world.walls, 1, axis=0), (Wall.OBSIDIAN, Wall.HELLSTONE))
+    candidates = np.argwhere(floor & interior & house_wall)
     if candidates.size == 0:
         return
-    city_count = sum(marker.kind == "Underworld city" for marker in world.structures)
-    count = min(len(candidates), max(1, city_count))
+    house_count = sum(marker.kind == "Ruined house" for marker in world.structures)
+    count = min(len(candidates), max(1, house_count))
     chosen = candidates[rng.choice(len(candidates), count, replace=False)]
     world.tiles[chosen[:, 0] - 1, chosen[:, 1]] = Tile.HELLFORGE
 
