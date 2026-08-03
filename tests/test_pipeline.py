@@ -82,11 +82,21 @@ def test_showcase_structures_are_real_world_state() -> None:
         "Floating island",
         "Jungle temple",
         "Pyramid",
-        "Underworld city",
+        "Ruined house",
     } <= marker_kinds
     assert np.any(world.tiles == Tile.OBSIDIAN_BRICK)
     assert np.any(world.tiles == Tile.HELLFORGE)
     assert np.any(world.tiles == Tile.SKY_BRICK)
+    assert np.any(world.tiles == Tile.CLOUD)
+    assert np.any(world.tiles == Tile.RAIN_CLOUD)
+    assert np.any(world.tiles == Tile.GEM_TREE)
+
+    for island in (marker for marker in world.structures if marker.kind == "Floating island"):
+        island_liquid = world.liquid_amount[
+            island.y : island.y + island.height,
+            island.x : island.x + island.width,
+        ]
+        assert not np.any(island_liquid)
 
     rows = np.arange(world.shape[0])[:, None]
     sky_water = (
@@ -99,6 +109,17 @@ def test_showcase_structures_are_real_world_state() -> None:
     pyramid = next(marker for marker in world.structures if marker.kind == "Pyramid")
     pyramid_x = pyramid.x + pyramid.width // 2
     assert pyramid.y > world.surface[pyramid_x]
+    pyramid_tiles = world.tiles[
+        pyramid.y : pyramid.y + pyramid.height,
+        pyramid.x : pyramid.x + pyramid.width,
+    ]
+    passage_columns = np.flatnonzero(np.any(pyramid_tiles == Tile.AIR, axis=0))
+    assert np.ptp(passage_columns) > 4
+
+    aether = next(marker for marker in world.structures if marker.kind == "Aether")
+    aether_x = aether.x + aether.width // 2
+    jungle_x = int(world.metadata["jungle_x"])
+    assert (aether_x < world.shape[1] // 5) == (jungle_x < world.shape[1] // 2)
 
     temple = next(marker for marker in world.structures if marker.kind == "Jungle temple")
     temple_state = np.isin(
@@ -114,15 +135,23 @@ def test_showcase_structures_are_real_world_state() -> None:
         ]
         == Wall.LIHZAHRD
     )
-    assert np.count_nonzero(temple_state[0]) < np.count_nonzero(temple_state[-2])
+    assert np.count_nonzero(temple_state) > temple.width * 3
+    assert np.any(world.tiles == Tile.TRAP)
+    assert np.any(world.tiles == Tile.ALTAR)
 
     lava_level = int(world.metadata["underworld_lava_level"])
     underworld_lava = (world.liquid_kind[lava_level:] == Liquid.LAVA) & (
         world.liquid_amount[lava_level:] > 0
     )
     assert np.count_nonzero(underworld_lava) > world.shape[1]
-    submerged_city = (world.tiles == Tile.OBSIDIAN_BRICK) & (rows >= lava_level)
-    assert np.any(submerged_city)
+    ruined_houses = [marker for marker in world.structures if marker.kind == "Ruined house"]
+    assert ruined_houses
+    assert all(world.shape[1] // 5 < marker.x < world.shape[1] * 4 // 5 for marker in ruined_houses)
+    submerged_house = np.isin(
+        world.tiles,
+        (Tile.OBSIDIAN_BRICK, Tile.HELLSTONE_BRICK),
+    ) & (rows >= lava_level)
+    assert np.any(submerged_house)
 
 
 def test_biome_spread_stops_at_world_boundaries() -> None:

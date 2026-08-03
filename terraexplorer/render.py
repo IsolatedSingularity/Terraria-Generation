@@ -100,6 +100,7 @@ def render_world(
     biome_overlay: bool = False,
     layer_lines: bool = False,
     markers: bool = True,
+    material_texture: bool = True,
 ) -> Image.Image:
     """Render an original sprite-free pixel map."""
 
@@ -121,13 +122,20 @@ def render_world(
     solid = world.tiles != Tile.AIR
     tile_pixels = _TILE_PALETTE[world.tiles].astype(np.float32)
 
-    # Coordinate hash adds subtle, deterministic material texture.
-    yy, xx = np.indices(world.shape, dtype=np.uint32)
-    noise = ((xx * 73856093) ^ (yy * 19349663) ^ world.config.seed_value) & 15
-    texture = 0.91 + noise.astype(np.float32) / 110.0
+    # Coordinate hash adds subtle, deterministic material texture. Diagnostic
+    # atlases can disable it to prevent one-tile texture from becoming false
+    # color noise when a large world is shown at one pixel per tile.
+    texture: float | np.ndarray = 1.0
+    if material_texture:
+        yy, xx = np.indices(world.shape, dtype=np.uint32)
+        noise = ((xx * 73856093) ^ (yy * 19349663) ^ world.config.seed_value) & 15
+        texture = 0.91 + noise.astype(np.float32) / 110.0
     lighting = 1.0 - depth * 0.22
     lighting[world.layers.underworld :] = 0.92
-    shaded = tile_pixels * texture[..., None] * lighting[..., None]
+    if isinstance(texture, np.ndarray):
+        shaded = tile_pixels * texture[..., None] * lighting[..., None]
+    else:
+        shaded = tile_pixels * texture * lighting[..., None]
     pixels[solid] = shaded[solid]
 
     # Crisp top-edge light and bottom-edge shade suggest connected tiles without
@@ -191,7 +199,7 @@ def _draw_marker(draw: ImageDraw.ImageDraw, marker: StructureMarker, scale: int)
         "Jungle temple": "#e0a85a",
         "Floating island": "#9bc6e5",
         "Pyramid": "#e1ba6e",
-        "Underworld city": "#f08a4b",
+        "Ruined house": "#f08a4b",
         "Spider cave": "#cf7f9c",
         "Gem cave": "#67e0d2",
     }

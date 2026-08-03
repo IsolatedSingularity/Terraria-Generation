@@ -18,6 +18,13 @@ from terraexplorer.model import GeneratedWorld
 from terraexplorer.passes import PASS_SPECS, Fidelity
 from terraexplorer.pipeline import generate_world
 from terraexplorer.render import add_title_bar, render_world, save_generation_gif
+from terraexplorer.simulations import (
+    ContainmentStrategy,
+    SimulationGrid,
+    simulate_biome_containment,
+    simulate_catastrophe_chain,
+)
+from terraexplorer.tiles import TILE_STYLES, Tile
 
 ROOT = Path(__file__).resolve().parents[1]
 MEDIA = ROOT / "docs" / "media"
@@ -47,6 +54,10 @@ def build_icon() -> None:
     logo.thumbnail((512, 512), Image.Resampling.LANCZOS)
     logo.save(ASSETS / "terraexplorer_logo.png", optimize=True)
     logo.save(MEDIA / "terraexplorer_logo.png", optimize=True)
+    logo.crop((0, 0, logo.width, 472)).save(
+        MEDIA / "terraexplorer_readme_logo.png",
+        optimize=True,
+    )
     logo.save(
         ASSETS / "terraexplorer.ico",
         sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)],
@@ -60,15 +71,16 @@ def build_world_media() -> None:
     config = WorldConfig(seed="TerraExplorer", evil=Evil.CORRUPTION, hardmode=True)
     save_generation_gif(config, MEDIA / "terraexplorer_generation.gif", scale=4)
 
-    deep_world = generate_world(
+    small_world = generate_world(
         WorldConfig(seed="TerraExplorer Atlas", scale=WorldScale.SMALL, evil=Evil.CORRUPTION)
     )
     overview = render_world(
-        deep_world,
+        small_world,
         scale=1,
         biome_overlay=True,
         layer_lines=True,
         markers=True,
+        material_texture=False,
     )
     overview = overview.resize((1400, 400), Image.Resampling.NEAREST)
     add_title_bar(
@@ -77,75 +89,81 @@ def build_world_media() -> None:
         "Biome tint, layer guides, and original landmark symbols",
     ).save(MEDIA / "biome_overview.png", optimize=True)
 
-    image = render_world(deep_world, scale=1, markers=True)
     studies = (
         (
             "Floating island",
-            "SKY LAKE & HOUSE",
-            "sky brick, reservoir, and waterfall",
-            220,
-            110,
-            28,
-        ),
-        (
-            "Dungeon",
-            "DUNGEON KEEP",
-            "surface tower and descending rooms",
-            170,
-            95,
+            "FLOATING ISLAND",
+            "Cloud base, forest cap, and sky house",
+            "Landmark Study 02",
             0,
         ),
         (
+            "Dungeon",
+            "DUNGEON",
+            "Weathered entrance and branching chambers",
+            "Landmark Study 08",
+            16,
+        ),
+        (
             "Pyramid",
-            "BURIED PYRAMID",
-            "shaft, chamber, and desert shell",
-            260,
-            130,
+            "PYRAMID",
+            "Buried tip, zigzag passage, and treasure room",
+            "Landmark Study 07",
             0,
         ),
         (
             "Aether",
             "AETHER",
-            "gem-ringed cavern and Shimmer pool",
-            260,
-            130,
+            "Outer-fifth cavern, Gem Trees, and Shimmer",
+            "Landmark Study 27",
             0,
         ),
         (
             "Jungle temple",
             "JUNGLE TEMPLE",
-            "sealed brick maze and trap corridors",
-            320,
-            160,
+            "Irregular brick rooms, passages, traps, and altar",
+            "Landmark Study 27",
             0,
         ),
         (
-            "Underworld city",
-            "UNDERWORLD CITY",
-            "obsidian ruins, bridges, and Hellforge",
-            190,
-            105,
+            "Ruined house",
+            "RUINED HOUSE",
+            "Multi-floor Underworld tower and Hellforge",
+            "Landmark Study 24",
             0,
         ),
     )
     cards = []
-    for kind, label, subtitle, crop_width, crop_height, offset_y in studies:
-        matching = [item for item in deep_world.structures if item.kind == kind]
-        marker = (
-            max(matching, key=lambda item: item.width * item.height)
-            if kind == "Underworld city"
-            else matching[0]
+    crop_width, crop_height, scale = 88, 44, 5
+    for kind, label, subtitle, seed, offset_y in studies:
+        landmark_world = generate_world(WorldConfig(seed=seed, evil=Evil.CORRUPTION))
+        image = render_world(
+            landmark_world,
+            scale=scale,
+            markers=False,
+            material_texture=False,
         )
+        matching = [item for item in landmark_world.structures if item.kind == kind]
+        if kind == "Floating island":
+            marker = matching[0]
+        else:
+            marker = max(matching, key=lambda item: item.width * item.height)
         center_x = marker.x + marker.width // 2
         center_y = marker.y + marker.height // 2 + offset_y
         if kind == "Dungeon":
-            center_x = int(deep_world.metadata["dungeon_x"])
-            center_y = int(deep_world.surface[center_x])
-        left = int(np.clip(center_x - crop_width // 2, 0, image.width - crop_width))
-        top = int(np.clip(center_y - crop_height // 2, 0, image.height - crop_height))
-        crop = image.crop((left, top, left + crop_width, top + crop_height))
-        panel = crop.resize((440, 220), Image.Resampling.NEAREST)
-        cards.append(add_title_bar(panel, label, subtitle))
+            center_x = int(landmark_world.metadata["dungeon_x"])
+            center_y = int(landmark_world.surface[center_x]) + offset_y
+        left = int(np.clip(center_x - crop_width // 2, 0, landmark_world.shape[1] - crop_width))
+        top = int(np.clip(center_y - crop_height // 2, 0, landmark_world.shape[0] - crop_height))
+        crop = image.crop(
+            (
+                left * scale,
+                top * scale,
+                (left + crop_width) * scale,
+                (top + crop_height) * scale,
+            )
+        )
+        cards.append(add_title_bar(crop, label, subtitle))
 
     gap = 8
     card_width, card_height = cards[0].size
@@ -278,6 +296,245 @@ def build_spread_animation() -> None:
         optimize=True,
         disposal=2,
     )
+
+
+def _render_simulation_grid(grid: SimulationGrid, scale: int = 3) -> Image.Image:
+    maximum = max(int(tile) for tile in TILE_STYLES)
+    palette = np.zeros((maximum + 1, 3), dtype=np.uint8)
+    for tile, style in TILE_STYLES.items():
+        color = style.color.lstrip("#")
+        palette[int(tile)] = tuple(int(color[index : index + 2], 16) for index in (0, 2, 4))
+    image = Image.fromarray(palette[grid.tiles], mode="RGB")
+    return image.resize((image.width * scale, image.height * scale), Image.Resampling.NEAREST)
+
+
+def build_containment_animation() -> None:
+    strategies = tuple(ContainmentStrategy)
+    results = {
+        strategy: simulate_biome_containment(strategy, seed=20260802) for strategy in strategies
+    }
+    titles = {
+        ContainmentStrategy.OPEN: "OPEN GROUND",
+        ContainmentStrategy.TRENCH: "THREE-TILE TRENCH",
+        ContainmentStrategy.SUNFLOWERS: "SUNFLOWERS",
+        ContainmentStrategy.CHLOROPHYTE: "CHLOROPHYTE CLUSTER",
+    }
+    frames: list[Image.Image] = []
+    gap = 8
+    for frame_index in range(len(results[strategies[0]].frames)):
+        cards = []
+        for strategy in strategies:
+            result = results[strategy]
+            infected = result.infected_counts[frame_index]
+            card = add_title_bar(
+                _render_simulation_grid(result.frames[frame_index]),
+                titles[strategy],
+                f"infected tiles {infected:,} | identical initial geology",
+            )
+            cards.append(card)
+        card_width, card_height = cards[0].size
+        canvas = Image.new(
+            "RGB",
+            (card_width * 2 + gap, card_height * 2 + gap),
+            BG,
+        )
+        for index, card in enumerate(cards):
+            canvas.paste(
+                card,
+                ((index % 2) * (card_width + gap), (index // 2) * (card_height + gap)),
+            )
+        frames.append(canvas)
+    frames[0].save(
+        MEDIA / "containment_lab.gif",
+        save_all=True,
+        append_images=frames[1:],
+        duration=[620] * (len(frames) - 1) + [1800],
+        loop=0,
+        optimize=True,
+        disposal=2,
+    )
+
+
+def build_catastrophe_animation() -> None:
+    world = generate_world(WorldConfig(seed="Catastrophe Laboratory", evil=Evil.CRIMSON))
+    simulation_steps = 30
+    result = simulate_catastrophe_chain(world, seed=20260802, steps=simulation_steps)
+    crop_width, crop_height, scale = 104, 78, 4
+    left = int(np.clip(result.impact_x - crop_width // 2, 0, world.shape[1] - crop_width))
+    top = int(np.clip(result.impact_y - 12, 0, world.shape[0] - crop_height))
+    frames: list[Image.Image] = []
+    for index, state in enumerate(result.frames):
+        image = render_world(
+            state,
+            scale=scale,
+            markers=False,
+            material_texture=False,
+        ).crop(
+            (
+                left * scale,
+                top * scale,
+                (left + crop_width) * scale,
+                (top + crop_height) * scale,
+            )
+        )
+        if index == 0:
+            title = "PREPARED CROSS-SECTION"
+            subtitle = "four liquids and granular strata before impact"
+        elif index == 1:
+            title = "METEOR IMPACT"
+            subtitle = "protected-site selection, crater, and Meteorite rim"
+        else:
+            title = "CHAIN REACTION"
+            captured_step = (index - 1) * max(1, simulation_steps // 6)
+            products = sum(
+                np.count_nonzero(state.tiles == tile)
+                for tile in (
+                    Tile.OBSIDIAN,
+                    Tile.HONEY_BLOCK,
+                    Tile.CRISPY_HONEY_BLOCK,
+                    Tile.AETHERIUM,
+                )
+            )
+            subtitle = f"liquid step {captured_step} | {products:,} contact tiles"
+        frames.append(add_title_bar(image, title, subtitle))
+    frames[0].save(
+        MEDIA / "catastrophe_chain.gif",
+        save_all=True,
+        append_images=frames[1:],
+        duration=[520] * (len(frames) - 1) + [1800],
+        loop=0,
+        optimize=True,
+        disposal=2,
+    )
+
+
+def build_surface_diagnostic() -> None:
+    worlds = [generate_world(WorldConfig(seed=f"surface-profile-{index}")) for index in range(4)]
+    canvas = Image.new("RGB", (1000, 360), BG)
+    draw = ImageDraw.Draw(canvas)
+    draw.text((48, 28), "Surface profiles", fill=TEXT, font=font(28, True))
+    draw.text(
+        (48, 68),
+        "Four deterministic seeds | active TerraExplorer terrain pass",
+        fill=MUTED,
+        font=font(16),
+    )
+    x0, y0, x1, y1 = 70, 112, 950, 318
+    draw.rectangle((x0, y0, x1, y1), outline="#34445e", width=2)
+    colors = (ACCENT, GOLD, "#8fb4ef", "#d58bb5")
+    minimum = min(int(world.surface.min()) for world in worlds) - 2
+    maximum = max(int(world.surface.max()) for world in worlds) + 2
+    for index, (world, color) in enumerate(zip(worlds, colors, strict=True)):
+        points = []
+        for x, surface_y in enumerate(world.surface):
+            px = x0 + round((x1 - x0) * x / (world.shape[1] - 1))
+            py = y0 + round((y1 - y0) * (int(surface_y) - minimum) / max(1, maximum - minimum))
+            points.append((px, py))
+        draw.line(points, fill=color, width=3)
+        draw.text((x0 + index * 210, 326), f"seed {index + 1}", fill=color, font=font(13, True))
+    canvas.save(MEDIA / "surface_profiles.png", optimize=True)
+
+
+def build_cave_diagnostic() -> None:
+    world = generate_world(WorldConfig(seed="Cave Diagnostic"))
+    edges = np.linspace(world.layers.world_surface, world.layers.underworld, 11).astype(int)
+    values = [
+        float(np.mean(world.tiles[edges[index] : edges[index + 1]] == Tile.AIR))
+        for index in range(len(edges) - 1)
+    ]
+    canvas = Image.new("RGB", (1000, 500), BG)
+    draw = ImageDraw.Draw(canvas)
+    draw.text((48, 28), "Cave void fraction by depth", fill=TEXT, font=font(28, True))
+    draw.text(
+        (48, 68),
+        "Air tiles per depth band | one deterministic Preview world",
+        fill=MUTED,
+        font=font(16),
+    )
+    maximum = max(values)
+    for index, value in enumerate(values):
+        y = 112 + index * 34
+        label = f"{edges[index]:03d}-{edges[index + 1]:03d}"
+        draw.text((48, y + 5), label, fill=MUTED, font=font(13, True))
+        draw.rounded_rectangle((155, y, 900, y + 24), radius=6, fill=PANEL)
+        width = round(745 * value / max(maximum, 0.001))
+        draw.rounded_rectangle((155, y, 155 + width, y + 24), radius=6, fill=ACCENT)
+        draw.text((912, y + 4), f"{value:.1%}", fill=TEXT, font=font(13, True))
+    canvas.save(MEDIA / "cave_density.png", optimize=True)
+
+
+def build_ore_diagnostic() -> None:
+    ores = (
+        Tile.COPPER,
+        Tile.TIN,
+        Tile.IRON,
+        Tile.LEAD,
+        Tile.SILVER,
+        Tile.TUNGSTEN,
+        Tile.GOLD,
+        Tile.PLATINUM,
+    )
+    worlds = [generate_world(WorldConfig(seed=f"ore-diagnostic-{index}")) for index in range(8)]
+    edges = np.linspace(worlds[0].layers.world_surface, worlds[0].layers.underworld, 9).astype(int)
+    counts = np.zeros((len(edges) - 1, len(ores)), dtype=np.int64)
+    for world in worlds:
+        for row in range(len(edges) - 1):
+            band = world.tiles[edges[row] : edges[row + 1]]
+            for column, ore in enumerate(ores):
+                counts[row, column] += int(np.count_nonzero(band == ore))
+    canvas = Image.new("RGB", (1000, 520), BG)
+    draw = ImageDraw.Draw(canvas)
+    draw.text((48, 28), "Ore placement by depth", fill=TEXT, font=font(28, True))
+    draw.text(
+        (48, 68),
+        "Eight seeds aggregated | raw tile counts, no interpolation",
+        fill=MUTED,
+        font=font(16),
+    )
+    grid_x, grid_y = 132, 116
+    cell_w, cell_h = 100, 40
+    maximum = max(1, int(counts.max()))
+    for column, ore in enumerate(ores):
+        label = TILE_STYLES[ore].name
+        label_width = draw.textlength(label, font=font(11, True))
+        draw.text(
+            (grid_x + column * cell_w + (cell_w - label_width) / 2, 94),
+            label,
+            fill=MUTED,
+            font=font(11, True),
+        )
+    for row in range(counts.shape[0]):
+        draw.text(
+            (48, grid_y + row * cell_h + 12),
+            f"{edges[row]:03d}-{edges[row + 1]:03d}",
+            fill=MUTED,
+            font=font(11, True),
+        )
+        for column in range(counts.shape[1]):
+            value = int(counts[row, column])
+            intensity = math.sqrt(value / maximum)
+            base = np.array((19, 29, 46), dtype=float)
+            accent = np.array((99, 211, 193), dtype=float)
+            color = tuple(np.round(base * (1.0 - intensity) + accent * intensity).astype(int))
+            x = grid_x + column * cell_w
+            y = grid_y + row * cell_h
+            draw.rectangle((x, y, x + cell_w - 4, y + cell_h - 4), fill=color)
+            if value:
+                label = str(value)
+                label_width = draw.textlength(label, font=font(12, True))
+                draw.text(
+                    (x + (cell_w - 4 - label_width) / 2, y + 9),
+                    label,
+                    fill=TEXT,
+                    font=font(12, True),
+                )
+    canvas.save(MEDIA / "ore_depth.png", optimize=True)
+
+
+def build_active_diagnostics() -> None:
+    build_surface_diagnostic()
+    build_cave_diagnostic()
+    build_ore_diagnostic()
 
 
 def _depth_name(world: GeneratedWorld, tile_y: int) -> str:
@@ -461,7 +718,10 @@ def main() -> None:
     build_seed_comparison()
     build_biome_study()
     build_spread_animation()
+    build_containment_animation()
+    build_catastrophe_animation()
     build_depth_descent()
+    build_active_diagnostics()
     build_performance_chart()
     build_fidelity_chart()
     print(f"Wrote TerraExplorer media to {MEDIA}")
