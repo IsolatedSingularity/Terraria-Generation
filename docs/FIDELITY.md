@@ -76,6 +76,17 @@ Guide.
 - Controlled laboratories compare biome-containment strategies and couple a
   meteor impact to granular motion, four liquids, and contact products.
 
+## Open problems
+
+- Liquid movement conserves quantity and resolves modeled contacts, but does not
+  reproduce Terraria's full settling cadence, pressure behavior, or update order.
+- Biome spread compares interventions under a deterministic batch scheduler; it
+  is not an in-game tick-for-tick infection simulator.
+- Secret-seed world branches, richer structure variants, and smaller-scale
+  biome-transition details remain approximations.
+- Small-world output needs an independent high-resolution validation suite in
+  addition to the deterministic and invariant tests used by the active runtime.
+
 ## References
 
 - [Vanilla World Generation Steps](https://github.com/tModLoader/tModLoader/wiki/Vanilla-World-Generation-Steps)

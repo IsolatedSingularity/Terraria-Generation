@@ -60,6 +60,27 @@ def test_world_evil_is_a_real_generation_choice(evil: Evil, present: Biome, abse
     assert not np.any(world.biomes == absent)
 
 
+def test_researched_biome_geometry_is_present_in_generated_world() -> None:
+    world = generate_world(WorldConfig(seed="researched-landscape", evil=Evil.CRIMSON))
+    midpoint = world.shape[1] // 2
+    snow_x = int(world.metadata["snow_x"])
+    jungle_x = int(world.metadata["jungle_x"])
+    desert_x = int(world.metadata["desert_x"])
+
+    assert (snow_x < midpoint) != (jungle_x < midpoint)
+    assert (desert_x < midpoint) == (jungle_x < midpoint)
+
+    surface_width = np.count_nonzero(world.biomes[world.layers.world_surface + 4] == Biome.SNOW)
+    underground_width = np.count_nonzero(world.biomes[world.layers.rock_layer + 20] == Biome.SNOW)
+    assert surface_width > underground_width
+
+    jungle_band = world.tiles[
+        world.layers.rock_layer : world.layers.underworld,
+        jungle_x - 20 : jungle_x + 20,
+    ]
+    assert np.count_nonzero(jungle_band == Tile.MUD) > 100
+
+
 def test_hardmode_adds_hallow_and_a_post_generation_pass() -> None:
     world = generate_world(WorldConfig(seed="hardmode", hardmode=True))
 

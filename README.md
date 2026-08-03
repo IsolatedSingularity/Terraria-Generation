@@ -74,6 +74,10 @@ Preview worlds are quick `240 x 140` experiments. Small worlds use the much
 deeper `4200 x 1200` grid. Windows packaging produces
 `dist/TerraExplorer.exe`.
 
+The full biome overview is the only README figure rendered from a Small world.
+Every other map, study, and animation below is an actual Preview world—or an
+exact crop from one—using the same material renderer as the hero animation.
+
 ## World-rule comparison
 
 > One seed, three futures.
@@ -89,13 +93,14 @@ The Dryad would have opinions. TerraExplorer keeps the arrays and tile counts.
 
 ## Landmark generation
 
-> Six places where a recall potion belongs on the packing list.
+> Field notes from six places the Guide neglected to mention.
 
 ![TerraExplorer landmark atlas](docs/media/terraexplorer_world.png)
 
-The landmark atlas uses exact-size crops from `240 x 140` Preview worlds, like
-the hero animation, so each structure remains legible. It shows six distinct
-generated systems:
+The landmark atlas shows six complete `240 x 140` Preview worlds, matching the
+hero animation rather than placing tiny crops on a synthetic background. A gold
+frame identifies each structure while leaving its coast, biome, depth, and
+surrounding caves visible.
 
 | Above and below | What is modeled |
 |---|---|
@@ -106,9 +111,10 @@ generated systems:
 | Jungle Temple | Irregular Lihzahrd-brick rooms, passages, traps, and a deep altar chamber |
 | Ruined House | An individual multi-floor obsidian or Hellstone-brick tower, sometimes flooded by lava |
 
-The overview below puts those improved landmarks back into a full `4200 x 1200`
-Small world. The biome tint and layer guides are diagnostic overlays; the
-symbols are original map marks rather than borrowed sprites.
+The overview below is the single deliberate exception to the Preview-world
+rule. It puts those improved landmarks into a full `4200 x 1200` Small world.
+The biome tint and layer guides are diagnostic overlays; the symbols are
+original map marks rather than borrowed sprites.
 
 ![Biome, layer, and landmark overview](docs/media/biome_overview.png)
 
@@ -118,11 +124,13 @@ symbols are original map marks rather than borrowed sprites.
 
 ![Six independently generated biome studies](docs/media/biome_atlas.png)
 
-These are six independent, biome-centered crops rather than the same three
-landmarks repeated under different colors. Forest exposes open surface caves;
-Snow forms ice shelves; Desert layers sand, hardened sand, and sandstone;
-Jungle packs mud and vines around denser cavities; Corruption branches through
-ebonstone; Crimson joins rounded chambers through a descending spine.
+These are six independent crops from generated Preview worlds rather than the
+same landmarks repeated under different colors. Forest exposes open surface
+caves; Snow forms a narrowing underground wedge opposite the Jungle; Desert
+places dunes over an oval, ant-hive-like Underground Desert; Jungle packs mud
+and vines around larger Cavern openings. Corruption descends in straighter
+chasms that connect near their bases, while Crimson enters on slants and links
+rounded chambers through branching passages.
 
 ## Biome evolution
 
@@ -141,13 +149,14 @@ materials, and does not wrap across world boundaries.
 
 ![Four biome-containment strategies under the same starting conditions](docs/media/containment_lab.gif)
 
-This controlled experiment gives Corruption the same geology and deterministic
-random stream under four strategies: no barrier, a three-tile trench,
-Sunflowers, and Chlorophyte. Spread can reach host material up to three tiles
-away and surface attempts are weighted six times more heavily than underground
-attempts. The animation reports infected tile counts and the amount that crosses
-the marked containment line, making the intervention rather than the seed the
-independent variable.
+This controlled experiment starts from one generated Preview world and gives
+Corruption the same terrain, caves, structures, and deterministic random stream
+under four strategies: no barrier, a three-tile trench, Sunflowers, and
+Chlorophyte. The gold line marks the protected-side boundary. Spread can reach
+host material up to three tiles away and surface attempts are weighted six times
+more heavily than underground attempts. The animation reports infected tile
+counts and protected-side crossings, making the intervention rather than the
+seed the independent variable.
 
 ## Catastrophe chain-reaction simulation
 
@@ -156,11 +165,13 @@ independent variable.
 ![Meteor impact driving granular and liquid interactions](docs/media/catastrophe_chain.gif)
 
 A constrained meteor site is selected away from spawn and protected landmark
-columns. The impact excavates a crater and meteorite rim, releases Sand and Silt,
-and drives conservative liquid motion through a prepared cross-section. Water,
-Lava, Honey, and Shimmer then form Obsidian, Honey Block, Crispy Honey Block,
-and Aetherium Block contacts. This is a deterministic educational laboratory,
-not a claim to reproduce Terraria's frame-by-frame liquid engine.
+columns in a generated Preview world. Four irregular pools are carved into its
+existing cavern geology and connected by narrow fissures—there is no rectangular
+test chamber. The impact excavates a crater and Meteorite rim, releases Sand and
+Silt, and drives conservative Water, Lava, Honey, and Shimmer motion. Their
+contacts form Obsidian, Honey Block, Crispy Honey Block, and Aetherium Block.
+This is a deterministic educational laboratory, not a claim to reproduce
+Terraria's frame-by-frame liquid engine.
 
 ## World layers
 
@@ -168,14 +179,29 @@ not a claim to reproduce Terraria's frame-by-frame liquid engine.
 
 ![Animated descent from the surface to the Underworld](docs/media/depth_descent.gif)
 
-This descent travels through the snowy Dungeon coast of one `4200 x 1200`
-world. Its fixed route keeps the beach, ocean edge, Snow biome, and Dungeon in
-view before following their caves into the Underworld. It has no decorative
-title competing with the terrain: a compact live depth label stays over the map,
-while the separate gauge marks Space, Surface, Underground, Rock, Deep Caverns,
-Underworld, and Bottom with intermediate ticks.
+This is a vertical window through one complete `240 x 140` Preview world. The
+camera keeps the full width visible while it moves from surface hills and biome
+mouths through smaller Underground tunnels, larger Cavern voids, and the lava
+terrain and Ruined Houses of the Underworld. The live title reports the current
+layer and depth without replacing the generated terrain with a schematic gauge.
 
-It is a longer trip than the preview used to imply. Bring rope.
+It is still a long trip. Bring rope.
+
+## Generated-world studies
+
+> The plot is the world.
+
+These diagnostics no longer turn the runtime into line charts, bars, or noisy
+heatmaps. Every panel is a complete generated Preview world or an exact tile
+crop from one. The landscape studies show coast-to-coast biome relationships;
+the cave studies compare surface, Snow, Underground Desert, and Jungle geology;
+the ore studies mark actual generated veins at their real depths.
+
+![Four generated Preview-world landscape studies](docs/media/surface_profiles.png)
+
+![Generated cave and biome cross-sections](docs/media/cave_density.png)
+
+![Actual generated ore veins at their world depths](docs/media/ore_depth.png)
 
 ## Data model
 
@@ -232,6 +258,25 @@ Ruined Houses in the central Underworld. Remaining approximations are listed
 plainly in the [fidelity inventory](docs/FIDELITY.md). Data boundaries and
 extension rules live in the [architecture guide](docs/ARCHITECTURE.md).
 
+The landscape rules were checked against the public Terraria Wiki descriptions
+of [world generation](https://terraria.wiki.gg/wiki/World_generation), the
+[Underground Desert](https://terraria.wiki.gg/wiki/Underground_Desert),
+[Corruption chasms](https://terraria.wiki.gg/wiki/Chasm),
+[Floating Islands](https://terraria.wiki.gg/wiki/Floating_Island), the
+[Tundra](https://terraria.wiki.gg/wiki/Tundra), and the
+[Jungle](https://terraria.wiki.gg/wiki/Jungle). TerraExplorer models their
+visible relationships with original algorithms; it does not claim exact world
+parity.
+
+### Open problems
+
+Liquid transfer is conservative but does not yet model Terraria's complete
+settling cadence or pressure behavior. Biome spread is a controlled batch model,
+not an in-game tick scheduler. Secret-seed branches, more structure variants,
+better biome-transition microterrain, and independent high-resolution validation
+of the Small-world generator remain useful next experiments. The fidelity
+inventory distinguishes those limits from completed modeled passes.
+
 `Engine/`, `Code/`, and `Advanced/` are a labeled research archive. They are
 not part of the runtime package.
 
@@ -256,19 +301,6 @@ python -m scripts.capture_gui  # requires a visible Windows desktop
 CI tests Python 3.11, 3.12, and 3.13 on Windows and Ubuntu. Windows release
 packaging builds `TerraExplorer.exe`. See [CONTRIBUTING.md](CONTRIBUTING.md)
 and [CHANGELOG.md](CHANGELOG.md) before sending a patch.
-
-<details>
-<summary><strong>Generation diagnostics</strong></summary>
-
-These clean diagnostics regenerate from the active TerraExplorer runtime. They
-compare generated surface profiles, Cave-layer void fractions, and Ore-layer
-placement without relying on the legacy research archive.
-
-| Surface profiles | Cave void fraction | Ore placement by depth |
-|---|---|---|
-| ![Generated surface profiles](docs/media/surface_profiles.png) | ![Generated cave void fraction](docs/media/cave_density.png) | ![Generated ore placement by depth](docs/media/ore_depth.png) |
-
-</details>
 
 ## Legal
 

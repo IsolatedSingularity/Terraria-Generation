@@ -367,15 +367,26 @@ def wavy_caves(world: GeneratedWorld, rng: np.random.Generator) -> None:
 def ice_biome(world: GeneratedWorld, rng: np.random.Generator) -> None:
     del rng
     center = int(world.metadata["snow_x"])
-    half = int(_pick(world, 24, 430))
-    x0, x1 = _band(world, center, half)
-    region = world.tiles[:, x0:x1]
-    region[region == Tile.DIRT] = Tile.SNOW
-    region[region == Tile.STONE] = Tile.ICE
-    region[region == Tile.GRASS] = Tile.SNOW
-    rows = np.arange(world.shape[0])[:, None]
-    mask = rows >= world.surface[None, x0:x1]
-    world.biomes[:, x0:x1][mask] = Biome.SNOW
+    surface_half = int(_pick(world, 27, 470))
+    deep_half = int(surface_half * 0.62)
+    bottom = world.layers.underworld
+    for y in range(max(1, int(world.surface.min())), bottom):
+        depth = np.clip(
+            (y - world.layers.world_surface)
+            / max(1, world.layers.underworld - world.layers.world_surface),
+            0.0,
+            1.0,
+        )
+        half = round(surface_half * (1.0 - depth) + deep_half * depth)
+        x0, x1 = _band(world, center, half)
+        columns = np.arange(x0, x1)
+        below_surface = y >= world.surface[columns]
+        row = world.tiles[y, x0:x1]
+        dirt = below_surface & np.isin(row, (Tile.DIRT, Tile.GRASS))
+        stone = below_surface & (row == Tile.STONE)
+        row[dirt] = Tile.SNOW
+        row[stone] = Tile.ICE
+        world.biomes[y, x0:x1][below_surface] = Biome.SNOW
 
 
 def grass(world: GeneratedWorld, rng: np.random.Generator) -> None:
@@ -390,7 +401,7 @@ def jungle(world: GeneratedWorld, rng: np.random.Generator) -> None:
     half = int(_pick(world, 28, 520))
     x0, x1 = _band(world, center, half)
     region = world.tiles[:, x0:x1]
-    region[np.isin(region, (Tile.DIRT, Tile.GRASS))] = Tile.MUD
+    region[np.isin(region, (Tile.DIRT, Tile.GRASS, Tile.STONE))] = Tile.MUD
     rows = np.arange(world.shape[0])[:, None]
     mask = (rows >= world.surface[None, x0:x1]) & (rows < world.layers.underworld)
     world.biomes[:, x0:x1][mask] = Biome.JUNGLE
@@ -717,6 +728,7 @@ def evil_biome(world: GeneratedWorld, rng: np.random.Generator) -> None:
     world.biomes[:, x0:x1][mask] = biome_id
 
     if world.config.evil is Evil.CORRUPTION:
+        chasm_x = (center - half // 2, center + half // 3)
         for offset in (-half // 2, half // 3):
             x = center + offset
             stamp_walk(
@@ -742,9 +754,21 @@ def evil_biome(world: GeneratedWorld, rng: np.random.Generator) -> None:
                 (float(rng.choice((-1.2, 1.2))), 0.1),
                 _CARVABLE,
             )
+        connection_y = min(
+            world.layers.underworld - 8,
+            world.layers.rock_layer + int(_pick(world, 18, 130)),
+        )
+        _carve_corridor(
+            world,
+            (chasm_x[0], connection_y),
+            (chasm_x[1], connection_y),
+            int(_pick(world, 3, 7)),
+            Wall.NONE,
+        )
     else:
         bulbs = int(_pick(world, 4, 13))
         previous: tuple[int, int] | None = None
+        first_chamber: tuple[int, int] | None = None
         for index in range(bulbs):
             x = int(center + rng.integers(-half, half + 1))
             y = int(
@@ -753,6 +777,8 @@ def evil_biome(world: GeneratedWorld, rng: np.random.Generator) -> None:
             )
             rx, ry = tuple(_pick(world, (7, 5), (28, 20)))
             stamp_ellipse(world.tiles, x, y, int(rx), int(ry), Tile.AIR, _CARVABLE)
+            if first_chamber is None:
+                first_chamber = (x, y)
             if previous is not None:
                 px, py = previous
                 stamp_walk(
@@ -770,6 +796,26 @@ def evil_biome(world: GeneratedWorld, rng: np.random.Generator) -> None:
                     _CARVABLE,
                 )
             previous = (x, y)
+        if first_chamber is not None:
+            first_x, first_y = first_chamber
+            entry_direction = -1 if first_x >= center else 1
+            entry_x = int(np.clip(first_x + entry_direction * half // 2, x0 + 3, x1 - 4))
+            entry_y = max(2, int(world.surface[entry_x]) - 1)
+            length = max(abs(first_x - entry_x), abs(first_y - entry_y)) + 1
+            for x_value, y_value in zip(
+                np.linspace(entry_x, first_x, length),
+                np.linspace(entry_y, first_y, length),
+                strict=True,
+            ):
+                stamp_ellipse(
+                    world.tiles,
+                    round(x_value),
+                    round(y_value),
+                    int(_pick(world, 3, 8)),
+                    int(_pick(world, 2, 5)),
+                    Tile.AIR,
+                    _CARVABLE,
+                )
 
     fringe_length = int(_pick(world, 18, 160))
     for side, start_x in ((-1, x0), (1, x1 - 1)):

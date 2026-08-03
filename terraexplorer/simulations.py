@@ -9,8 +9,9 @@ from enum import StrEnum
 import numpy as np
 import numpy.typing as npt
 
-from terraexplorer.config import WorldScale
+from terraexplorer.config import Evil, WorldConfig, WorldScale
 from terraexplorer.model import GeneratedWorld
+from terraexplorer.pipeline import generate_world
 from terraexplorer.tiles import Biome, Liquid, Tile, Wall
 
 
@@ -23,24 +24,13 @@ class ContainmentStrategy(StrEnum):
     CHLOROPHYTE = "chlorophyte"
 
 
-@dataclass(slots=True)
-class SimulationGrid:
-    """Compact tile and biome state used by controlled experiments."""
-
-    tiles: npt.NDArray[np.uint8]
-    biomes: npt.NDArray[np.uint8]
-    surface: npt.NDArray[np.int16]
-
-    def clone(self) -> SimulationGrid:
-        return SimulationGrid(self.tiles.copy(), self.biomes.copy(), self.surface.copy())
-
-
 @dataclass(frozen=True, slots=True)
 class ContainmentResult:
     strategy: ContainmentStrategy
-    frames: tuple[SimulationGrid, ...]
+    frames: tuple[GeneratedWorld, ...]
     infected_counts: tuple[int, ...]
     barrier_x: int
+    spread_direction: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,90 +55,99 @@ _VULNERABLE = (
 )
 
 
-def _containment_baseline(seed: int, width: int, height: int) -> SimulationGrid:
-    rng = np.random.default_rng(seed)
-    columns = np.arange(width)
-    surface = (
-        round(height * 0.18)
-        + np.sin(columns / 13.0) * 2.0
-        + np.sin(columns / 31.0) * 1.5
-        + rng.normal(0.0, 0.35, width)
-    ).astype(np.int16)
-    rows = np.arange(height)[:, None]
-    tiles = np.full((height, width), Tile.STONE, dtype=np.uint8)
-    tiles[rows < surface[None, :]] = Tile.AIR
-    dirt = (rows >= surface[None, :]) & (rows < surface[None, :] + round(height * 0.20))
-    tiles[dirt] = Tile.DIRT
-    for x, surface_y in enumerate(surface):
-        tiles[int(surface_y), x] = Tile.GRASS
+def _containment_baseline(seed: int | str) -> tuple[GeneratedWorld, int, int]:
+    """Generate the actual Preview world used by every containment strategy."""
 
-    desert = slice(round(width * 0.38), round(width * 0.56))
-    jungle = slice(round(width * 0.72), round(width * 0.92))
-    tiles[:, desert][np.isin(tiles[:, desert], (Tile.DIRT, Tile.GRASS))] = Tile.SAND
-    tiles[:, jungle][tiles[:, jungle] == Tile.DIRT] = Tile.MUD
-    tiles[:, jungle][tiles[:, jungle] == Tile.GRASS] = Tile.JUNGLE_GRASS
-    biomes = np.full((height, width), Biome.FOREST, dtype=np.uint8)
-    biomes[rows < surface[None, :]] = Biome.SKY
-
-    source_x1 = max(10, round(width * 0.30))
-    source = (columns[None, :] < source_x1) & (rows >= surface[None, :])
-    source &= np.isin(tiles, _VULNERABLE)
-    grass = np.isin(tiles, (Tile.GRASS, Tile.JUNGLE_GRASS))
-    tiles[source & grass] = Tile.CORRUPT_GRASS
-    tiles[source & ~grass] = Tile.EBONSTONE
-    biomes[source] = Biome.CORRUPTION
-    return SimulationGrid(tiles, biomes, surface)
+    world = generate_world(WorldConfig(seed=seed, evil=Evil.CORRUPTION))
+    infected = (world.biomes == Biome.CORRUPTION) & np.isin(
+        world.tiles, (Tile.EBONSTONE, Tile.CORRUPT_GRASS)
+    )
+    infected_columns = np.flatnonzero(np.any(infected, axis=0))
+    spawn_x = int(world.metadata.get("spawn_x", world.shape[1] // 2))
+    evil_x = int(world.metadata.get("evil_x", infected_columns.mean()))
+    if evil_x < spawn_x:
+        spread_direction = 1
+        frontier = int(infected_columns[infected_columns < spawn_x].max(initial=evil_x))
+        barrier_x = min(spawn_x - 7, frontier + 5)
+    else:
+        spread_direction = -1
+        right_columns = infected_columns[infected_columns > spawn_x]
+        frontier = int(right_columns.min(initial=evil_x))
+        barrier_x = max(spawn_x + 7, frontier - 5)
+    barrier_x = int(np.clip(barrier_x, 8, world.shape[1] - 9))
+    return world, barrier_x, spread_direction
 
 
 def _install_containment(
-    grid: SimulationGrid, strategy: ContainmentStrategy, barrier_x: int
+    world: GeneratedWorld, strategy: ContainmentStrategy, barrier_x: int
 ) -> None:
-    height, width = grid.tiles.shape
+    height, width = world.tiles.shape
     if strategy is ContainmentStrategy.TRENCH:
         x0, x1 = max(1, barrier_x - 1), min(width - 1, barrier_x + 2)
-        grid.tiles[:, x0:x1] = Tile.AIR
-        grid.biomes[:, x0:x1] = Biome.FOREST
+        world.tiles[:, x0:x1] = Tile.AIR
+        world.walls[:, x0:x1] = Wall.NONE
+        world.liquid_amount[:, x0:x1] = 0
+        world.liquid_kind[:, x0:x1] = Liquid.NONE
+        world.biomes[:, x0:x1] = Biome.FOREST
     elif strategy is ContainmentStrategy.SUNFLOWERS:
         for x in range(max(1, barrier_x - 4), min(width - 1, barrier_x + 5), 2):
-            y = int(grid.surface[x])
+            y = int(world.surface[x])
             if y > 0:
-                grid.tiles[y - 1, x] = Tile.FLOWER
+                world.tiles[y - 1, x] = Tile.FLOWER
     elif strategy is ContainmentStrategy.CHLOROPHYTE:
-        center_y = round(height * 0.62)
+        center_y = _chlorophyte_center_y(world, barrier_x)
+        world.metadata["containment_chlorophyte_y"] = center_y
         cluster = ((0, 0), (-1, 0), (1, 0), (0, -1), (0, 1))
         for dx, dy in cluster:
-            grid.tiles[center_y + dy, barrier_x + dx] = Tile.CHLOROPHYTE
+            world.tiles[center_y + dy, barrier_x + dx] = Tile.CHLOROPHYTE
+
+
+def _chlorophyte_center_y(world: GeneratedWorld, barrier_x: int) -> int:
+    infected_y, infected_x = np.nonzero(
+        (world.biomes == Biome.CORRUPTION)
+        & np.isin(world.tiles, (Tile.EBONSTONE, Tile.CORRUPT_GRASS))
+    )
+    if not len(infected_y):
+        return (world.layers.rock_layer + world.layers.underworld) // 2
+    distance = np.abs(infected_x - barrier_x)
+    frontier_y = infected_y[distance <= distance.min() + 3]
+    return int(np.clip(np.median(frontier_y), 12, world.shape[0] - 13))
 
 
 def _containment_protection(
-    grid: SimulationGrid,
+    world: GeneratedWorld,
     strategy: ContainmentStrategy,
     barrier_x: int,
 ) -> npt.NDArray[np.bool_]:
-    protected = np.zeros(grid.tiles.shape, dtype=bool)
+    protected = np.zeros(world.tiles.shape, dtype=bool)
     if strategy is ContainmentStrategy.SUNFLOWERS:
-        for x in range(max(1, barrier_x - 4), min(grid.tiles.shape[1] - 1, barrier_x + 5), 2):
-            y = int(grid.surface[x])
-            protected[y : min(grid.tiles.shape[0], y + 3), x] = True
+        for x in range(max(1, barrier_x - 4), min(world.tiles.shape[1] - 1, barrier_x + 5), 2):
+            y = int(world.surface[x])
+            protected[y : min(world.tiles.shape[0], y + 3), x] = True
     elif strategy is ContainmentStrategy.CHLOROPHYTE:
-        center_y = round(grid.tiles.shape[0] * 0.62)
-        yy, xx = np.ogrid[: grid.tiles.shape[0], : grid.tiles.shape[1]]
+        center_y = int(
+            world.metadata.get(
+                "containment_chlorophyte_y",
+                _chlorophyte_center_y(world, barrier_x),
+            )
+        )
+        yy, xx = np.ogrid[: world.tiles.shape[0], : world.tiles.shape[1]]
         protected = (xx - barrier_x) ** 2 + (yy - center_y) ** 2 <= 10**2
     return protected
 
 
 def _advance_containment(
-    grid: SimulationGrid,
+    world: GeneratedWorld,
     strategy: ContainmentStrategy,
     barrier_x: int,
     rng: np.random.Generator,
     attempts: int,
 ) -> None:
-    infected = (grid.biomes == Biome.CORRUPTION) & np.isin(
-        grid.tiles, (Tile.EBONSTONE, Tile.CORRUPT_GRASS)
+    infected = (world.biomes == Biome.CORRUPTION) & np.isin(
+        world.tiles, (Tile.EBONSTONE, Tile.CORRUPT_GRASS)
     )
-    vulnerable_grid = np.isin(grid.tiles, _VULNERABLE)
-    near_vulnerable = np.zeros(grid.tiles.shape, dtype=bool)
+    vulnerable_grid = np.isin(world.tiles, _VULNERABLE)
+    near_vulnerable = np.zeros(world.tiles.shape, dtype=bool)
     for dy in range(-3, 4):
         for dx in range(-3, 4):
             if dy or dx:
@@ -160,7 +159,7 @@ def _advance_containment(
     sources = np.argwhere(infected & near_vulnerable)
     if not len(sources):
         return
-    surface_limit = grid.surface[sources[:, 1]] + 4
+    surface_limit = world.surface[sources[:, 1]] + 4
     weights = np.where(sources[:, 0] <= surface_limit, 6.0, 1.0)
     weights /= weights.sum()
     chosen = sources[rng.choice(len(sources), size=attempts, replace=True, p=weights)]
@@ -168,32 +167,30 @@ def _advance_containment(
     targets = chosen + offsets
     valid = (
         (targets[:, 0] >= 1)
-        & (targets[:, 0] < grid.tiles.shape[0] - 1)
+        & (targets[:, 0] < world.tiles.shape[0] - 1)
         & (targets[:, 1] >= 1)
-        & (targets[:, 1] < grid.tiles.shape[1] - 1)
+        & (targets[:, 1] < world.tiles.shape[1] - 1)
         & np.any(offsets != 0, axis=1)
     )
     targets = targets[valid]
     if not len(targets):
         return
     target_y, target_x = targets[:, 0], targets[:, 1]
-    vulnerable = np.isin(grid.tiles[target_y, target_x], _VULNERABLE)
-    protection = _containment_protection(grid, strategy, barrier_x)
+    vulnerable = np.isin(world.tiles[target_y, target_x], _VULNERABLE)
+    protection = _containment_protection(world, strategy, barrier_x)
     accepted = vulnerable & ~protection[target_y, target_x]
     target_y, target_x = target_y[accepted], target_x[accepted]
-    grass = np.isin(grid.tiles[target_y, target_x], (Tile.GRASS, Tile.JUNGLE_GRASS))
-    grid.tiles[target_y[grass], target_x[grass]] = Tile.CORRUPT_GRASS
-    grid.tiles[target_y[~grass], target_x[~grass]] = Tile.EBONSTONE
-    grid.biomes[target_y, target_x] = Biome.CORRUPTION
+    grass = np.isin(world.tiles[target_y, target_x], (Tile.GRASS, Tile.JUNGLE_GRASS))
+    world.tiles[target_y[grass], target_x[grass]] = Tile.CORRUPT_GRASS
+    world.tiles[target_y[~grass], target_x[~grass]] = Tile.EBONSTONE
+    world.biomes[target_y, target_x] = Biome.CORRUPTION
 
 
 def simulate_biome_containment(
     strategy: ContainmentStrategy,
     *,
-    seed: int = 0xC01A1E,
+    seed: int | str = "Containment Field",
     steps: int = 24,
-    width: int = 180,
-    height: int = 84,
 ) -> ContainmentResult:
     """Run a controlled infection experiment with six-times-faster surface sampling.
 
@@ -203,19 +200,24 @@ def simulate_biome_containment(
     """
 
     strategy = ContainmentStrategy(strategy)
-    grid = _containment_baseline(seed, width, height)
-    barrier_x = width // 2
-    _install_containment(grid, strategy, barrier_x)
-    rng = np.random.default_rng(seed ^ 0x51A7E)
-    frames = [grid.clone()]
-    counts = [int(np.count_nonzero(grid.biomes == Biome.CORRUPTION))]
+    world, barrier_x, spread_direction = _containment_baseline(seed)
+    _install_containment(world, strategy, barrier_x)
+    rng = np.random.default_rng(world.config.seed_value ^ 0x51A7E)
+    frames = [_clone_world(world)]
+    counts = [int(np.count_nonzero(world.biomes == Biome.CORRUPTION))]
     capture_every = max(1, steps // 6)
     for step in range(1, max(0, steps) + 1):
-        _advance_containment(grid, strategy, barrier_x, rng, max(240, width * 5))
+        _advance_containment(world, strategy, barrier_x, rng, max(240, world.shape[1] * 5))
         if step % capture_every == 0 or step == steps:
-            frames.append(grid.clone())
-            counts.append(int(np.count_nonzero(grid.biomes == Biome.CORRUPTION)))
-    return ContainmentResult(strategy, tuple(frames), tuple(counts), barrier_x)
+            frames.append(_clone_world(world))
+            counts.append(int(np.count_nonzero(world.biomes == Biome.CORRUPTION)))
+    return ContainmentResult(
+        strategy,
+        tuple(frames),
+        tuple(counts),
+        barrier_x,
+        spread_direction,
+    )
 
 
 def _clone_world(world: GeneratedWorld) -> GeneratedWorld:
@@ -260,58 +262,105 @@ def _meteor_site(world: GeneratedWorld, rng: np.random.Generator) -> int:
     return valid[int(nearest[int(rng.integers(0, len(nearest)))])]
 
 
+def _carve_natural_pool(
+    world: GeneratedWorld,
+    center_x: int,
+    center_y: int,
+    radius_x: int,
+    radius_y: int,
+    liquid: Liquid,
+) -> None:
+    y0, y1 = max(1, center_y - radius_y), min(world.shape[0] - 1, center_y + radius_y + 1)
+    x0, x1 = max(1, center_x - radius_x), min(world.shape[1] - 1, center_x + radius_x + 1)
+    yy, xx = np.ogrid[y0:y1, x0:x1]
+    cave = ((xx - center_x) / radius_x) ** 2 + ((yy - center_y) / radius_y) ** 2 <= 1.0
+    local_tiles = world.tiles[y0:y1, x0:x1]
+    local_amount = world.liquid_amount[y0:y1, x0:x1]
+    local_kind = world.liquid_kind[y0:y1, x0:x1]
+    local_tiles[cave] = Tile.AIR
+    local_amount[cave] = 0
+    local_kind[cave] = Liquid.NONE
+    basin = cave & (yy >= center_y + 1)
+    local_amount[basin] = 255
+    local_kind[basin] = liquid
+
+
+def _carve_natural_channel(
+    world: GeneratedWorld,
+    start: tuple[int, int],
+    end: tuple[int, int],
+) -> None:
+    length = max(abs(end[0] - start[0]), abs(end[1] - start[1])) + 1
+    for x_value, y_value in zip(
+        np.linspace(start[0], end[0], length),
+        np.linspace(start[1], end[1], length),
+        strict=True,
+    ):
+        x = int(round(x_value))
+        y = int(round(y_value))
+        y0, y1 = max(1, y - 1), min(world.shape[0] - 1, y + 2)
+        x0, x1 = max(1, x - 1), min(world.shape[1] - 1, x + 2)
+        world.tiles[y0:y1, x0:x1] = Tile.AIR
+        world.liquid_amount[y0:y1, x0:x1] = 0
+        world.liquid_kind[y0:y1, x0:x1] = Liquid.NONE
+
+
 def _prime_catastrophe_lab(world: GeneratedWorld, impact_x: int, impact_y: int) -> None:
+    """Prepare four natural cave pools inside the generated Preview geology."""
+
     height, width = world.shape
-    arena_top = min(height - 38, impact_y + 8)
-    arena_bottom = min(height - 7, arena_top + 48)
-    x0, x1 = max(3, impact_x - 30), min(width - 3, impact_x + 31)
-    world.tiles[arena_top:arena_bottom, x0:x1] = Tile.STONE
-    world.walls[arena_top:arena_bottom, x0:x1] = Wall.NONE
-    world.liquid_amount[arena_top:arena_bottom, x0:x1] = 0
-    world.liquid_kind[arena_top:arena_bottom, x0:x1] = Liquid.NONE
-
-    chambers = (
-        (Liquid.WATER, x0 + 3, arena_top + 3),
-        (Liquid.HONEY, x0 + 3, arena_top + 24),
-        (Liquid.LAVA, x1 - 15, arena_top + 3),
-        (Liquid.SHIMMER, x1 - 15, arena_top + 24),
+    upper_y = min(height - 36, impact_y + 27)
+    lower_y = min(height - 15, impact_y + 50)
+    pool_specs = (
+        (Liquid.WATER, impact_x - 19, upper_y, 10, 7),
+        (Liquid.LAVA, impact_x + 19, upper_y, 10, 7),
+        (Liquid.HONEY, impact_x - 16, lower_y, 9, 7),
+        (Liquid.SHIMMER, impact_x + 16, lower_y, 9, 7),
     )
-    for liquid, chamber_x, chamber_y in chambers:
-        chamber_x1 = min(x1 - 1, chamber_x + 12)
-        chamber_y1 = min(arena_bottom - 2, chamber_y + 11)
-        world.tiles[chamber_y:chamber_y1, chamber_x:chamber_x1] = Tile.AIR
-        fill_y = chamber_y + 3
-        world.liquid_kind[fill_y:chamber_y1, chamber_x:chamber_x1] = liquid
-        world.liquid_amount[fill_y:chamber_y1, chamber_x:chamber_x1] = 255
+    for liquid, center_x, center_y, radius_x, radius_y in pool_specs:
+        center_x = int(np.clip(center_x, radius_x + 2, width - radius_x - 3))
+        _carve_natural_pool(world, center_x, center_y, radius_x, radius_y, liquid)
 
-    chute_x0, chute_x1 = impact_x - 3, impact_x + 4
-    chute_y0 = max(1, impact_y + 5)
-    world.tiles[chute_y0:arena_bottom, chute_x0:chute_x1] = Tile.AIR
-    world.liquid_amount[chute_y0:arena_bottom, chute_x0:chute_x1] = 0
-    world.liquid_kind[chute_y0:arena_bottom, chute_x0:chute_x1] = Liquid.NONE
-    channel_levels = (arena_top + 12, arena_top + 33)
-    for index, channel_y in enumerate(channel_levels):
-        world.tiles[channel_y : channel_y + 2, x0 + 14 : chute_x0] = Tile.AIR
-        world.tiles[channel_y : channel_y + 2, chute_x1 : x1 - 14] = Tile.AIR
+    fissure_bottom = min(height - 8, lower_y + 13)
+    for y in range(max(2, impact_y + 5), fissure_bottom):
+        offset = round(np.sin((y - impact_y) * 0.55) * 1.5)
+        x = int(np.clip(impact_x + offset, 2, width - 3))
+        world.tiles[y, x - 1 : x + 2] = Tile.AIR
+        world.liquid_amount[y, x - 1 : x + 2] = 0
+        world.liquid_kind[y, x - 1 : x + 2] = Liquid.NONE
+
+    channels = (
+        ((impact_x - 11, upper_y + 2), (impact_x - 1, upper_y + 5)),
+        ((impact_x + 11, upper_y + 2), (impact_x + 1, upper_y + 5)),
+        ((impact_x - 9, lower_y + 2), (impact_x - 1, lower_y + 5)),
+        ((impact_x + 9, lower_y + 2), (impact_x + 1, lower_y + 5)),
+    )
+    for start, end in channels:
+        _carve_natural_channel(world, start, end)
+
+    for index, gate_y in enumerate((upper_y + 5, lower_y + 5)):
         gate = Tile.SAND if index == 0 else Tile.SILT
-        world.tiles[channel_y, chute_x0:chute_x1] = gate
+        world.tiles[gate_y, impact_x - 2 : impact_x + 3] = gate
+        world.liquid_amount[gate_y, impact_x - 2 : impact_x + 3] = 0
+        world.liquid_kind[gate_y, impact_x - 2 : impact_x + 3] = Liquid.NONE
 
-    contact_y = arena_bottom - 3
+    contact_y = min(height - 5, lower_y + 11)
     contact_pairs = (
         (Liquid.WATER, Liquid.LAVA),
         (Liquid.WATER, Liquid.HONEY),
         (Liquid.LAVA, Liquid.HONEY),
         (Liquid.SHIMMER, Liquid.WATER),
     )
-    pair_x = x0 + 5
+    pair_x = max(3, impact_x - 23)
     for first, second in contact_pairs:
         world.tiles[contact_y, pair_x : pair_x + 2] = Tile.AIR
         world.liquid_kind[contact_y, pair_x] = first
         world.liquid_kind[contact_y, pair_x + 1] = second
         world.liquid_amount[contact_y, pair_x : pair_x + 2] = 255
-        pair_x += 11
-    world.tiles[arena_top - 3 : arena_top, impact_x - 11 : impact_x + 12] = Tile.SAND
-    world.tiles[arena_top - 5 : arena_top - 3, impact_x - 7 : impact_x + 8] = Tile.SILT
+        pair_x += 12
+    deposit_top = min(height - 2, impact_y + 8)
+    world.tiles[deposit_top : deposit_top + 3, impact_x - 10 : impact_x + 11] = Tile.SAND
+    world.tiles[deposit_top - 2 : deposit_top, impact_x - 6 : impact_x + 7] = Tile.SILT
 
 
 def _meteor_impact(

@@ -14,6 +14,12 @@ All notable project changes are documented here. This project follows
 - Replaced legacy README plots with clean active-runtime diagnostics, used
   Preview-world landmark crops, retained the full Small-world overview, and
   removed the logo's README-only bottom gap.
+- Standardized every README diagram except the full biome overview on actual
+  `240 x 140` Preview-world renders or exact crops, including containment,
+  catastrophe, depth, landscape, cave, ore, benchmark, and fidelity media.
+- Reworked containment to spread through generated terrain, replaced the
+  catastrophe rectangle with irregular connected cave pools, and documented
+  the public landscape rules and remaining simulation problems.
 - Normalized README section titles, moved flavor text into subtitles, and
   refreshed fidelity and open-problem documentation.
 - Renamed the supported product and package from TerraForge to TerraExplorer,

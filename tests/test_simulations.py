@@ -22,13 +22,17 @@ def test_containment_interventions_are_deterministic_and_measurable() -> None:
 
     assert first.infected_counts == second.infected_counts
     assert np.array_equal(first.frames[-1].tiles, second.frames[-1].tiles)
+    assert all(frame.shape == (140, 240) for frame in first.frames)
+    assert first.spread_direction == trench.spread_direction
     assert first.infected_counts[-1] > first.infected_counts[0]
-    open_beyond = np.count_nonzero(
-        first.frames[-1].biomes[:, first.barrier_x + 3 :] == Biome.CORRUPTION
-    )
-    trench_beyond = np.count_nonzero(
-        trench.frames[-1].biomes[:, trench.barrier_x + 3 :] == Biome.CORRUPTION
-    )
+    if first.spread_direction > 0:
+        open_safe_side = first.frames[-1].biomes[:, first.barrier_x + 3 :]
+        trench_safe_side = trench.frames[-1].biomes[:, trench.barrier_x + 3 :]
+    else:
+        open_safe_side = first.frames[-1].biomes[:, : first.barrier_x - 2]
+        trench_safe_side = trench.frames[-1].biomes[:, : trench.barrier_x - 2]
+    open_beyond = np.count_nonzero(open_safe_side == Biome.CORRUPTION)
+    trench_beyond = np.count_nonzero(trench_safe_side == Biome.CORRUPTION)
     assert open_beyond > 0
     assert trench_beyond == 0
     assert sunflowers.infected_counts[-1] < first.infected_counts[-1]
@@ -56,6 +60,13 @@ def test_catastrophe_couples_impact_collapse_and_all_contact_products() -> None:
     assert not np.any((final.liquid_amount > 0) & (final.tiles != Tile.AIR))
     assert np.array_equal(world.tiles, original_tiles)
     assert np.array_equal(world.liquid_amount, original_liquid_amount)
+    prepared = result.frames[0]
+    pool_band = prepared.tiles[
+        result.impact_y + 18 : result.impact_y + 62,
+        result.impact_x - 34 : result.impact_x + 35,
+    ]
+    assert np.count_nonzero(pool_band == Tile.AIR) > 100
+    assert len(np.unique(pool_band)) > 4
 
 
 def test_catastrophe_rejects_full_small_worlds() -> None:
