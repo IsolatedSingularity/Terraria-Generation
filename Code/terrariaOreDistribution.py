@@ -102,7 +102,6 @@ def createOreDensityFigure(savePath: str) -> None:
     world0 = generateSmallWorld(seed=42, altarsSmashed=0)
     world3 = generateSmallWorld(seed=42, altarsSmashed=3)
     world9 = generateSmallWorld(seed=42, altarsSmashed=9)
-    height = world0.layers.maxTilesY
 
     # 10 depth bins from worldSurface to hellLayer.
     binEdges = np.linspace(int(world0.layers.worldSurface),
