@@ -178,13 +178,14 @@ def _placeBiomes(
     # Evil band: surface dirt -> corrupt/crimson dirt; stone -> ebonstone/crimstone.
     evilDirt = CORRUPT_DIRT if evilType == "corruption" else CRIMSON_DIRT
     evilStone = EBONSTONE if evilType == "corruption" else CRIMSTONE
-    for x in range(max(0, evilX - evilHalf), min(width, evilX + evilHalf)):
-        for y in range(hell):
-            t = grid[y, x]
-            if t == DIRT or t == GRASS:
-                grid[y, x] = evilDirt
-            elif t == STONE:
-                grid[y, x] = evilStone
+    x_start = max(0, evilX - evilHalf)
+    x_end = min(width, evilX + evilHalf)
+    if x_start < x_end and hell > 0:
+        region = grid[:hell, x_start:x_end]
+        dirt_mask = (region == DIRT) | (region == GRASS)
+        stone_mask = region == STONE
+        region[dirt_mask] = evilDirt
+        region[stone_mask] = evilStone
 
     return {
         "spawnX": spawnX,
@@ -611,13 +612,14 @@ def _miniBiomes(
 
     evilDirt = CORRUPT_DIRT if evilType == "corruption" else CRIMSON_DIRT
     evilStone = EBONSTONE if evilType == "corruption" else CRIMSTONE
-    for x in range(max(0, evilX - evilHalf), min(width, evilX + evilHalf)):
-        for y in range(hell):
-            t = grid[y, x]
-            if t == DIRT or t == GRASS:
-                grid[y, x] = evilDirt
-            elif t == STONE:
-                grid[y, x] = evilStone
+    x_start = max(0, evilX - evilHalf)
+    x_end = min(width, evilX + evilHalf)
+    if x_start < x_end and hell > 0:
+        region = grid[:hell, x_start:x_end]
+        dirt_mask = (region == DIRT) | (region == GRASS)
+        stone_mask = region == STONE
+        region[dirt_mask] = evilDirt
+        region[stone_mask] = evilStone
 
     return {
         "spawnX": spawnX,
