@@ -14,7 +14,7 @@ The authoritative machine-readable inventory is `terraexplorer/passes.py`. Run
 - **Approximated**: a simpler/shared operation represents the pass's broad role.
 - **Documented**: preserved in ordering and telemetry without a grid mutation.
 
-## Modeled (67)
+## Modeled (68)
 
 Reset; Terrain; Dunes; Ocean Sand; Sand Patches; Tunnels; Mount Caves; Dirt Wall
 Backgrounds; Rocks In Dirt; Dirt In Rocks; Clay; Small Holes; Dirt Layer Caves;
@@ -26,9 +26,9 @@ Jungle Temple; Hives; Settle Liquids; Smooth World; Life Crystals; Buried Chests
 Surface Chests; Spider Caves; Gem Caves; Cave Walls; Pots; Spreading Grass; Traps;
 Spawn Point; Planting Trees; Vines; Flowers; Settle Liquids Again; Cactus, Palm
 Trees, & Coral; Tile Cleanup; Stalac; Remove Broken Traps; Final Cleanup;
-Waterfalls; Temple; Floating Island Houses; Hellforge.
+Waterfalls; Temple; Floating Island Houses; Hellforge; Micro Biomes.
 
-## Approximated (39)
+## Approximated (38)
 
 Slush; Mountain Caves; Gravitating Sand; Clean Up Dirt; Dirt Rock Wall Runner;
 Wood Tree Walls; Wet Jungle; Jungle Chests; Remove Water From Sand; Oasis; Shell
@@ -36,8 +36,7 @@ Piles; Ice; Wall Variety; Statues; Jungle Chests Placement; Water Chests; Moss;
 Jungle Trees; Quick Cleanup; Surface Ore and Stone; Place Fallen Log; Piles;
 Grass Wall; Sunflowers; Herbs; Dye Plants; Webs And Honey; Weeds; Glowing
 Mushrooms and Jungle Plants; Jungle Plants; Mushrooms; Gems In Ice Biome; Random
-Gems; Moss Grass; Muds Walls In Jungle; Larva; Lihzahrd Altars; Micro Biomes;
-Water Plants.
+Gems; Moss Grass; Muds Walls In Jungle; Larva; Lihzahrd Altars; Water Plants.
 
 ## Documented (1)
 
@@ -71,8 +70,11 @@ Guide.
   pool, and Gem Trees.
 - Individual multi-floor Ruined Houses occupy the central Underworld, use
   obsidian or Hellstone brick, can be lava-flooded, and carry Hellforges.
-- Corruption, Crimson, and Hallow can advance into adjacent natural materials
-  without wrapping across map edges.
+- Corruption, Crimson, and Hallow use bounded one-tile pre-Hardmode or
+  three-tile Hardmode reach, six-times-faster surface weighting, and competing
+  fronts that cannot overwrite one another.
+- The Micro Biomes pass lays long, gently sloped underground minecart tracks
+  around protected structure bounds in addition to compact Gem Caves.
 - Controlled laboratories compare biome-containment strategies and couple a
   meteor impact to granular motion, four liquids, and contact products.
 
@@ -89,6 +91,7 @@ Guide.
 
 ## References
 
+- [Project visual reference atlas](references/information/README.md)
 - [Vanilla World Generation Steps](https://github.com/tModLoader/tModLoader/wiki/Vanilla-World-Generation-Steps)
 - [WorldGenerator reference](https://docs.tmodloader.net/docs/stable/class_world_generator.html)
 - [WorldGen reference](https://docs.tmodloader.net/docs/stable/class_world_gen.html)

@@ -6,6 +6,7 @@ import pytest
 
 from terraexplorer.config import Evil, WorldConfig
 from terraexplorer.generation import advance_biome_spread
+from terraexplorer.model import GeneratedWorld
 from terraexplorer.passes import Phase
 from terraexplorer.pipeline import GenerationCancelledError, TerraExplorerPipeline, generate_world
 from terraexplorer.tiles import Biome, Liquid, Tile, Wall
@@ -111,6 +112,9 @@ def test_showcase_structures_are_real_world_state() -> None:
     assert np.any(world.tiles == Tile.CLOUD)
     assert np.any(world.tiles == Tile.RAIN_CLOUD)
     assert np.any(world.tiles == Tile.GEM_TREE)
+    assert np.any(world.tiles == Tile.MINECART_TRACK)
+    assert world.metadata["minecart_track_count"] >= 1
+    assert any(marker.kind == "Minecart track" for marker in world.structures)
 
     for island in (marker for marker in world.structures if marker.kind == "Floating island"):
         island_liquid = world.liquid_amount[
@@ -182,14 +186,53 @@ def test_biome_spread_stops_at_world_boundaries() -> None:
             return np.zeros(shape)
 
     world = generate_world(WorldConfig(seed="spread-boundary", evil=Evil.CORRUPTION))
-    world.tiles[:] = Tile.STONE
+    world.tiles[:] = Tile.GRASS
     world.biomes[:] = Biome.FOREST
+    world.tiles[10, 0] = Tile.CORRUPT_GRASS
     world.biomes[10, 0] = Biome.CORRUPTION
 
     advance_biome_spread(world, ZeroRng())
 
     assert world.biomes[10, 1] == Biome.CORRUPTION
     assert world.biomes[10, -1] == Biome.FOREST
+
+
+def test_hardmode_spread_reaches_three_tiles_without_crossing_hallow() -> None:
+    class ZeroRng:
+        @staticmethod
+        def random(shape):
+            return np.zeros(shape)
+
+    world = GeneratedWorld.empty(WorldConfig(seed="spread-range", evil=Evil.CORRUPTION))
+    world.tiles[:] = Tile.STONE
+    world.biomes[:] = Biome.FOREST
+    world.metadata["hardmode"] = True
+    world.tiles[10, 3] = Tile.EBONSTONE
+    world.biomes[10, 3] = Biome.CORRUPTION
+    world.tiles[10, 7] = Tile.PEARLSTONE
+    world.biomes[10, 7] = Biome.HALLOW
+
+    advance_biome_spread(world, ZeroRng())
+
+    assert world.biomes[10, 6] == Biome.CORRUPTION
+    assert world.tiles[10, 7] == Tile.PEARLSTONE
+    assert world.biomes[10, 7] == Biome.HALLOW
+
+
+def test_biome_labels_without_infected_material_do_not_spread() -> None:
+    class ZeroRng:
+        @staticmethod
+        def random(shape):
+            return np.zeros(shape)
+
+    world = GeneratedWorld.empty(WorldConfig(seed="spread-source"))
+    world.tiles[:] = Tile.GRASS
+    world.biomes[:] = Biome.FOREST
+    world.biomes[10, 3] = Biome.CORRUPTION
+
+    advance_biome_spread(world, ZeroRng())
+
+    assert world.biomes[10, 4] == Biome.FOREST
 
 
 def test_phase_controls_skip_optional_pass_groups() -> None:

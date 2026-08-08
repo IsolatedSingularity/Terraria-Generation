@@ -76,6 +76,7 @@ class Tile(IntEnum):
     GEM_TREE = 61
     HELLSTONE_BRICK = 62
     CHLOROPHYTE = 63
+    MINECART_TRACK = 64
 
 
 class Wall(IntEnum):
@@ -190,6 +191,7 @@ TILE_STYLES: dict[Tile, TileStyle] = {
     Tile.GEM_TREE: TileStyle("Gem tree", "#62d6c7", "crystal"),
     Tile.HELLSTONE_BRICK: TileStyle("Hellstone brick", "#8f3e37", "brick"),
     Tile.CHLOROPHYTE: TileStyle("Chlorophyte", "#60b84f", "ore"),
+    Tile.MINECART_TRACK: TileStyle("Minecart track", "#b58a59", "metal"),
 }
 
 WALL_COLORS: dict[Wall, str] = {

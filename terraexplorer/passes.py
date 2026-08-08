@@ -203,6 +203,7 @@ _MODELED_HANDLERS: dict[str, str] = {
     "Floating Island Houses": "island_houses",
     "Pots": "pots",
     "Hellforge": "hellforge",
+    "Micro Biomes": "micro_biomes",
     "Spreading Grass": "spreading_grass",
     "Traps": "traps",
     "Spawn Point": "spawn_point",
@@ -255,7 +256,6 @@ _APPROXIMATED_HANDLERS: dict[str, str] = {
     "Muds Walls In Jungle": "mud_walls",
     "Larva": "larva",
     "Lihzahrd Altars": "lihzahrd_altars",
-    "Micro Biomes": "micro_biomes",
     "Water Plants": "water_plants",
 }
 

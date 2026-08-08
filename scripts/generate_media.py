@@ -178,39 +178,73 @@ def build_world_media() -> None:
     atlas.save(MEDIA / "terraexplorer_world.png", optimize=True)
 
 
-def build_seed_comparison() -> None:
-    configs = (
-        WorldConfig(seed="One Seed, Three Futures", evil=Evil.CORRUPTION),
-        WorldConfig(seed="One Seed, Three Futures", evil=Evil.CRIMSON),
-        WorldConfig(
-            seed="One Seed, Three Futures",
-            evil=Evil.CORRUPTION,
-            hardmode=True,
+def build_idle_world_evolution() -> None:
+    scenarios = (
+        (
+            "idle_corruption.gif",
+            "Chasm Crown",
+            Evil.CORRUPTION,
+            False,
+            "CORRUPTION UNCHECKED",
+        ),
+        (
+            "idle_crimson.gif",
+            "The Red Burrow",
+            Evil.CRIMSON,
+            False,
+            "CRIMSON UNCHECKED",
+        ),
+        (
+            "idle_opposition.gif",
+            "Two Fronts at Dusk",
+            Evil.CORRUPTION,
+            True,
+            "CORRUPTION AGAINST HALLOW",
         ),
     )
-    labels = ("CORRUPTION", "CRIMSON", "HARDMODE V")
-    subtitles = (
-        "same seed | violet chasms",
-        "same seed | crimson chambers",
-        "same seed | evil and Hallow",
-    )
-    cards: list[Image.Image] = []
-    for config, label, subtitle in zip(configs, labels, subtitles, strict=True):
+    for filename, seed, evil, include_hallow, title in scenarios:
+        config = WorldConfig(seed=seed, evil=evil)
         world = generate_world(config)
-        image = render_world(world, scale=2, markers=True)
-        cards.append(add_title_bar(image, label, subtitle))
+        rng = np.random.default_rng(config.seed_value ^ 0x1D1E5EED)
+        if include_hallow:
+            apply_hardmode(world, rng)
+        else:
+            world.metadata["hardmode"] = True
 
-    gap = 8
-    canvas = Image.new(
-        "RGB",
-        (sum(card.width for card in cards) + gap * (len(cards) - 1), max(c.height for c in cards)),
-        BG,
-    )
-    x = 0
-    for card in cards:
-        canvas.paste(card, (x, 0))
-        x += card.width + gap
-    canvas.save(MEDIA / "seed_comparison.png", optimize=True)
+        frames: list[Image.Image] = []
+        captures = 9
+        for capture_index in range(captures):
+            evil_tiles = (
+                (Tile.EBONSTONE, Tile.CORRUPT_GRASS)
+                if evil is Evil.CORRUPTION
+                else (Tile.CRIMSTONE, Tile.CRIMSON_GRASS)
+            )
+            evil_count = int(np.count_nonzero(np.isin(world.tiles, evil_tiles)))
+            hallow_count = int(
+                np.count_nonzero(np.isin(world.tiles, (Tile.PEARLSTONE, Tile.HALLOW_GRASS)))
+            )
+            subtitle = f"cycle {capture_index:02d} | evil {evil_count:,} tiles"
+            if include_hallow:
+                subtitle += f" | Hallow {hallow_count:,} tiles"
+            frames.append(
+                add_title_bar(
+                    render_world(world, scale=4, markers=True),
+                    title,
+                    subtitle,
+                )
+            )
+            if capture_index < captures - 1:
+                advance_biome_spread(world, rng, iterations=12)
+
+        frames[0].save(
+            MEDIA / filename,
+            save_all=True,
+            append_images=frames[1:],
+            duration=[620] * (len(frames) - 1) + [1800],
+            loop=0,
+            optimize=True,
+            disposal=2,
+        )
 
 
 def build_biome_study() -> None:
@@ -647,11 +681,9 @@ def main() -> None:
     ASSETS.mkdir(parents=True, exist_ok=True)
     build_icon()
     build_world_media()
-    build_seed_comparison()
+    build_idle_world_evolution()
     build_biome_study()
-    build_spread_animation()
     build_containment_animation()
-    build_catastrophe_animation()
     build_depth_descent()
     build_active_diagnostics()
     build_performance_chart()

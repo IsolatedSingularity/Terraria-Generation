@@ -70,6 +70,11 @@ To add a new modeled behavior, write a handler accepting `(world, rng)`, route
 it from `passes.py`, add a deterministic test, and update the fidelity inventory.
 Avoid dependencies on render/GUI code from generation modules.
 
+Supplied visual evidence is retained in
+[`references/information`](references/information/README.md). These files guide
+composition and placement but are not loaded by the runtime or redistributed as
+renderer assets.
+
 Post-generation experiments belong in `simulations.py`. They must copy input
 arrays, keep deterministic random streams, expose their physical and numerical
 assumptions, and test conservation or boundary invariants where applicable.

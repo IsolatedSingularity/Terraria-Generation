@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import numpy as np
+import numpy.typing as npt
 
 from terraexplorer.config import Evil, WorldScale
 from terraexplorer.geometry import smooth_noise_1d, stamp_ellipse, stamp_walk, surface_candidates
@@ -843,40 +844,78 @@ def advance_biome_spread(
     *,
     iterations: int = 1,
 ) -> None:
-    """Advance deterministic evil and Hallow growth into adjacent natural tiles."""
+    """Advance a bounded batch approximation of infectious biome growth.
+
+    Hardmode sources can reach a 7 by 7 square centered on the source tile.
+    Surface candidates receive six times the conversion probability of deeper
+    candidates, mirroring Terraria's separate tile-update sampling rates. Evil
+    and Hallow materials are deliberately absent from the vulnerable set, so
+    competing fronts meet instead of converting one another.
+    """
 
     evil_biome_id = Biome.CORRUPTION if world.config.evil is Evil.CORRUPTION else Biome.CRIMSON
     evil_stone = Tile.EBONSTONE if world.config.evil is Evil.CORRUPTION else Tile.CRIMSTONE
     evil_grass = Tile.CORRUPT_GRASS if world.config.evil is Evil.CORRUPTION else Tile.CRIMSON_GRASS
-    natural = np.isin(
-        world.tiles,
-        (
-            Tile.DIRT,
-            Tile.STONE,
-            Tile.GRASS,
-            Tile.SAND,
-            Tile.HARDENED_SAND,
-            Tile.SANDSTONE,
-            Tile.ICE,
-            Tile.SNOW,
-        ),
-    )
+    hardmode = bool(world.metadata.get("hardmode", world.config.hardmode))
+    radius = 3 if hardmode else 1
+
+    def within_range(source: npt.NDArray[np.bool_]) -> npt.NDArray[np.bool_]:
+        reached = np.zeros(world.shape, dtype=bool)
+        height, width = world.shape
+        for dy in range(-radius, radius + 1):
+            source_y0 = max(0, -dy)
+            source_y1 = min(height, height - dy)
+            target_y0 = max(0, dy)
+            target_y1 = min(height, height + dy)
+            for dx in range(-radius, radius + 1):
+                if dx == 0 and dy == 0:
+                    continue
+                source_x0 = max(0, -dx)
+                source_x1 = min(width, width - dx)
+                target_x0 = max(0, dx)
+                target_x1 = min(width, width + dx)
+                reached[target_y0:target_y1, target_x0:target_x1] |= source[
+                    source_y0:source_y1, source_x0:source_x1
+                ]
+        return reached
+
     for _ in range(max(0, iterations)):
-        evil = world.biomes == evil_biome_id
-        hallow = world.biomes == Biome.HALLOW
-        evil_edge = np.zeros(world.shape, dtype=bool)
-        hallow_edge = np.zeros(world.shape, dtype=bool)
-        for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-            evil_edge |= np.roll(np.roll(evil, dy, axis=0), dx, axis=1)
-            hallow_edge |= np.roll(np.roll(hallow, dy, axis=0), dx, axis=1)
-        chance = rng.random(world.shape)
-        evil_growth = natural & evil_edge & (chance < 0.24)
-        hallow_growth = natural & hallow_edge & (chance >= 0.24) & (chance < 0.46)
-        evil_growth[[0, -1], :] = False
-        evil_growth[:, [0, -1]] = False
-        hallow_growth[[0, -1], :] = False
-        hallow_growth[:, [0, -1]] = False
-        grass = np.isin(world.tiles, (Tile.GRASS, Tile.JUNGLE_GRASS))
+        vulnerable_tiles = (
+            (
+                Tile.DIRT,
+                Tile.STONE,
+                Tile.GRASS,
+                Tile.SAND,
+                Tile.HARDENED_SAND,
+                Tile.SANDSTONE,
+                Tile.ICE,
+                Tile.JUNGLE_GRASS,
+            )
+            if hardmode
+            else (Tile.DIRT, Tile.GRASS)
+        )
+        natural = np.isin(world.tiles, vulnerable_tiles)
+        evil = (world.biomes == evil_biome_id) & np.isin(world.tiles, (evil_stone, evil_grass))
+        hallow = (world.biomes == Biome.HALLOW) & np.isin(
+            world.tiles, (Tile.PEARLSTONE, Tile.HALLOW_GRASS)
+        )
+        evil_edge = within_range(evil)
+        hallow_edge = within_range(hallow)
+        surface_band = np.arange(world.shape[0])[:, None] <= world.surface[None, :] + 4
+        probability = np.where(surface_band, 0.18, 0.03)
+        evil_growth = natural & evil_edge & (rng.random(world.shape) < probability)
+        hallow_growth = (
+            natural
+            & (world.tiles != Tile.JUNGLE_GRASS)
+            & hallow_edge
+            & (rng.random(world.shape) < probability)
+        )
+        contested = evil_growth & hallow_growth
+        evil_wins = rng.random(world.shape) < 0.5
+        evil_growth &= ~contested | evil_wins
+        hallow_growth &= ~contested | ~evil_wins
+        grass_targets = (Tile.GRASS, Tile.JUNGLE_GRASS) if hardmode else (Tile.DIRT, Tile.GRASS)
+        grass = np.isin(world.tiles, grass_targets)
         world.tiles[evil_growth & grass] = evil_grass
         world.tiles[evil_growth & ~grass] = evil_stone
         world.tiles[hallow_growth & grass] = Tile.HALLOW_GRASS
@@ -1673,12 +1712,86 @@ def apply_hardmode(world: GeneratedWorld, rng: np.random.Generator) -> None:
             if not 2 <= x < world.shape[1] - 2:
                 continue
             radius = int(_pick(world, 3, 15))
-            stamp_ellipse(world.tiles, x, y, radius, radius, tile, _ORE_HOSTS)
             x0, x1b = max(0, x - radius), min(world.shape[1], x + radius + 1)
             y0b, y1b = max(0, y - radius), min(world.shape[0], y + radius + 1)
-            world.biomes[y0b:y1b, x0:x1b] = biome
-    advance_biome_spread(world, rng, iterations=int(_pick(world, 3, 6)))
+            local_tiles = world.tiles[y0b:y1b, x0:x1b]
+            hosts = np.isin(local_tiles, _ORE_HOSTS).copy()
+            stamp_ellipse(world.tiles, x, y, radius, radius, tile, _ORE_HOSTS)
+            converted = hosts & (local_tiles == tile)
+            world.biomes[y0b:y1b, x0:x1b][converted] = biome
     world.metadata["hardmode"] = True
+    advance_biome_spread(world, rng, iterations=int(_pick(world, 3, 6)))
+
+
+def minecart_tracks(world: GeneratedWorld, rng: np.random.Generator) -> None:
+    """Lay long underground track runs while preserving generated structures."""
+
+    height, width = world.shape
+    count = int(_pick(world, 2, 9))
+    minimum_y = world.layers.world_surface + int(_pick(world, 7, 55))
+    maximum_y = world.layers.underworld - int(_pick(world, 7, 55))
+    protected = np.zeros(world.shape, dtype=bool)
+    for marker in world.structures:
+        padding = int(_pick(world, 2, 18))
+        x0 = max(0, marker.x - padding)
+        x1 = min(width, marker.x + marker.width + padding)
+        y0 = max(0, marker.y - padding)
+        y1 = min(height, marker.y + marker.height + padding)
+        protected[y0:y1, x0:x1] = True
+
+    placed = 0
+    for index in range(count):
+        segment = width / count
+        jitter_limit = max(3, round(segment / 3))
+        start_x = int(np.clip(index * segment + rng.integers(2, jitter_limit), 2, width - 3))
+        length = int(_pick(world, rng.integers(55, 95), rng.integers(480, 920)))
+        end_x = min(width - 2, start_x + length)
+        if end_x - start_x < int(_pick(world, 24, 180)):
+            continue
+        y = int(rng.integers(minimum_y, maximum_y))
+        slope = int(rng.integers(-1, 2))
+        turn_after = int(rng.integers(8, 18))
+        min_track_y = height
+        max_track_y = 0
+        track_x0 = width
+        track_x1 = 0
+        for step, x in enumerate(range(start_x, end_x)):
+            if step and step % turn_after == 0:
+                slope = int(np.clip(slope + rng.integers(-1, 2), -1, 1))
+                turn_after = int(rng.integers(8, 18))
+            if step % int(_pick(world, 4, 14)) == 0:
+                y = int(np.clip(y + slope, minimum_y, maximum_y))
+            if protected[y, x]:
+                continue
+            clearance_y0 = max(1, y - 2)
+            clearance = world.tiles[clearance_y0:y, x]
+            clearance[np.isin(clearance, _CARVABLE)] = Tile.AIR
+            world.tiles[y, x] = Tile.MINECART_TRACK
+            world.liquid_kind[clearance_y0 : y + 1, x] = Liquid.NONE
+            world.liquid_amount[clearance_y0 : y + 1, x] = 0
+            min_track_y = min(min_track_y, y)
+            max_track_y = max(max_track_y, y)
+            track_x0 = min(track_x0, x)
+            track_x1 = max(track_x1, x)
+        if track_x1 > track_x0:
+            _place_marker(
+                world,
+                "Minecart track",
+                track_x0,
+                min_track_y,
+                track_x1 - track_x0 + 1,
+                max_track_y - min_track_y + 1,
+                "=",
+            )
+            placed += 1
+    world.metadata["minecart_track_count"] = placed
+
+
+def micro_biomes(world: GeneratedWorld, rng: np.random.Generator) -> None:
+    """Combine compact gem caves with abandoned underground tracks."""
+
+    gem_caves(world, rng)
+    minecart_tracks(world, rng)
 
 
 # Lightweight approximations used to keep the complete named-pass timeline
@@ -1699,7 +1812,6 @@ sunflowers = flowers
 webs_honey = webs
 ice_gems = gems
 larva = _annotate_only
-micro_biomes = gem_caves
 water_plants = flowers
 
 

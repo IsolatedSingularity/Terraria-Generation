@@ -7,6 +7,17 @@ All notable project changes are documented here. This project follows
 
 ### Changed
 
+- Integrated the root Information screenshots into a permanent traceable
+  reference atlas, modeled long abandoned minecart tracks in `Micro Biomes`,
+  and corrected biome spread distance, surface weighting, and competing fronts.
+- Replaced the same-seed static comparison with three full-width Idle World
+  Evolution animations using distinct seeds and unchecked Corruption, Crimson,
+  and Corruption-versus-Hallow scenarios.
+- Added a light-brown native Windows title bar, darkened and reduced the tree
+  logo, and rebuilt the Getting Started screenshot.
+- Reworked the README into an equation, code, interpretation, and figure
+  narrative while removing the obsolete Biome Evolution and catastrophe
+  sections.
 - Corrected Floating Island, Dungeon, Pyramid, Aether, Jungle Temple, and
   Underworld landmark generation, including the public `Ruined house` marker.
 - Added deterministic biome-containment and meteor/granular/four-liquid

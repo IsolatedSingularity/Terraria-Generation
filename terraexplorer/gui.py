@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 import queue
 import secrets
+import sys
 import threading
 import tkinter as tk
 from dataclasses import dataclass
@@ -48,6 +49,38 @@ _LIGHT_THEME = {
     "canvas": "#b6d2dc",
 }
 
+_TITLE_BAR_COLOR = "#c6a36f"
+
+
+def _windows_colorref(color: str) -> int:
+    """Convert ``#RRGGBB`` to the COLORREF byte order used by DWM."""
+
+    red, green, blue = (int(color[index : index + 2], 16) for index in (1, 3, 5))
+    return red | (green << 8) | (blue << 16)
+
+
+def _set_windows_title_bar(root: tk.Tk, color: str = _TITLE_BAR_COLOR) -> bool:
+    """Apply a light-brown native caption on supported Windows versions."""
+
+    if sys.platform != "win32":
+        return False
+    try:
+        import ctypes
+
+        root.update_idletasks()
+        hwnd = ctypes.windll.user32.GetAncestor(root.winfo_id(), 2)  # type: ignore[attr-defined]
+        caption = ctypes.c_int(_windows_colorref(color))
+        text = ctypes.c_int(_windows_colorref("#21160e"))
+        caption_result = ctypes.windll.dwmapi.DwmSetWindowAttribute(  # type: ignore[attr-defined]
+            hwnd, 35, ctypes.byref(caption), ctypes.sizeof(caption)
+        )
+        ctypes.windll.dwmapi.DwmSetWindowAttribute(  # type: ignore[attr-defined]
+            hwnd, 36, ctypes.byref(text), ctypes.sizeof(text)
+        )
+        return caption_result == 0
+    except (AttributeError, OSError, ValueError):
+        return False
+
 
 @dataclass(frozen=True, slots=True)
 class EvolutionFrame:
@@ -65,6 +98,7 @@ class TerraExplorerApp:
         self.root.geometry("1600x860")
         self.root.minsize(1180, 720)
         self.root.configure(bg=self.colors["bg"])
+        _set_windows_title_bar(self.root)
         self._configure_styles()
 
         self.current_world: GeneratedWorld | None = None
