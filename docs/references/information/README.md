@@ -6,9 +6,11 @@ temporary root `Information` folder so their original framing and filenames
 remain traceable. TerraExplorer uses them as composition and silhouette
 references, not as distributable game art or renderer inputs.
 
-Public Terraria documentation is used only as a sanity check for relationships
-such as spread distance, layer placement, and structure location. When a visual
-detail differs, these supplied references govern the project interpretation.
+Public Terraria Wiki mechanics govern relationships such as spread distance,
+layer placement, structure location, and event restrictions. When a supplied
+image conflicts with those documented mechanics, the wiki takes precedence.
+These screenshots remain the composition, silhouette, and visual-inspection
+references within those rules.
 
 | Reference | Active TerraExplorer interpretation |
 |---|---|

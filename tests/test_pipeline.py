@@ -62,12 +62,13 @@ def test_world_evil_is_a_real_generation_choice(evil: Evil, present: Biome, abse
 
 
 def test_researched_biome_geometry_is_present_in_generated_world() -> None:
-    world = generate_world(WorldConfig(seed="researched-landscape", evil=Evil.CRIMSON))
+    world = generate_world(WorldConfig(seed="researched-landscape-no-ocean", evil=Evil.CRIMSON))
     midpoint = world.shape[1] // 2
     snow_x = int(world.metadata["snow_x"])
     jungle_x = int(world.metadata["jungle_x"])
     desert_x = int(world.metadata["desert_x"])
 
+    assert world.metadata["ocean_cave_generated"] is False
     assert (snow_x < midpoint) != (jungle_x < midpoint)
     assert (desert_x < midpoint) == (jungle_x < midpoint)
 
@@ -177,6 +178,30 @@ def test_showcase_structures_are_real_world_state() -> None:
         (Tile.OBSIDIAN_BRICK, Tile.HELLSTONE_BRICK),
     ) & (rows >= lava_level)
     assert np.any(submerged_house)
+
+
+def test_reference_minibiomes_have_bounds_and_ocean_cave_state() -> None:
+    world = generate_world(WorldConfig(seed="Ash Compass"))
+    marker_kinds = {marker.kind for marker in world.structures}
+
+    assert {
+        "Glowing mushroom",
+        "Granite biome",
+        "Hive",
+        "Marble biome",
+        "Underground ocean",
+    } <= marker_kinds
+    assert world.metadata["ocean_cave_generated"] is True
+
+    ocean = next(marker for marker in world.structures if marker.kind == "Underground ocean")
+    ocean_slice = (
+        slice(ocean.y, ocean.y + ocean.height),
+        slice(ocean.x, ocean.x + ocean.width),
+    )
+    assert np.any(world.biomes[ocean_slice] == Biome.OCEAN)
+    assert np.any(world.liquid_kind[ocean_slice] == Liquid.WATER)
+    assert np.any(world.walls[ocean_slice] == Wall.SANDSTONE)
+    assert (ocean.x < world.shape[1] // 2) == (world.metadata["dungeon_side"] == "left")
 
 
 def test_biome_spread_stops_at_world_boundaries() -> None:

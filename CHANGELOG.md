@@ -7,6 +7,22 @@ All notable project changes are documented here. This project follows
 
 ### Changed
 
+- Replaced the landmark atlas with an annotated `4200 x 1200` Feature
+  Distribution world and expanded the README hero with missing biome,
+  minibiome, track, cave, and visualization-only Meteorite milestones.
+- Rebuilt Biomes as ten equal-size, seed-optimized crops covering Forest, Snow,
+  Desert, Jungle, both world evils, Glowing Mushroom, Meteorite, Underground
+  Ocean, and Spider Nest, with reproducible seed metadata.
+- Restored Hazard Containment Strategies as four independently seeded animated
+  studies, each using a distinct hazard layout and intervention.
+- Reworked World Layers with five named layers, a light grid, render-only
+  vertical exaggeration, complete world features, and depth-only subtitles.
+- Replaced the landscape, cave, and ore diagnostics with a mechanical viridis
+  Spawn Heat Map that accounts for valid standing space, depth, biome, light,
+  spawn safety, NPC housing, Peace Candle, and Sunflower suppression.
+- Added bounded Glowing Mushroom, Granite, Marble, Hive, and Underground Ocean
+  markers; modeled the one-in-three Dungeon-side water-filled Ocean cave; and
+  made public wiki mechanics authoritative over conflicting supplied visuals.
 - Integrated the root Information screenshots into a permanent traceable
   reference atlas, modeled long abandoned minecart tracks in `Micro Biomes`,
   and corrected biome spread distance, surface weighting, and competing fronts.

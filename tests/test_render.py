@@ -3,6 +3,7 @@ import json
 import numpy as np
 from PIL import Image
 
+from scripts.generate_media import _spawn_heat_scores
 from terraexplorer.config import WorldConfig
 from terraexplorer.pipeline import generate_world
 from terraexplorer.render import (
@@ -67,3 +68,15 @@ def test_hardmode_gif_includes_post_generation_transformation(tmp_path) -> None:
 
     with Image.open(output) as animation:
         assert animation.n_frames == 26
+
+
+def test_spawn_heat_scores_are_normalized_and_suppress_spawn() -> None:
+    world = generate_world(WorldConfig(seed="spawn-heat"))
+    scores = _spawn_heat_scores(world)
+    spawn_x = int(world.metadata["spawn_x"])
+    spawn_y = int(world.surface[spawn_x])
+
+    assert scores.shape == world.shape
+    assert np.all((scores >= 0.0) & (scores <= 1.0))
+    assert np.all(scores[max(0, spawn_y - 20) : spawn_y + 21, spawn_x - 20 : spawn_x + 21] == 0)
+    assert np.any(scores > 0)

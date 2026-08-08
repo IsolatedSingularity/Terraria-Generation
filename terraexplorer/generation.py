@@ -7,6 +7,7 @@ provided by :mod:`terraexplorer.pipeline`.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable
 
 import numpy as np
@@ -504,14 +505,15 @@ def mushroom_patches(world: GeneratedWorld, rng: np.random.Generator) -> None:
         stamp_ellipse(
             world.tiles, x, y, max(2, radius - 2), max(2, radius // 2 - 1), Tile.AIR, (Tile.MUD,)
         )
-        local = world.tiles[
-            max(0, y - radius) : y + radius + 1, max(0, x - radius) : x + radius + 1
-        ]
+        y0, y1 = max(0, y - radius), min(world.shape[0], y + radius + 1)
+        x0, x1 = max(0, x - radius), min(world.shape[1], x + radius + 1)
+        local = world.tiles[y0:y1, x0:x1]
         exposed = surface_candidates(local, (Tile.MUD,))
         local[exposed] = Tile.MUSHROOM_GRASS
-        world.biomes[max(0, y - radius) : y + radius + 1, max(0, x - radius) : x + radius + 1] = (
-            Biome.MUSHROOM
-        )
+        air = local == Tile.AIR
+        world.walls[y0:y1, x0:x1][air] = Wall.MUSHROOM
+        world.biomes[y0:y1, x0:x1] = Biome.MUSHROOM
+        _place_marker(world, "Glowing mushroom", x0, y0, x1 - x0, y1 - y0, "G")
 
 
 def _stone_biome(world: GeneratedWorld, rng: np.random.Generator, tile: Tile) -> None:
@@ -523,6 +525,16 @@ def _stone_biome(world: GeneratedWorld, rng: np.random.Generator, tile: Tile) ->
         stamp_ellipse(world.tiles, x, y, int(rx), int(ry), tile, _CARVABLE)
         stamp_ellipse(
             world.tiles, x, y, max(2, int(rx) - 2), max(2, int(ry) - 2), Tile.AIR, (tile,)
+        )
+        kind = "Granite biome" if tile is Tile.GRANITE else "Marble biome"
+        _place_marker(
+            world,
+            kind,
+            max(0, x - int(rx)),
+            max(0, y - int(ry)),
+            int(rx) * 2 + 1,
+            int(ry) * 2 + 1,
+            "S",
         )
 
 
@@ -1060,19 +1072,44 @@ def gems(world: GeneratedWorld, rng: np.random.Generator) -> None:
 
 
 def ocean_caves(world: GeneratedWorld, rng: np.random.Generator) -> None:
+    if rng.random() >= 1 / 3:
+        world.metadata["ocean_cave_generated"] = False
+        return
     coast = int(_pick(world, 20, 300))
-    for x in (coast // 2, world.shape[1] - coast // 2):
-        stamp_walk(
-            world.tiles,
-            rng,
-            x,
-            world.layers.world_surface + int(_pick(world, 6, 25)),
-            int(_pick(world, 18, 70)),
-            tuple(_pick(world, (4, 2), (12, 4))),
-            Tile.AIR,
-            (float(rng.choice((-0.6, 0.6))), 0.7),
-            _CARVABLE,
-        )
+    left_side = world.metadata["dungeon_side"] == "left"
+    direction = 1 if left_side else -1
+    start_x = coast // 2 if left_side else world.shape[1] - coast // 2 - 1
+    start_y = int(world.surface[start_x]) - int(_pick(world, 1, 6))
+    length = int(_pick(world, 28, 240))
+    radius_x, radius_y = tuple(_pick(world, (4, 3), (14, 9)))
+    steps = max(8, length // max(1, radius_x // 2))
+    points: list[tuple[int, int]] = []
+    for step in range(steps):
+        progress = step / max(1, steps - 1)
+        x = round(start_x + direction * length * progress)
+        y = round(start_y + length * 0.20 * progress + math.sin(progress * math.pi * 3) * radius_y)
+        points.append((x, y))
+
+    x0 = max(0, min(x for x, _ in points) - radius_x - 2)
+    x1 = min(world.shape[1], max(x for x, _ in points) + radius_x + 3)
+    y0 = max(0, min(y for _, y in points) - radius_y - 2)
+    y1 = min(world.shape[0], max(y for _, y in points) + radius_y + 3)
+    yy, xx = np.ogrid[y0:y1, x0:x1]
+    tunnel = np.zeros((y1 - y0, x1 - x0), dtype=bool)
+    for x, y in points:
+        tunnel |= ((xx - x) / radius_x) ** 2 + ((yy - y) / radius_y) ** 2 <= 1.0
+    local_tiles = world.tiles[y0:y1, x0:x1]
+    local_tiles[tunnel] = Tile.AIR
+    ceiling = np.zeros_like(tunnel)
+    ceiling[:-1] = tunnel[1:] & ~tunnel[:-1]
+    ceiling &= np.isin(local_tiles, _CARVABLE)
+    local_tiles[ceiling] = Tile.HARDENED_SAND
+    world.walls[y0:y1, x0:x1][tunnel] = Wall.SANDSTONE
+    world.liquid_kind[y0:y1, x0:x1][tunnel] = Liquid.WATER
+    world.liquid_amount[y0:y1, x0:x1][tunnel] = 255
+    world.biomes[y0:y1, x0:x1][tunnel] = Biome.OCEAN
+    _place_marker(world, "Underground ocean", x0, y0, x1 - x0, y1 - y0, "O")
+    world.metadata["ocean_cave_generated"] = True
 
 
 def shimmer(world: GeneratedWorld, rng: np.random.Generator) -> None:
@@ -1326,6 +1363,15 @@ def hives(world: GeneratedWorld, rng: np.random.Generator) -> None:
         world.liquid_kind[y0:y1, x0:x1][air] = Liquid.HONEY
         world.liquid_amount[y0:y1, x0:x1][air] = 255
         world.walls[max(0, y - int(ry)) : y1, x0:x1] = Wall.HIVE
+        _place_marker(
+            world,
+            "Hive",
+            x0,
+            max(0, y - int(ry)),
+            x1 - x0,
+            y1 - max(0, y - int(ry)),
+            "H",
+        )
 
 
 def settle_liquids(world: GeneratedWorld, rng: np.random.Generator) -> None:

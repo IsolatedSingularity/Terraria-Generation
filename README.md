@@ -1,8 +1,7 @@
-<p align="center">
-  <img src="docs/media/terraexplorer_readme_logo.png" width="180" alt="TerraExplorer mechanical tree">
-</p>
-
-<h1 align="center">TerraExplorer</h1>
+<h1 align="center">
+  <img src="docs/media/terraexplorer_readme_logo.png" width="160" alt="TerraExplorer mechanical tree"><br>
+  TerraExplorer
+</h1>
 
 <p align="center">
   <strong>A deterministic, explorable 2D world-generation laboratory.</strong><br>
@@ -33,9 +32,9 @@ Every named pass receives its own random stream. For text seed (s) and pass
 label (p), TerraExplorer derives
 
 $$
-s_{32}=\operatorname{CRC32}(s), \qquad
-r_p=\operatorname{PCG64}\!\left(\operatorname{uint64}
-\left(\operatorname{BLAKE2s}(s_{32}\mathbin{:}p)\right)\right).
+s_{32}=\mathrm{CRC32}(s), \qquad
+r_p=\mathrm{PCG64}\!\left(\mathrm{uint64}
+\left(\mathrm{BLAKE2s}(s_{32}\mathbin{:}p)\right)\right).
 $$
 
 The important consequence is practical: editing `Dungeon` cannot silently
@@ -53,10 +52,10 @@ frame is a state produced by the same handlers used by the API, CLI, and GUI.
 
 ![A TerraExplorer world taking shape](docs/media/terraexplorer_generation.gif)
 
-The final frame pauses so the world can be read: Floating Islands above the
-surface, biome wedges below it, minecart tracks cutting through the dark, and
-the Underworld holding its line at the bottom. The evolution rail exposes 26
-meaningful milestones from the 107-pass run.
+The README animation adds Mushroom, Marble, Granite, Ocean Cave, Spider Cave,
+Gem Cave, and Micro Biome snapshots to the principal generation milestones,
+then pauses on a visualization-only Meteorite impact. The desktop evolution
+rail remains a focused 26-stop view of the 107-pass run.
 
 ## Getting started
 
@@ -153,204 +152,172 @@ The last world begins after the Hardmode V cuts two diagonal bands through the
 Caverns. Corruption and Hallow consume pure hosts until they collide. Neither is
 allowed to convert the other's established material.
 
-## Landmark generation
+## Feature Distribution
 
 > Every ruin is a decision written into stone.
 
-Many structures begin with clipped geometric stamps. An elliptical mask, for
-example, includes a tile when
+Every generated structure records a bounding box
 
 $$
-\left(\frac{x-c_x}{r_x}\right)^2+
-\left(\frac{y-c_y}{r_y}\right)^2\le1.
+B_i=(x_i,y_i,w_i,h_i), \qquad
+q_i=\left(x_i+\frac{w_i}{2},y_i+\frac{h_i}{2}\right).
 $$
 
-The mask is only a starting primitive. Connected rooms, directed walks,
-material replacement rules, walls, liquids, and structure-specific polish turn
-it into a Dungeon, Hive, Aether, or chamber rather than a bare oval.
+The figure projects those bounds and biome masks into one `4200 x 1200` world.
+Repeated instances all remain visible and retain their full generated bounds;
+one external label names each feature class so the annotation layer stays
+readable.
 
 ```python
-stamp_ellipse(world.tiles, x, y, rx, ry, Tile.HIVE, replace=_CARVABLE)
-_place_marker(world, "Jungle temple", x, y, width, height, "T")
+world = generate_world(WorldConfig(seed="Ash Compass", scale=WorldScale.SMALL))
+for marker in world.structures:
+    draw_bounds(marker.x, marker.y, marker.width, marker.height)
 ```
 
-The gold frames below identify structures while keeping their coast, biome,
-depth, and surrounding caves visible.
+![Feature distribution across the Ash Compass world](docs/media/terraexplorer_world.png)
 
-![TerraExplorer landmark atlas](docs/media/terraexplorer_world.png)
+The map includes both oceans, surface biomes, Floating Islands, Living Trees,
+the Dungeon, Pyramid, Aether, Jungle Temple, Hives, Granite, Glowing Mushroom
+and Spider pockets, Gem Caves, minecart tracks, Ruined Houses, the Underground
+Ocean, Corruption, Hallow, and every repeated generated instance. The Meteorite
+is a deterministic visualization-only post-generation event. Its crater obeys
+the documented border, spawn, liquid, cloud, and protected-structure exclusions
+without changing the core 107-pass generator.
 
-| Above and below | What is modeled |
-|---|---|
-| Floating Island | Cloud and Rain Cloud foundation, forest cap, and compact sky-brick house |
-| Dungeon | Surface entrance connected to branching rooms, corridors, and platforms |
-| Pyramid | Mostly buried sandstone shell with a zigzag passage and treasure chamber |
-| Aether | Stone cavern in the Jungle-side outer fifth with Shimmer and Gem Trees |
-| Jungle Temple | Irregular Lihzahrd-brick shell, connected rooms, traps, and deep altar chamber |
-| Ruined House | Individual multi-floor obsidian or Hellstone-brick tower, sometimes flooded by lava |
-
-Layer placement can be read with a normalized depth coordinate. If (s(x)) is
-the local surface and (u) is the Underworld boundary, then
-
-$$
-d(y,x)=\frac{y-s(x)}{u-s(x)}.
-$$
-
-Values near zero sit at the surface; values approaching one descend toward the
-Underworld. The overview uses that coordinate only for guides and preserves the
-actual generated materials beneath them.
-
-```python
-overview = render_world(
-    world,
-    biome_overlay=True,
-    layer_lines=True,
-    markers=True,
-)
-```
-
-![Biome, layer, and landmark overview](docs/media/biome_overview.png)
-
-This is the README's current Small-world overview. The new authoritative visual
-references are preserved in
-[`docs/references/information`](docs/references/information/README.md). They now
-inform the active Corruption, Crimson, Granite, Mushroom, Aether, Hive, Living
-Tree, Floating Island, Temple, Dungeon, Underworld, and minecart-track rules.
-
-## Biome generation
+## Biomes
 
 > A biome is not a color. It is terrain with a history.
 
-Large biome regions begin from clipped horizontal bands around a seeded center
-(c) with half-width (h):
+Biome regions start from clipped seeded bands, but the atlas crop is selected
+by a separate presentation objective. For candidate crop (C), target mask (M),
+and crop center (c_C), the optimizer maximizes
 
 $$
-x_0=\max(0,c-h), \qquad x_1=\min(W,c+h).
+J(C)=\frac{|C\cap M|}{|C|}
+-\lambda\frac{\lVert c_C-c_M\rVert_2}{\sqrt{48^2+72^2}}.
 $$
 
-Inside that band, each biome applies its own vertical profile and material
-rules. Snow narrows underground, Jungle replaces deep terrain with Mud, Desert
-caps an oval sandstone system with dunes, and the two evils carve different
-entrances and chamber networks.
+This favors biome purity first and centering second. Relevant structures and
+caves remain part of the crop rather than being painted into it.
 
 ```python
-x0, x1 = _band(world, center, half_width)
-region = world.tiles[:, x0:x1]
-region[np.isin(region, (Tile.STONE, Tile.DIRT))] = evil_stone
+crop, score = _best_subject_crop(world, subject_mask, width=48, height=72)
+selected = max(candidate_seeds, key=lambda seed: score_for(seed))
 ```
 
-![Six independently generated biome studies](docs/media/biome_atlas.png)
+![Ten independently optimized biome studies](docs/media/biome_atlas.png)
 
-Each crop comes from a generated world rather than a painted biome swatch.
-Forest shows open surface caves; Snow forms a narrowing wedge opposite the
-Jungle; Desert places dunes over hardened Sand and Sandstone; Jungle packs Mud
-and vines around larger Cavern openings. Corruption cuts steep chasms that join
-below, while Crimson descends toward rounded, linked chambers.
+Every panel represents the same `48 x 72` tiles at the same six-pixel scale.
+The seeds are printed in the figure and recorded here:
 
-## Biome containment simulation
+| Biome | Seed | Biome | Seed |
+|---|---|---|---|
+| Forest | `Violet Scar` | Snow | `Salt Cathedral` |
+| Desert | `World Below` | Jungle | `Red Descent` |
+| Corruption | `Glass Horizon` | Crimson | `Cinder Archive` |
+| Glowing Mushroom | `Emerald Hunger` | Meteorite | `Iron Orchard` |
+| Underground Ocean | `Ash Compass` | Spider Nest | `Deep Lantern` |
 
-> The Dryad asked for a boundary. The world tested every weakness in it.
+Corruption is selected around its branching chasms and Crimson around its
+linked chambers. The four additional panels expose Mushroom walls and grass, a
+media-only Meteorite crater, the water-filled Dungeon-side Ocean tunnel, and a
+Cobweb-filled Spider pocket. The exact optimizer output is also tracked in
+[`docs/media/biome_seeds.json`](docs/media/biome_seeds.json).
 
-Containment uses the same three-tile reach, but samples source tiles with a
-surface weight of six:
+## Hazard Containment Strategies
+
+> A wall is an argument with time.
+
+The media study advances hostile biome fronts through valid host materials
+within a three-tile neighborhood. A containment mask (K) rejects otherwise
+valid targets:
 
 $$
-w(y,x)=
-\begin{cases}
-6, & y\le s(x)+4,\\
-1, & y>s(x)+4,
-\end{cases}
-\qquad
-P(i)=\frac{w_i}{\sum_j w_j}.
+S_{t+1}=S_t\cup
+\{z:z\in\mathcal N_3(S_t),\ z\in V,\ z\notin K\}.
 $$
+
+Surface source tiles receive six times the sampling weight of underground
+sources. Established Corruption, Crimson, and Hallow cannot overwrite one
+another.
 
 ```python
-results = {
-    strategy: simulate_biome_containment(strategy, seed=42)
-    for strategy in ContainmentStrategy
-}
+accepted = vulnerable & ~occupied & ~protected[target_y, target_x]
+world.biomes[target_y[accepted], target_x[accepted]] = biome
 ```
 
-All four panels start from the same generated terrain and deterministic random
-stream. The intervention is the independent variable, so infected counts and
-protected-side crossings remain comparable.
+![Four hazard containment strategies](docs/media/containment_lab.gif)
 
-![Four biome-containment strategies under the same starting conditions](docs/media/containment_lab.gif)
+`Violet Quarantine` uses a three-tile trench against Corruption. `Red Garden`
+uses a Sunflower cordon against Crimson. `Pearl Ward` places a Chlorophyte
+cluster against Hallow. `Three Front Siege` protects a brick bastion while all
+three hazards advance from different regions. These are explanatory generated
+world studies, not frame-exact game timing, and the public containment API is
+unchanged.
 
-The gold line marks the protected-side boundary. Open ground provides a
-baseline; the trench removes convertible tiles; Sunflowers protect the surface;
-and Chlorophyte protects a local radius. This is a controlled model of selected
-mechanics, not a complete in-game tick scheduler.
-
-## World layers
+## World Layers
 
 > Depth is not distance. Depth is what the world permits to survive.
 
-For world height (H), TerraExplorer's default layer boundaries are
+For world height (H), the generator stores three primary boundaries. The
+animation adds a visualization-only Space guide and stretches vertical render
+coordinates:
 
 $$
-y_{surface}=\operatorname{round}(0.19H), \qquad
-y_{rock}=\operatorname{round}(0.46H), \qquad
-y_{underworld}=H-H_u,
+y_{surface}=\mathrm{round}(0.19H),\quad
+y_{rock}=\mathrm{round}(0.46H),\quad
+y_{space}=\mathrm{round}(0.67y_{surface}),\quad
+y'=1.7y.
 $$
 
-where (H_u=200) for a Small world and approximately (H/6) for a Preview
-world.
+The stretch changes pixels only. Tile coordinates, structure placement, and
+simulation boundaries remain untouched.
 
 ```python
-layers = WorldLayers.for_height(config.height)
-print(layers.world_surface, layers.rock_layer, layers.underworld)
+world_image = base_image.resize(
+    (base_image.width, round(base_image.height * 1.7)),
+    Image.Resampling.NEAREST,
+)
 ```
 
-The descent keeps the full Preview-world width visible while the camera moves
-through each depth interval.
+![Animated descent through all five world layers](docs/media/depth_descent.gif)
 
-![Animated descent from the surface to the Underworld](docs/media/depth_descent.gif)
+The extended camera pass names Space, Surface, Underground, Caverns, and
+Underworld. Its subtitle is only `Depth XXX`. A light coordinate grid and
+colored boundary guides expose the transitions while the complete generated
+biomes, structures, Meteorite, and Underworld ruins stay visible.
 
-The horizontal guides are diagnostic boundaries. They do not flatten the local
-surface profile or replace the generated terrain. Floating Islands remain above
-the surface, structures retain their true placement, and Ruined Houses stand in
-the lava-cut Underworld instead of a schematic layer box.
+## Spawn Heat Map
 
-## Generated-world studies
+> The world does not choose an enemy until it finds somewhere to stand.
 
-> The plot is the world. The statistic only teaches us where to look.
-
-For a tile region (R), cave density and material frequency are simple counts
-over the generated arrays:
+The heat score combines valid three-tile standing space (I), a depth factor
+(D), biome factor (B), moderate-to-low light factor (L), and suppression factor
+(S):
 
 $$
-D_{cave}(R)=\frac{|\{(y,x)\in R:T(y,x)=\mathrm{AIR}\}|}{|R|},
+H(y,x)=I(y,x)D(y)B(y,x)L(y,x)S(y,x).
 $$
 
-$$
-F_t(R)=\frac{|\{(y,x)\in R:T(y,x)=t\}|}{|R|}.
-$$
+The score is zero inside the modeled spawn-safe and occupied housing zone,
+multiplied by `0.77` inside Peace Candle range, and multiplied by `0.83` near a
+Sunflower. A local Gaussian aggregation turns valid individual spawn tiles into
+a readable regional likelihood while preserving those mechanical inputs.
 
 ```python
-cave_density = np.count_nonzero(world.tiles[region] == Tile.AIR) / region.size
-ore_tiles = np.isin(world.tiles, world.metadata["selected_ore_ids"])
+valid = three_air_tiles & solid_floor & ~lava
+heat = valid * depth_weight * biome_weight * darkness_weight
+heat[safe_zone | npc_housing] = 0.0
 ```
 
-The figures keep terrain visible instead of replacing it with bars or a noisy
-heat map. The landscape studies expose coast-to-coast relationships; cave crops
-show where the density statistic came from; ore studies mark veins at their
-actual depths.
+![Relative hostile spawn heat across the Ash Compass world](docs/media/spawn_heatmap.png)
 
-![Four generated Preview-world landscape studies](docs/media/surface_profiles.png)
-
-The same layout reveals how Snow, Desert, Jungle, and evil placement alter the
-surface profile without reducing the world to one line.
-
-![Generated cave and biome cross-sections](docs/media/cave_density.png)
-
-These exact tile crops make large Jungle openings, narrow surface mouths, and
-the denser fractured Cavern layer directly comparable.
-
-![Actual generated ore veins at their world depths](docs/media/ore_depth.png)
-
-Ore alternatives are selected once per seed. Veins then use depth-specific
-ranges, so the highlighted material remains embedded in the geometry that
-constrained its placement.
+This uses the same `Ash Compass` `4200 x 1200` world and identical
+post-generation Meteorite overlay as Feature Distribution. The `viridis`
+overlay represents relative hostile spawn opportunity, not an exact per-tick
+enemy simulator. The legend names common or mechanically relevant enemies for
+the major regions, while the marked control zones make town, Peace Candle, and
+Sunflower suppression inspectable.
 
 ## Data model
 
@@ -411,9 +378,14 @@ The landscape rules are checked against public Terraria Wiki descriptions of
 [biome spread](https://terraria.wiki.gg/wiki/Biome_spread),
 [the Aether](https://terraria.wiki.gg/wiki/The_Aether),
 [minecart tracks](https://terraria.wiki.gg/wiki/Minecart_Track), and
-[Floating Islands](https://terraria.wiki.gg/wiki/Floating_Island). The supplied
-[reference atlas](docs/references/information/README.md) remains authoritative
-for this project's current visual correction cycle.
+[Floating Islands](https://terraria.wiki.gg/wiki/Floating_Island),
+[world layers](https://terraria.wiki.gg/wiki/Layers),
+[Ocean caves](https://terraria.wiki.gg/wiki/Ocean_cave), and
+[Spider Nests](https://terraria.wiki.gg/wiki/Spider_Cavern). Public wiki
+mechanics take precedence when a supplied visual reference conflicts with a
+documented rule. The
+[reference atlas](docs/references/information/README.md) guides composition,
+silhouette, and visual inspection within those rules.
 
 ### Open problems
 
