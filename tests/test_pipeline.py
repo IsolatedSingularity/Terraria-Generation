@@ -12,6 +12,23 @@ from terraexplorer.pipeline import GenerationCancelledError, TerraExplorerPipeli
 from terraexplorer.tiles import Biome, Liquid, Tile, Wall
 
 
+class OffsetRng:
+    """Deterministic spread RNG that always chooses one requested offset."""
+
+    def __init__(self, dx: int) -> None:
+        self.dx = dx
+
+    def integers(self, low: int, high: int, *, size: tuple[int, int]):
+        del low, high
+        offsets = np.zeros(size, dtype=np.int64)
+        offsets[:, 1] = self.dx
+        return offsets
+
+    @staticmethod
+    def random(shape):
+        return np.zeros(shape)
+
+
 def test_generation_is_deterministic_and_uses_independent_arrays() -> None:
     first = generate_world(WorldConfig(seed="repeatable"))
     second = generate_world(WorldConfig(seed="repeatable"))
@@ -71,6 +88,7 @@ def test_researched_biome_geometry_is_present_in_generated_world() -> None:
     assert world.metadata["ocean_cave_generated"] is False
     assert (snow_x < midpoint) != (jungle_x < midpoint)
     assert (desert_x < midpoint) == (jungle_x < midpoint)
+    assert abs(desert_x - jungle_x) >= round(world.shape[1] * 0.18)
 
     surface_width = np.count_nonzero(world.biomes[world.layers.world_surface + 4] == Biome.SNOW)
     underground_width = np.count_nonzero(world.biomes[world.layers.rock_layer + 20] == Biome.SNOW)
@@ -106,6 +124,7 @@ def test_showcase_structures_are_real_world_state() -> None:
         "Jungle temple",
         "Pyramid",
         "Ruined house",
+        "Underground cabin",
     } <= marker_kinds
     assert np.any(world.tiles == Tile.OBSIDIAN_BRICK)
     assert np.any(world.tiles == Tile.HELLFORGE)
@@ -116,6 +135,19 @@ def test_showcase_structures_are_real_world_state() -> None:
     assert np.any(world.tiles == Tile.MINECART_TRACK)
     assert world.metadata["minecart_track_count"] >= 1
     assert any(marker.kind == "Minecart track" for marker in world.structures)
+    assert world.metadata["underground_cabin_count"] >= 1
+
+    cabins = [marker for marker in world.structures if marker.kind == "Underground cabin"]
+    for cabin in cabins:
+        for marker in world.structures:
+            if marker is cabin:
+                continue
+            assert not (
+                cabin.x < marker.x + marker.width
+                and cabin.x + cabin.width > marker.x
+                and cabin.y < marker.y + marker.height
+                and cabin.y + cabin.height > marker.y
+            )
 
     for island in (marker for marker in world.structures if marker.kind == "Floating island"):
         island_liquid = world.liquid_amount[
@@ -205,29 +237,19 @@ def test_reference_minibiomes_have_bounds_and_ocean_cave_state() -> None:
 
 
 def test_biome_spread_stops_at_world_boundaries() -> None:
-    class ZeroRng:
-        @staticmethod
-        def random(shape):
-            return np.zeros(shape)
-
     world = generate_world(WorldConfig(seed="spread-boundary", evil=Evil.CORRUPTION))
     world.tiles[:] = Tile.GRASS
     world.biomes[:] = Biome.FOREST
     world.tiles[10, 0] = Tile.CORRUPT_GRASS
     world.biomes[10, 0] = Biome.CORRUPTION
 
-    advance_biome_spread(world, ZeroRng())
+    advance_biome_spread(world, OffsetRng(dx=1))
 
     assert world.biomes[10, 1] == Biome.CORRUPTION
     assert world.biomes[10, -1] == Biome.FOREST
 
 
 def test_hardmode_spread_reaches_three_tiles_without_crossing_hallow() -> None:
-    class ZeroRng:
-        @staticmethod
-        def random(shape):
-            return np.zeros(shape)
-
     world = GeneratedWorld.empty(WorldConfig(seed="spread-range", evil=Evil.CORRUPTION))
     world.tiles[:] = Tile.STONE
     world.biomes[:] = Biome.FOREST
@@ -237,11 +259,45 @@ def test_hardmode_spread_reaches_three_tiles_without_crossing_hallow() -> None:
     world.tiles[10, 7] = Tile.PEARLSTONE
     world.biomes[10, 7] = Biome.HALLOW
 
-    advance_biome_spread(world, ZeroRng())
+    advance_biome_spread(world, OffsetRng(dx=3))
 
     assert world.biomes[10, 6] == Biome.CORRUPTION
     assert world.tiles[10, 7] == Tile.PEARLSTONE
     assert world.biomes[10, 7] == Biome.HALLOW
+
+
+@pytest.mark.parametrize("defense", ("sunflower", "chlorophyte"))
+def test_reference_infection_defenses_block_nearby_evil_conversion(defense: str) -> None:
+    world = GeneratedWorld.empty(WorldConfig(seed=f"spread-{defense}"))
+    world.tiles[:] = Tile.STONE
+    world.biomes[:] = Biome.FOREST
+    world.metadata["hardmode"] = True
+    world.tiles[10, 3] = Tile.EBONSTONE
+    world.biomes[10, 3] = Biome.CORRUPTION
+    if defense == "sunflower":
+        world.tiles[8, 6] = Tile.SUNFLOWER
+    else:
+        world.tiles[8, 5:8] = Tile.CHLOROPHYTE
+
+    advance_biome_spread(world, OffsetRng(dx=3))
+
+    assert world.tiles[10, 6] == Tile.STONE
+    assert world.biomes[10, 6] == Biome.FOREST
+
+
+def test_chlorophyte_does_not_block_hallow_conversion() -> None:
+    world = GeneratedWorld.empty(WorldConfig(seed="spread-hallow-chlorophyte"))
+    world.tiles[:] = Tile.STONE
+    world.biomes[:] = Biome.FOREST
+    world.metadata["hardmode"] = True
+    world.tiles[10, 3] = Tile.PEARLSTONE
+    world.biomes[10, 3] = Biome.HALLOW
+    world.tiles[8, 5:8] = Tile.CHLOROPHYTE
+
+    advance_biome_spread(world, OffsetRng(dx=3))
+
+    assert world.tiles[10, 6] == Tile.PEARLSTONE
+    assert world.biomes[10, 6] == Biome.HALLOW
 
 
 def test_biome_labels_without_infected_material_do_not_spread() -> None:

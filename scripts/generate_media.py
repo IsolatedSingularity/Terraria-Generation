@@ -335,6 +335,7 @@ def _build_feature_distribution(world: GeneratedWorld) -> Image.Image:
         "Pyramid",
         "Ruined house",
         "Spider cave",
+        "Underground cabin",
         "Underground ocean",
     }
     for marker in world.structures:
@@ -388,6 +389,7 @@ def _build_feature_distribution(world: GeneratedWorld) -> Image.Image:
         ("HALLOW", _mask_anchor(world.biomes == Biome.HALLOW)),
         ("JUNGLE TEMPLE", _marker_anchor(world, "Jungle temple")),
         ("GEM CAVES", _marker_anchor(world, "Gem cave")),
+        ("UNDERGROUND CABINS", _marker_anchor(world, "Underground cabin")),
         ("RUINED HOUSES", _marker_anchor(world, "Ruined house")),
     ]
     image_box = (80, 120, 1400, 400)
@@ -591,13 +593,26 @@ def _install_media_containment(
     elif technique == "sunflowers":
         for x in range(barrier_x - 10, barrier_x + 11, 2):
             y = int(world.surface[x])
-            world.tiles[max(0, y - 1), x] = Tile.FLOWER
-            protected[y : min(world.shape[0], y + 5), max(0, x - 1) : x + 2] = True
+            world.tiles[max(0, y - 1), x] = Tile.SUNFLOWER
+        sunflower = world.tiles == Tile.SUNFLOWER
+        for dy in range(-2, 3):
+            for dx in range(-2, 3):
+                protected |= np.roll(np.roll(sunflower, dy, axis=0), dx, axis=1)
+        protected[:2] = False
+        protected[-2:] = False
+        protected[:, :2] = False
+        protected[:, -2:] = False
     elif technique == "chlorophyte":
         center_y = (world.layers.rock_layer + world.layers.underworld) // 2
-        yy, xx = np.ogrid[: world.shape[0], : world.shape[1]]
-        protected = (xx - barrier_x) ** 2 + (yy - center_y) ** 2 <= 14**2
-        world.tiles[center_y - 1 : center_y + 2, barrier_x - 1 : barrier_x + 2] = Tile.CHLOROPHYTE
+        cluster = ((0, 0), (-1, 0), (1, 0), (0, -1), (0, 1))
+        for dx, dy in cluster:
+            world.tiles[center_y + dy, barrier_x + dx] = Tile.CHLOROPHYTE
+        chlorophyte = world.tiles == Tile.CHLOROPHYTE
+        nearby_count = np.zeros(world.shape, dtype=np.uint8)
+        for dy in range(-5, 6):
+            for dx in range(-5, 6):
+                nearby_count += np.roll(np.roll(chlorophyte, dy, axis=0), dx, axis=1)
+        protected = nearby_count >= 3
     else:
         x0, x1 = barrier_x - 22, barrier_x + 23
         top = int(np.min(world.surface[x0:x1])) - 2
@@ -627,7 +642,7 @@ def _advance_media_hazards(
                 continue
             attempts = min(900, max(300, len(sources) // 2))
             surface_limit = world.surface[sources[:, 1]] + 4
-            weights = np.where(sources[:, 0] <= surface_limit, 6.0, 1.0)
+            weights = np.where(sources[:, 0] <= surface_limit, 2.0, 1.0)
             weights /= weights.sum()
             selected = sources[rng.choice(len(sources), size=attempts, replace=True, p=weights)]
             offsets = rng.integers(-3, 4, size=(attempts, 2))
@@ -660,7 +675,13 @@ def build_hazard_containment_animation() -> None:
     scenarios = (
         ("corruption", "Violet Quarantine", Evil.CORRUPTION, "trench", "THREE-TILE TRENCH"),
         ("crimson", "Red Garden", Evil.CRIMSON, "sunflowers", "SUNFLOWER CORDON"),
-        ("hallow", "Pearl Ward", Evil.CORRUPTION, "chlorophyte", "CHLOROPHYTE CLUSTER"),
+        (
+            "corruption",
+            "Verdant Defense",
+            Evil.CORRUPTION,
+            "chlorophyte",
+            "CHLOROPHYTE DEFENSE",
+        ),
         ("all", "Three Front Siege", Evil.CRIMSON, "bastion", "BRICK BASTION"),
     )
     states: list[
@@ -1452,7 +1473,7 @@ def build_spawn_heatmap() -> None:
     controls = (
         ("NPC HOUSING + SAFE ZONE", spawn_x, spawn_y, 62, 34, ACCENT),
         (
-            "PEACE CANDLE -23%",
+            "PEACE CANDLE | ATTEMPTS -23% | CAP -30%",
             min(world.shape[1] - 90, spawn_x + max(90, world.shape[1] // 9)),
             None,
             85,
@@ -1460,7 +1481,7 @@ def build_spawn_heatmap() -> None:
             GOLD,
         ),
         (
-            "SUNFLOWER -17%",
+            "SUNFLOWER | ATTEMPTS -17% | CAP -20%",
             max(40, spawn_x - max(70, world.shape[1] // 12)),
             None,
             42,

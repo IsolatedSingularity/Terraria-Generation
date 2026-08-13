@@ -5,6 +5,11 @@ TerraExplorer is an educational approximation. It follows the public vanilla
 concepts; it does not copy Terraria's source, internal tile IDs, RNG stream, or
 assets.
 
+The 107-step order is a stable project compatibility surface. New mechanical
+and visual audits use the optional version-locked Terraria 1.4.5.6 local corpus;
+they improve handlers and documentation without silently replacing the baseline
+or promising Terraria-compatible seeds.
+
 The authoritative machine-readable inventory is `terraexplorer/passes.py`. Run
 `terraexplorer passes` or `terraexplorer passes --json` to inspect it.
 
@@ -71,8 +76,12 @@ Guide.
 - Individual multi-floor Ruined Houses occupy the central Underworld, use
   obsidian or Hellstone brick, can be lava-flooded, and carry Hellforges.
 - Corruption, Crimson, and Hallow use bounded one-tile pre-Hardmode or
-  three-tile Hardmode reach, six-times-faster surface weighting, and competing
-  fronts that cannot overwrite one another.
+  three-tile Hardmode reach, source-sampled surface/deep updates, and competing
+  fronts that cannot overwrite one another. Sunflowers use a two-tile proximity
+  check; count-dependent Chlorophyte defense applies to evil conversion only.
+- Buried Chests now creates protected one- or two-floor underground cabins as
+  well as loose treasure, instead of representing the combined vanilla role
+  with isolated chest tiles alone.
 - The Micro Biomes pass lays long, gently sloped underground minecart tracks
   around protected structure bounds in addition to compact Gem Caves.
 - Controlled laboratories compare biome-containment strategies and couple a
@@ -83,7 +92,8 @@ Guide.
 - Liquid movement conserves quantity and resolves modeled contacts, but does not
   reproduce Terraria's full settling cadence, pressure behavior, or update order.
 - Biome spread compares interventions under a deterministic batch scheduler; it
-  is not an in-game tick-for-tick infection simulator.
+  is not an in-game tick-for-tick infection simulator, and batch iterations have
+  not been calibrated to elapsed game time.
 - Secret-seed world branches, richer structure variants, and smaller-scale
   biome-transition details remain approximations.
 - Small-world output needs an independent high-resolution validation suite in
@@ -92,6 +102,7 @@ Guide.
 ## References
 
 - [Project visual reference atlas](references/information/README.md)
+- [Visual and structural fidelity audit](VISUAL_FIDELITY.md)
 - [Vanilla World Generation Steps](https://github.com/tModLoader/tModLoader/wiki/Vanilla-World-Generation-Steps)
 - [WorldGenerator reference](https://docs.tmodloader.net/docs/stable/class_world_generator.html)
 - [WorldGen reference](https://docs.tmodloader.net/docs/stable/class_world_gen.html)

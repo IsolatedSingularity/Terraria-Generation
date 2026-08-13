@@ -72,6 +72,61 @@ def _place_marker(
     world.structures.append(StructureMarker(kind, x, y, width, height, symbol))
 
 
+def _can_place_structure(
+    world: GeneratedWorld,
+    x: int,
+    y: int,
+    width: int,
+    height: int,
+    *,
+    padding: int = 0,
+) -> bool:
+    """Reject out-of-world or overlapping structure bounds.
+
+    This is a compact analogue of Terraria's ``StructureMap`` placement guard.
+    It intentionally operates on TerraExplorer markers rather than game tile IDs.
+    """
+
+    left = x - padding
+    top = y - padding
+    right = x + width + padding
+    bottom = y + height + padding
+    if left < 1 or top < 1 or right >= world.shape[1] - 1 or bottom >= world.shape[0] - 1:
+        return False
+    for marker in world.structures:
+        marker_right = marker.x + marker.width
+        marker_bottom = marker.y + marker.height
+        if left < marker_right and right > marker.x and top < marker_bottom and bottom > marker.y:
+            return False
+    return True
+
+
+def _nearby_tile_count(
+    tiles: npt.NDArray[np.uint8],
+    tile: Tile,
+    radius: int,
+) -> npt.NDArray[np.uint16]:
+    """Count a tile type in a clipped square neighborhood without edge wrapping."""
+
+    source = tiles == tile
+    height, width = source.shape
+    counts = np.zeros(source.shape, dtype=np.uint16)
+    for dy in range(-radius, radius + 1):
+        source_y0 = max(0, -dy)
+        source_y1 = min(height, height - dy)
+        target_y0 = max(0, dy)
+        target_y1 = min(height, height + dy)
+        for dx in range(-radius, radius + 1):
+            source_x0 = max(0, -dx)
+            source_x1 = min(width, width - dx)
+            target_x0 = max(0, dx)
+            target_x1 = min(width, width + dx)
+            counts[target_y0:target_y1, target_x0:target_x1] += source[
+                source_y0:source_y1, source_x0:source_x1
+            ]
+    return counts
+
+
 def _annotate_only(world: GeneratedWorld, rng: np.random.Generator) -> None:
     del world, rng
 
@@ -81,7 +136,9 @@ def reset(world: GeneratedWorld, rng: np.random.Generator) -> None:
     dungeon_side = -1 if rng.integers(0, 2) == 0 else 1
     snow_x = round(width * (0.14 if dungeon_side < 0 else 0.86))
     jungle_x = round(width * (0.78 if dungeon_side < 0 else 0.22))
-    desert_x = round(width * (0.68 if dungeon_side < 0 else 0.32))
+    # Vanilla stores biome origins and uses them to avoid destructive overlap.
+    # Keep Desert on the Jungle side, but leave a distinct transition band.
+    desert_x = round(width * (0.58 if dungeon_side < 0 else 0.42))
     evil_x = round(width * (0.30 if rng.integers(0, 2) == 0 else 0.72))
     if abs(evil_x - width // 2) < round(width * 0.12):
         evil_x = round(width * 0.78)
@@ -856,13 +913,13 @@ def advance_biome_spread(
     *,
     iterations: int = 1,
 ) -> None:
-    """Advance a bounded batch approximation of infectious biome growth.
+    """Advance a source-sampled approximation of infectious biome growth.
 
-    Hardmode sources can reach a 7 by 7 square centered on the source tile.
-    Surface candidates receive six times the conversion probability of deeper
-    candidates, mirroring Terraria's separate tile-update sampling rates. Evil
-    and Hallow materials are deliberately absent from the vulnerable set, so
-    competing fronts meet instead of converting one another.
+    Hardmode sources attempt conversion inside the game's three-tile square
+    reach. Exposed sources receive two attempts per deeper source, reflecting
+    the 1.4.5.6 overground/underground world-update rates without claiming that
+    one batch iteration equals game time. Sunflowers block nearby conversion;
+    Chlorophyte uses its local count-dependent defense against evil only.
     """
 
     evil_biome_id = Biome.CORRUPTION if world.config.evil is Evil.CORRUPTION else Biome.CRIMSON
@@ -870,26 +927,6 @@ def advance_biome_spread(
     evil_grass = Tile.CORRUPT_GRASS if world.config.evil is Evil.CORRUPTION else Tile.CRIMSON_GRASS
     hardmode = bool(world.metadata.get("hardmode", world.config.hardmode))
     radius = 3 if hardmode else 1
-
-    def within_range(source: npt.NDArray[np.bool_]) -> npt.NDArray[np.bool_]:
-        reached = np.zeros(world.shape, dtype=bool)
-        height, width = world.shape
-        for dy in range(-radius, radius + 1):
-            source_y0 = max(0, -dy)
-            source_y1 = min(height, height - dy)
-            target_y0 = max(0, dy)
-            target_y1 = min(height, height + dy)
-            for dx in range(-radius, radius + 1):
-                if dx == 0 and dy == 0:
-                    continue
-                source_x0 = max(0, -dx)
-                source_x1 = min(width, width - dx)
-                target_x0 = max(0, dx)
-                target_x1 = min(width, width + dx)
-                reached[target_y0:target_y1, target_x0:target_x1] |= source[
-                    source_y0:source_y1, source_x0:source_x1
-                ]
-        return reached
 
     for _ in range(max(0, iterations)):
         vulnerable_tiles = (
@@ -911,17 +948,52 @@ def advance_biome_spread(
         hallow = (world.biomes == Biome.HALLOW) & np.isin(
             world.tiles, (Tile.PEARLSTONE, Tile.HALLOW_GRASS)
         )
-        evil_edge = within_range(evil)
-        hallow_edge = within_range(hallow)
-        surface_band = np.arange(world.shape[0])[:, None] <= world.surface[None, :] + 4
-        probability = np.where(surface_band, 0.18, 0.03)
-        evil_growth = natural & evil_edge & (rng.random(world.shape) < probability)
-        hallow_growth = (
-            natural
-            & (world.tiles != Tile.JUNGLE_GRASS)
-            & hallow_edge
-            & (rng.random(world.shape) < probability)
-        )
+        sunflower_nearby = _nearby_tile_count(world.tiles, Tile.SUNFLOWER, 2) > 0
+        chlorophyte_count = _nearby_tile_count(world.tiles, Tile.CHLOROPHYTE, 5)
+
+        def sampled_growth(
+            source: npt.NDArray[np.bool_],
+            *,
+            allow_jungle: bool,
+            chlorophyte_defense: bool,
+        ) -> npt.NDArray[np.bool_]:
+            growth = np.zeros(world.shape, dtype=bool)
+            sources = np.argwhere(source)
+            if not len(sources):
+                return growth
+            surface_limit = world.surface[sources[:, 1]] + 4
+            attempts_per_source = np.where(sources[:, 0] <= surface_limit, 2, 1)
+            attempts = np.repeat(sources, attempts_per_source, axis=0)
+            if world.metadata.get("downed_plantera"):
+                attempts = attempts[rng.random(len(attempts)) >= 0.5]
+            if not len(attempts):
+                return growth
+            offsets = rng.integers(-radius, radius + 1, size=(len(attempts), 2))
+            targets = attempts + offsets
+            valid = (
+                (targets[:, 0] >= 1)
+                & (targets[:, 0] < world.shape[0] - 1)
+                & (targets[:, 1] >= 1)
+                & (targets[:, 1] < world.shape[1] - 1)
+                & np.any(offsets != 0, axis=1)
+            )
+            targets = targets[valid]
+            if not len(targets):
+                return growth
+            target_y, target_x = targets[:, 0], targets[:, 1]
+            accepted = natural[target_y, target_x] & ~sunflower_nearby[target_y, target_x]
+            if not allow_jungle:
+                accepted &= world.tiles[target_y, target_x] != Tile.JUNGLE_GRASS
+            if chlorophyte_defense:
+                counts = chlorophyte_count[target_y, target_x]
+                block_probability = np.where(counts >= 3, 1.0, (counts + 1) / 5.0)
+                block_probability[counts == 0] = 0.0
+                accepted &= rng.random(len(targets)) >= block_probability
+            growth[target_y[accepted], target_x[accepted]] = True
+            return growth
+
+        evil_growth = sampled_growth(evil, allow_jungle=True, chlorophyte_defense=True)
+        hallow_growth = sampled_growth(hallow, allow_jungle=False, chlorophyte_defense=False)
         contested = evil_growth & hallow_growth
         evil_wins = rng.random(world.shape) < 0.5
         evil_growth &= ~contested | evil_wins
@@ -1207,10 +1279,15 @@ def pyramids(world: GeneratedWorld, rng: np.random.Generator) -> None:
 def living_trees(world: GeneratedWorld, rng: np.random.Generator) -> None:
     count = int(_pick(world, 2, 5))
     coast = int(_pick(world, 28, 450))
-    for _ in range(count):
-        x = int(rng.integers(coast, world.shape[1] - coast))
-        if world.biomes[int(world.surface[x]), x] not in (Biome.FOREST, Biome.JUNGLE):
-            continue
+    candidate_x = np.arange(coast, world.shape[1] - coast)
+    candidate_y = world.surface[candidate_x].astype(np.intp)
+    surface_biomes = world.biomes[candidate_y, candidate_x]
+    candidate_x = candidate_x[np.isin(surface_biomes, (Biome.FOREST, Biome.JUNGLE))]
+    if not len(candidate_x):
+        return
+    chosen_x = rng.choice(candidate_x, size=min(count, len(candidate_x)), replace=False)
+    for selected_x in chosen_x:
+        x = int(selected_x)
         y = int(world.surface[x])
         height = int(_pick(world, rng.integers(9, 14), rng.integers(35, 70)))
         trunk_half = int(_pick(world, 1, 3))
@@ -1444,7 +1521,61 @@ def life_crystals(world: GeneratedWorld, rng: np.random.Generator) -> None:
 
 
 def buried_chests(world: GeneratedWorld, rng: np.random.Generator) -> None:
-    _place_surface_objects(world, rng, Tile.CHEST, int(_pick(world, 7, 80)))
+    target_houses = int(_pick(world, 2, 24))
+    placed_houses = 0
+    attempts = target_houses * 30
+    for _ in range(attempts):
+        if placed_houses >= target_houses:
+            break
+        room_width = int(_pick(world, rng.integers(10, 15), rng.integers(22, 35)))
+        room_height = int(_pick(world, rng.integers(7, 10), rng.integers(12, 19)))
+        x = int(rng.integers(3, world.shape[1] - room_width - 3))
+        y = int(
+            rng.integers(
+                world.layers.rock_layer,
+                max(world.layers.rock_layer + 1, world.layers.underworld - room_height - 3),
+            )
+        )
+        padding = int(_pick(world, 2, 10))
+        if not _can_place_structure(
+            world,
+            x,
+            y,
+            room_width,
+            room_height,
+            padding=padding,
+        ):
+            continue
+        local_tiles = world.tiles[y : y + room_height, x : x + room_width]
+        air_share = float(np.mean(local_tiles == Tile.AIR))
+        local_liquid = world.liquid_amount[y : y + room_height, x : x + room_width]
+        if not 0.12 <= air_share <= 0.82 or np.any(local_liquid > 0):
+            continue
+
+        center_x = x + room_width // 2
+        center_y = y + room_height // 2
+        biome = Biome(int(world.biomes[center_y, center_x]))
+        wall = {
+            Biome.DESERT: Wall.SANDSTONE,
+            Biome.JUNGLE: Wall.JUNGLE,
+            Biome.SNOW: Wall.STONE,
+        }.get(biome, Wall.DIRT)
+        _carve_room(world, x, y, room_width, room_height, Tile.LIVING_WOOD, wall)
+        if room_height >= int(_pick(world, 9, 15)):
+            floor_y = y + room_height // 2
+            world.tiles[floor_y, x + 1 : x + room_width - 1] = Tile.PLATFORM
+            stair_x = x + 2 if placed_houses % 2 == 0 else x + room_width - 4
+            world.tiles[floor_y, stair_x : stair_x + 2] = Tile.AIR
+        door_x = x if rng.integers(0, 2) == 0 else x + room_width - 1
+        world.tiles[y + room_height - 4 : y + room_height - 1, door_x] = Tile.AIR
+        chest_x = x + 2 if door_x > x else x + room_width - 3
+        world.tiles[y + room_height - 2, chest_x] = Tile.CHEST
+        _place_marker(world, "Underground cabin", x, y, room_width, room_height, "⌂")
+        placed_houses += 1
+
+    world.metadata["underground_cabin_count"] = placed_houses
+    loose_chests = max(0, int(_pick(world, 7, 80)) - placed_houses)
+    _place_surface_objects(world, rng, Tile.CHEST, loose_chests)
 
 
 def surface_chests(world: GeneratedWorld, rng: np.random.Generator) -> None:
@@ -1586,6 +1717,31 @@ def flowers(world: GeneratedWorld, rng: np.random.Generator) -> None:
         Tile.FLOWER,
         int(_pick(world, 15, 500)),
         (Tile.GRASS, Tile.JUNGLE_GRASS),
+    )
+
+
+def water_chests(world: GeneratedWorld, rng: np.random.Generator) -> None:
+    candidates = surface_candidates(world.tiles, (Tile.STONE, Tile.SAND, Tile.ICE))
+    candidates &= np.roll(world.liquid_amount > 0, 1, axis=0)
+    candidates[0] = False
+    positions = np.argwhere(candidates)
+    if not len(positions):
+        return
+    count = min(len(positions), int(_pick(world, 2, 12)))
+    selected = positions[rng.choice(len(positions), count, replace=False)]
+    world.tiles[selected[:, 0] - 1, selected[:, 1]] = Tile.CHEST
+
+
+def sunflowers(world: GeneratedWorld, rng: np.random.Generator) -> None:
+    """Place a sparse surface population with a distinct containment identity."""
+
+    _place_surface_objects(
+        world,
+        rng,
+        Tile.SUNFLOWER,
+        int(_pick(world, 4, 80)),
+        (Tile.GRASS,),
+        Biome.FOREST,
     )
 
 
@@ -1847,14 +2003,12 @@ jungle_chests = surface_chests
 remove_sand_water = shell_piles = ice_polish = wall_variety = _annotate_only
 oasis = lakes
 statues = piles = _annotate_only
-water_chests = buried_chests
 moss = moss_grass = mushrooms = jungle_plants = mud_walls = _annotate_only
 lihzahrd_altars = temple_polish
 jungle_trees = planting_trees
 surface_ore = gems
 fallen_log = _annotate_only
 grass_wall = cave_walls
-sunflowers = flowers
 webs_honey = webs
 ice_gems = gems
 larva = _annotate_only

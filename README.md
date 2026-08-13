@@ -3,6 +3,12 @@
   TerraExplorer
 </h1>
 
+<!--
+AGENT NOTE:
+For technical generation references, biome mechanics, and the optional local version-locked vanilla Terraria implementation corpus, please refer to the ignored `Game Reference/` directory when it is present. It is not included in public clones.
+Check `Game Reference/README.md` for instructions on how to use `Query-TerrariaLibrary.ps1` to query the corpus and find specific method ranges. Do not attempt to read massive files like `WorldGen.cs` in full.
+-->
+
 <p align="center">
   <strong>A deterministic, explorable 2D world-generation laboratory.</strong><br>
   One seed enters. Stone, jungle, ruin, and hunger answer.
@@ -14,7 +20,7 @@
   <img src="https://img.shields.io/badge/worlds-deterministic-d09a45" alt="Deterministic worlds">
 </p>
 
-TerraExplorer turns a text seed into a complete tile world that can be watched,
+TerraExplorer turns a text seed into a complete TerraExplorer world state that can be watched,
 scrubbed through, inspected, rendered, and exported. It is a laboratory built
 for the moment before the first torch is placed, when the map is still becoming
 itself. Terrain rises. Caverns split. The Dungeon drives downward. The Jungle
@@ -99,7 +105,7 @@ deeper `4200 x 1200` grid. Windows packaging produces
 
 > Leave the world alone long enough and the borders begin to move.
 
-Hardmode infection checks the square neighborhood within three tiles of a
+Hardmode infection checks a square neighborhood within three tiles of a sampled
 source. TerraExplorer models that reach as
 
 $$
@@ -107,20 +113,24 @@ $$
 (y,x)\in S,\ |\Delta x|\le3,\ |\Delta y|\le3\}.
 $$
 
-The batch probability is weighted to explain the visible difference between
-surface and underground advance:
+The Terraria 1.4.5.6 reference dispatches separate overground and underground
+tile-update streams at relative rates of two to one. TerraExplorer preserves
+that distinction inside each educational batch:
 
 $$
-P(\text{conversion})=
+u(s)=
 \begin{cases}
-0.18, & y\le s(x)+4,\\
-0.03, & y>s(x)+4.
+2, & y\le s(x)+4,\\
+1, & y>s(x)+4,
 \end{cases}
 $$
 
-That six-to-one ratio represents the separate surface and underground update
-rates described by the public biome-spread rules. This remains an educational
-batch scheduler, not a claim of frame-perfect game timing.
+where `u(s)` is the number of conversion attempts assigned to a source during
+one model iteration. Each attempt samples an offset from the three-tile square.
+Sunflowers block targets in a two-tile neighborhood. Chlorophyte searches a
+five-tile neighborhood and uses the local Chlorophyte count to defend against
+Corruption or Crimson, but not Hallow. This remains an educational batch
+scheduler, not a mapping from iterations to in-game time.
 
 ```python
 world.metadata["hardmode"] = True
@@ -177,7 +187,7 @@ for marker in world.structures:
 ![Feature distribution across the Ash Compass world](docs/media/terraexplorer_world.png)
 
 The map includes both oceans, surface biomes, Floating Islands, Living Trees,
-the Dungeon, Pyramid, Aether, Jungle Temple, Hives, Granite, Glowing Mushroom
+the Dungeon, Pyramid, Aether, Jungle Temple, Hives, underground cabins, Granite, Glowing Mushroom
 and Spider pockets, Gem Caves, minecart tracks, Ruined Houses, the Underground
 Ocean, Corruption, Hallow, and every repeated generated instance. The Meteorite
 is a deterministic visualization-only post-generation event. Its crater obeys
@@ -189,12 +199,14 @@ without changing the core 107-pass generator.
 > A biome is not a color. It is terrain with a history.
 
 Biome regions start from clipped seeded bands, but the atlas crop is selected
-by a separate presentation objective. For candidate crop (C), target mask (M),
-and crop center (c_C), the optimizer maximizes
+by a separate presentation objective. For candidate crop (C), visible-state
+mask (V), target mask (M), area (A), and target center (c_M), the optimizer
+maximizes
 
 $$
-J(C)=\frac{|C\cap M|}{|C|}
--\lambda\frac{\lVert c_C-c_M\rVert_2}{\sqrt{48^2+72^2}}.
+J(C)=\frac{|C\cap M|}{\max(1,|C\cap V|)}
++\frac{\min(|C\cap M|,0.35A)}{A}
+-0.001|c_{C,x}-c_{M,x}|-0.0005|c_{C,y}-c_{M,y}|.
 $$
 
 This favors biome purity first and centering second. Relevant structures and
@@ -237,9 +249,11 @@ S_{t+1}=S_t\cup
 \{z:z\in\mathcal N_3(S_t),\ z\in V,\ z\notin K\}.
 $$
 
-Surface source tiles receive six times the sampling weight of underground
-sources. Established Corruption, Crimson, and Hallow cannot overwrite one
-another.
+Surface source tiles receive twice the sampling weight of underground sources.
+Sunflowers reject conversion within two tiles. Chlorophyte defense follows the
+five-tile, count-dependent evil-biome check; it is not modeled as a generic
+barrier against Hallow. Established Corruption, Crimson, and Hallow cannot
+overwrite one another.
 
 ```python
 accepted = vulnerable & ~occupied & ~protected[target_y, target_x]
@@ -249,11 +263,11 @@ world.biomes[target_y[accepted], target_x[accepted]] = biome
 ![Four hazard containment strategies](docs/media/containment_lab.gif)
 
 `Violet Quarantine` uses a three-tile trench against Corruption. `Red Garden`
-uses a Sunflower cordon against Crimson. `Pearl Ward` places a Chlorophyte
-cluster against Hallow. `Three Front Siege` protects a brick bastion while all
-three hazards advance from different regions. These are explanatory generated
-world studies, not frame-exact game timing, and the public containment API is
-unchanged.
+uses a Sunflower cordon against Crimson. `Verdant Defense` places a Chlorophyte
+cluster against Corruption. `Three Front Siege` protects a brick bastion while
+all three hazards advance from different regions. These are explanatory
+generated-world studies, not frame-exact game timing, and the public
+containment API is unchanged.
 
 ## World Layers
 
@@ -299,10 +313,12 @@ $$
 H(y,x)=I(y,x)D(y)B(y,x)L(y,x)S(y,x).
 $$
 
-The score is zero inside the modeled spawn-safe and occupied housing zone,
-multiplied by `0.77` inside Peace Candle range, and multiplied by `0.83` near a
-Sunflower. A local Gaussian aggregation turns valid individual spawn tiles into
-a readable regional likelihood while preserving those mechanical inputs.
+The score is zero inside the modeled spawn-safe and occupied housing zone. Its
+attempt-frequency component is multiplied by `1/1.3` inside Peace Candle range
+and `1/1.2` near a Sunflower. The figure also labels their separate modeled
+maximum-spawn factors, `0.70` and `0.80`; those caps are not compounded into the
+standing-space heat value. A local Gaussian aggregation turns valid individual
+spawn tiles into a readable regional opportunity map.
 
 ```python
 valid = three_air_tiles & solid_floor & ~lava
@@ -361,15 +377,29 @@ name.
 
 > Accuracy begins by naming the distance between model and world.
 
-TerraExplorer follows the public 107-step Terraria 1.4.4.9 generation order as
-a reference, with its own IDs, algorithms, random streams, and art. The current
+TerraExplorer preserves the public 107-step Terraria 1.4.4.9 generation order as
+its stable pipeline contract. Accuracy work is checked against an optional local
+Terraria 1.4.5.6 implementation corpus without silently changing that ordering
+or claiming seed compatibility with Terraria.
+
+| Surface | Fidelity target |
+|---|---|
+| Pipeline order | Stable 1.4.4.9-inspired 107-step contract |
+| Mechanical and visual research | Version-locked 1.4.5.6 local reference |
+| RNG and IDs | TerraExplorer-specific; not Terraria-compatible |
+| Output | NumPy/PNG/GIF/JSON/NPZ, never `.wld` |
+
+The generator uses its own IDs, algorithms, random streams, and art. The current
 inventory contains 68 modeled passes, 38 approximated passes, and one documented
 pass. `Micro Biomes` is now modeled because it adds long underground minecart
-tracks as well as compact gem caves.
+tracks as well as compact gem caves. `Buried Chests` now creates protected
+one- or two-floor underground cabins in addition to loose treasure.
 
 Modeled means a distinct operation changes world state or metadata. It does not
 mean byte-for-byte compatibility. The
 [fidelity inventory](docs/FIDELITY.md) states those boundaries; the
+[visual and structural audit](docs/VISUAL_FIDELITY.md) records figure-level
+evidence and remaining discrepancies; the
 [architecture guide](docs/ARCHITECTURE.md) explains data ownership and extension
 rules.
 
@@ -390,9 +420,10 @@ silhouette, and visual inspection within those rules.
 ### Open problems
 
 Liquid transfer is conservative but does not model Terraria's complete settling
-cadence or pressure behavior. Biome spread is deterministic and mechanically
-bounded, but it is still a batch approximation. Secret-seed branches, richer
-structure variants, biome-transition microterrain, and independent
+cadence or pressure behavior. Biome spread now samples sources and reproduces
+the audited Sunflower and Chlorophyte proximity rules, but its iterations remain
+uncalibrated batches. Secret-seed branches, richer structure variants,
+biome-transition microterrain, and independent
 high-resolution validation of the Small-world generator remain useful next
 experiments.
 

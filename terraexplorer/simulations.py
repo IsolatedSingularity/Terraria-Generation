@@ -93,7 +93,7 @@ def _install_containment(
         for x in range(max(1, barrier_x - 4), min(width - 1, barrier_x + 5), 2):
             y = int(world.surface[x])
             if y > 0:
-                world.tiles[y - 1, x] = Tile.FLOWER
+                world.tiles[y - 1, x] = Tile.SUNFLOWER
     elif strategy is ContainmentStrategy.CHLOROPHYTE:
         center_y = _chlorophyte_center_y(world, barrier_x)
         world.metadata["containment_chlorophyte_y"] = center_y
@@ -118,21 +118,32 @@ def _containment_protection(
     world: GeneratedWorld,
     strategy: ContainmentStrategy,
     barrier_x: int,
+    rng: np.random.Generator,
 ) -> npt.NDArray[np.bool_]:
+    del barrier_x
     protected = np.zeros(world.tiles.shape, dtype=bool)
     if strategy is ContainmentStrategy.SUNFLOWERS:
-        for x in range(max(1, barrier_x - 4), min(world.tiles.shape[1] - 1, barrier_x + 5), 2):
-            y = int(world.surface[x])
-            protected[y : min(world.tiles.shape[0], y + 3), x] = True
+        sunflower = world.tiles == Tile.SUNFLOWER
+        for dy in range(-2, 3):
+            for dx in range(-2, 3):
+                protected |= np.roll(np.roll(sunflower, dy, axis=0), dx, axis=1)
+        protected[:2] = False
+        protected[-2:] = False
+        protected[:, :2] = False
+        protected[:, -2:] = False
     elif strategy is ContainmentStrategy.CHLOROPHYTE:
-        center_y = int(
-            world.metadata.get(
-                "containment_chlorophyte_y",
-                _chlorophyte_center_y(world, barrier_x),
-            )
-        )
-        yy, xx = np.ogrid[: world.tiles.shape[0], : world.tiles.shape[1]]
-        protected = (xx - barrier_x) ** 2 + (yy - center_y) ** 2 <= 10**2
+        chlorophyte = world.tiles == Tile.CHLOROPHYTE
+        counts = np.zeros(world.tiles.shape, dtype=np.uint8)
+        for dy in range(-5, 6):
+            for dx in range(-5, 6):
+                counts += np.roll(np.roll(chlorophyte, dy, axis=0), dx, axis=1)
+        counts[:5] = 0
+        counts[-5:] = 0
+        counts[:, :5] = 0
+        counts[:, -5:] = 0
+        block_probability = np.where(counts >= 3, 1.0, (counts + 1) / 5.0)
+        block_probability[counts == 0] = 0.0
+        protected = rng.random(world.tiles.shape) < block_probability
     return protected
 
 
@@ -160,7 +171,7 @@ def _advance_containment(
     if not len(sources):
         return
     surface_limit = world.surface[sources[:, 1]] + 4
-    weights = np.where(sources[:, 0] <= surface_limit, 6.0, 1.0)
+    weights = np.where(sources[:, 0] <= surface_limit, 2.0, 1.0)
     weights /= weights.sum()
     chosen = sources[rng.choice(len(sources), size=attempts, replace=True, p=weights)]
     offsets = rng.integers(-3, 4, size=(attempts, 2))
@@ -177,7 +188,7 @@ def _advance_containment(
         return
     target_y, target_x = targets[:, 0], targets[:, 1]
     vulnerable = np.isin(world.tiles[target_y, target_x], _VULNERABLE)
-    protection = _containment_protection(world, strategy, barrier_x)
+    protection = _containment_protection(world, strategy, barrier_x, rng)
     accepted = vulnerable & ~protection[target_y, target_x]
     target_y, target_x = target_y[accepted], target_x[accepted]
     grass = np.isin(world.tiles[target_y, target_x], (Tile.GRASS, Tile.JUNGLE_GRASS))
@@ -192,11 +203,11 @@ def simulate_biome_containment(
     seed: int | str = "Containment Field",
     steps: int = 24,
 ) -> ContainmentResult:
-    """Run a controlled infection experiment with six-times-faster surface sampling.
+    """Run a controlled infection experiment with separate source sampling rates.
 
     Conversion attempts use Terraria's three-tile neighborhood. The interventions
-    intentionally isolate one mechanic at a time; they are educational models,
-    not claims of tick-for-tick source parity.
+    use the 1.4.5.6 Sunflower and Chlorophyte proximity rules. Iterations remain
+    educational batches, not claims of tick-for-tick source parity.
     """
 
     strategy = ContainmentStrategy(strategy)

@@ -199,6 +199,7 @@ def _draw_marker(draw: ImageDraw.ImageDraw, marker: StructureMarker, scale: int)
         "Jungle temple": "#e0a85a",
         "Floating island": "#9bc6e5",
         "Pyramid": "#e1ba6e",
+        "Underground cabin": "#c89b6b",
         "Ruined house": "#f08a4b",
         "Spider cave": "#cf7f9c",
         "Gem cave": "#67e0d2",

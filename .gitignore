@@ -1,4 +1,4 @@
-﻿# Python
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -88,3 +88,7 @@ logs/
 *.fdb_latexmk
 *.synctex.gz
 IDEAS_Terraria_Generation.txt
+
+# Game Reference and Assets
+Game Reference/
+ASSETS_LICENSE.txt
