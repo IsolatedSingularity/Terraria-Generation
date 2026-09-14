@@ -20,11 +20,11 @@ import os
 
 import numpy as np
 
+from Advanced.terrariaCorruptionEvolution import (
+    carveVPattern,
+    spreadInfection,
+)
 from Engine.algorithms import (
-    AIR,
-    DIRT,
-    GRASS,
-    HELLSTONE,
     STONE,
 )
 from Engine.constants import TINY, LayerDepths
@@ -35,11 +35,6 @@ from Engine.worldgen import (
     _miniOres,
     _miniSurface,
     generateMiniWorld,
-)
-
-from Advanced.terrariaCorruptionEvolution import (
-    carveVPattern,
-    spreadInfection,
 )
 
 applyTokyoNight()

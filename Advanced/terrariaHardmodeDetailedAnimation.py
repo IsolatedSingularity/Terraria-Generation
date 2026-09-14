@@ -17,10 +17,9 @@ import os
 
 import numpy as np
 
+from Advanced.terrariaCorruptionEvolution import carveVPattern
 from Engine.theme import applyTokyoNight, saveTinyGif
 from Engine.worldgen import generateMiniWorld
-
-from Advanced.terrariaCorruptionEvolution import carveVPattern
 
 applyTokyoNight()
 
