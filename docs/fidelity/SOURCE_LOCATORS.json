@@ -1,0 +1,1743 @@
+{
+  "target_version": "1.4.5.7",
+  "steam_build_id": "24825745",
+  "corpus_root": "Game Reference",
+  "hash_algorithm": "sha256",
+  "status_meaning": "Locators verified against current source and read-only index; no runtime behavior validation.",
+  "excerpts": [
+    {
+      "id": "E001",
+      "path": "02_static/decompiled/client/Terraria/IO/WorldFileData.cs",
+      "sha256": "451507754ab5c41e9912ff7c3c51f402124309d200beb0566b457fa70efc2c18",
+      "line_start": 380,
+      "line_end": 443
+    },
+    {
+      "id": "E002",
+      "path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "line_start": 11460,
+      "line_end": 11595
+    },
+    {
+      "id": "E003",
+      "path": "02_static/decompiled/client/Terraria/WorldBuilding/WorldGenerator.cs",
+      "sha256": "bcc259b02daf4e3b3e42fabd504e7a29d16cf62f0dc5142b17f35b998842a2ba",
+      "line_start": 340,
+      "line_end": 466
+    },
+    {
+      "id": "E004",
+      "path": "02_static/decompiled/client/Terraria/WorldBuilding/WorldGenerator.cs",
+      "sha256": "bcc259b02daf4e3b3e42fabd504e7a29d16cf62f0dc5142b17f35b998842a2ba",
+      "line_start": 468,
+      "line_end": 552
+    },
+    {
+      "id": "E005",
+      "path": "02_static/decompiled/server/Terraria/Main.cs",
+      "sha256": "41b6199e5f9c43860622fb0223a74497dfc43842577755c078753f67b85c3d7d",
+      "line_start": 5480,
+      "line_end": 5525
+    },
+    {
+      "id": "E006",
+      "path": "02_static/decompiled/server/Terraria/Main.cs",
+      "sha256": "41b6199e5f9c43860622fb0223a74497dfc43842577755c078753f67b85c3d7d",
+      "line_start": 5595,
+      "line_end": 5655
+    },
+    {
+      "id": "E007",
+      "path": "02_static/decompiled/server/Terraria/Main.cs",
+      "sha256": "41b6199e5f9c43860622fb0223a74497dfc43842577755c078753f67b85c3d7d",
+      "line_start": 5175,
+      "line_end": 5210
+    },
+    {
+      "id": "E008",
+      "path": "02_static/decompiled/client/Terraria/IO/WorldFileData.cs",
+      "sha256": "451507754ab5c41e9912ff7c3c51f402124309d200beb0566b457fa70efc2c18",
+      "line_start": 232,
+      "line_end": 290
+    },
+    {
+      "id": "E009",
+      "path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/DungeonCrawler.cs",
+      "sha256": "d429b4f8a59fa26897cd1d28706129d23c54b60e663f8481fb9f50e19b732be6",
+      "line_start": 344,
+      "line_end": 420
+    },
+    {
+      "id": "E010",
+      "path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/DungeonCrawler.cs",
+      "sha256": "d429b4f8a59fa26897cd1d28706129d23c54b60e663f8481fb9f50e19b732be6",
+      "line_start": 465,
+      "line_end": 534
+    },
+    {
+      "id": "E011",
+      "path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "line_start": 4590,
+      "line_end": 4604
+    },
+    {
+      "id": "E012",
+      "path": "02_static/decompiled/server/Terraria/IO/WorldFile.cs",
+      "sha256": "17d45c43ad981505fb55d6067c21908bba10f5ce690c5f194cf24d951b4b83c2",
+      "line_start": 659,
+      "line_end": 714
+    },
+    {
+      "id": "E013",
+      "path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "line_start": 11939,
+      "line_end": 11988
+    },
+    {
+      "id": "E014",
+      "path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "line_start": 15273,
+      "line_end": 15343
+    },
+    {
+      "id": "E015",
+      "path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "line_start": 16383,
+      "line_end": 16480
+    },
+    {
+      "id": "E016",
+      "path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "line_start": 18322,
+      "line_end": 18346
+    },
+    {
+      "id": "E017",
+      "path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "line_start": 34514,
+      "line_end": 34580
+    },
+    {
+      "id": "E018",
+      "path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "line_start": 35686,
+      "line_end": 35739
+    },
+    {
+      "id": "E019",
+      "path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/LayoutProviders/LegacyDungeonLayoutProvider.cs",
+      "sha256": "404c1459257371ecc43dbd935db0ae0e821447559daf17c43adc388b15c59c31",
+      "line_start": 17,
+      "line_end": 98
+    },
+    {
+      "id": "E020",
+      "path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "line_start": 16067,
+      "line_end": 16178
+    },
+    {
+      "id": "E021",
+      "path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "line_start": 7,
+      "line_end": 66
+    },
+    {
+      "id": "E022",
+      "path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "line_start": 28934,
+      "line_end": 29012
+    },
+    {
+      "id": "E023",
+      "path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "line_start": 29532,
+      "line_end": 29570
+    },
+    {
+      "id": "E024",
+      "path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "line_start": 29995,
+      "line_end": 30047
+    },
+    {
+      "id": "E025",
+      "path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "line_start": 30105,
+      "line_end": 30134
+    },
+    {
+      "id": "E026",
+      "path": "02_static/decompiled/client/Terraria/WorldBuilding/StructureMap.cs",
+      "sha256": "b405a1623706b48a84ddd56d9d65c810b448ec0cfc4b2fba55a0a4078dab1bfc",
+      "line_start": 19,
+      "line_end": 75
+    },
+    {
+      "id": "E027",
+      "path": "02_static/decompiled/client/Terraria/WorldBuilding/StructureMap.cs",
+      "sha256": "b405a1623706b48a84ddd56d9d65c810b448ec0cfc4b2fba55a0a4078dab1bfc",
+      "line_start": 103,
+      "line_end": 132
+    },
+    {
+      "id": "E028",
+      "path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "line_start": 594,
+      "line_end": 628
+    },
+    {
+      "id": "E029",
+      "path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "line_start": 679,
+      "line_end": 743
+    },
+    {
+      "id": "E030",
+      "path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "line_start": 216,
+      "line_end": 247
+    },
+    {
+      "id": "E031",
+      "path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Rooms/LegacyDungeonRoom.cs",
+      "sha256": "a120d220e8500621d3e45558aec999fab17316a64b9b6a40d99e424d98089f99",
+      "line_start": 32,
+      "line_end": 90
+    },
+    {
+      "id": "E032",
+      "path": "02_static/decompiled/client/Terraria/NPC.cs",
+      "sha256": "ff2b422b5f33e4a172136bfc14a453cb784e1b3d8a598d4d168ee1f30af063dc",
+      "line_start": 94053,
+      "line_end": 94062
+    },
+    {
+      "id": "E033",
+      "path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Halls/LegacyDungeonHall.cs",
+      "sha256": "3d3e1b6523f5bf4587676d622fe4a612fe2354892c56e475931ee411e1d3f9e0",
+      "line_start": 51,
+      "line_end": 99
+    },
+    {
+      "id": "E034",
+      "path": "02_static/decompiled/client/Terraria/NPC.cs",
+      "sha256": "ff2b422b5f33e4a172136bfc14a453cb784e1b3d8a598d4d168ee1f30af063dc",
+      "line_start": 290,
+      "line_end": 388
+    },
+    {
+      "id": "E035",
+      "path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Entrances/LegacyDungeonEntrance.cs",
+      "sha256": "b8948dc4ec62edb0d42e97cc8e25f5f23c5c15aa60cc895a842cef93c36f0dbf",
+      "line_start": 23,
+      "line_end": 74
+    },
+    {
+      "id": "E036",
+      "path": "02_static/decompiled/client/Terraria/IO/WorldFile.cs",
+      "sha256": "17d45c43ad981505fb55d6067c21908bba10f5ce690c5f194cf24d951b4b83c2",
+      "line_start": 860,
+      "line_end": 909
+    },
+    {
+      "id": "E037",
+      "path": "02_static/decompiled/client/Terraria/IO/WorldFile.cs",
+      "sha256": "17d45c43ad981505fb55d6067c21908bba10f5ce690c5f194cf24d951b4b83c2",
+      "line_start": 1186,
+      "line_end": 1221
+    },
+    {
+      "id": "E038",
+      "path": "02_static/decompiled/client/Terraria/NPC.cs",
+      "sha256": "ff2b422b5f33e4a172136bfc14a453cb784e1b3d8a598d4d168ee1f30af063dc",
+      "line_start": 984,
+      "line_end": 1073
+    },
+    {
+      "id": "E039",
+      "path": "02_static/decompiled/client/Terraria/NPC.cs",
+      "sha256": "ff2b422b5f33e4a172136bfc14a453cb784e1b3d8a598d4d168ee1f30af063dc",
+      "line_start": 386,
+      "line_end": 430
+    },
+    {
+      "id": "E040",
+      "path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "line_start": 12914,
+      "line_end": 12926
+    },
+    {
+      "id": "E041",
+      "path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "line_start": 23298,
+      "line_end": 23314
+    },
+    {
+      "id": "E042",
+      "path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "line_start": 16000,
+      "line_end": 16031
+    },
+    {
+      "id": "E043",
+      "path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Rooms/LegacyDungeonRoom.cs",
+      "sha256": "a120d220e8500621d3e45558aec999fab17316a64b9b6a40d99e424d98089f99",
+      "line_start": 164,
+      "line_end": 188
+    },
+    {
+      "id": "E044",
+      "path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Halls/LegacyDungeonHall.cs",
+      "sha256": "3d3e1b6523f5bf4587676d622fe4a612fe2354892c56e475931ee411e1d3f9e0",
+      "line_start": 188,
+      "line_end": 208
+    },
+    {
+      "id": "E045",
+      "path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Entrances/LegacyDungeonEntrance.cs",
+      "sha256": "b8948dc4ec62edb0d42e97cc8e25f5f23c5c15aa60cc895a842cef93c36f0dbf",
+      "line_start": 85,
+      "line_end": 108
+    },
+    {
+      "id": "E046",
+      "path": "02_static/decompiled/client/Terraria/Utilities/UnifiedRandom.cs",
+      "sha256": "49a21bbbf163feabd01a150a2f6bd8e855925e808b4810b89324b83bd004901a",
+      "line_start": 6,
+      "line_end": 86
+    },
+    {
+      "id": "E047",
+      "path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "line_start": 22724,
+      "line_end": 22772
+    },
+    {
+      "id": "E048",
+      "path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "line_start": 35387,
+      "line_end": 35400
+    },
+    {
+      "id": "E049",
+      "path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "line_start": 33144,
+      "line_end": 33187
+    },
+    {
+      "id": "E050",
+      "path": "02_static/decompiled/client/Terraria/TileObject.cs",
+      "sha256": "b8eea7abce48f12e4ff2d1a4b89c31ab4e1fe45c6b45b47d3ae097c18e5b0620",
+      "line_start": 204,
+      "line_end": 227
+    },
+    {
+      "id": "E051",
+      "path": "02_static/decompiled/client/Terraria/ObjectData/TileObjectData.cs",
+      "sha256": "4199874585ee75536536a24785027968f10ce39d84eb7937c9634f9a811cfc70",
+      "line_start": 5126,
+      "line_end": 5154
+    },
+    {
+      "id": "E052",
+      "path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "line_start": 10476,
+      "line_end": 10489
+    },
+    {
+      "id": "E053",
+      "path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "line_start": 3127,
+      "line_end": 3127
+    }
+  ],
+  "symbols": [
+    {
+      "container": "Terraria.WorldGen",
+      "name": "genRand",
+      "signature": "public static UnifiedRandom genRand",
+      "kind": "property",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "line_start": 4597,
+      "line_end": 4597,
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "inspected_excerpt_ids": [
+        "E011"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.WorldGen",
+      "name": "Reset",
+      "signature": "public static void Reset()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "line_start": 11534,
+      "line_end": 11919,
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "inspected_excerpt_ids": [
+        "E002"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.WorldGen",
+      "name": "GenerateWorld",
+      "signature": "public static bool GenerateWorld(GenerationProgress customProgressObject = null, WorldGenerator.Controller customController = null)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "line_start": 11496,
+      "line_end": 11532,
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "inspected_excerpt_ids": [
+        "E002"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.WorldGen",
+      "name": "AddGenerationPass",
+      "signature": "private static void AddGenerationPass(string name, WorldGenLegacyMethod method)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "line_start": 10476,
+      "line_end": 10479,
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "inspected_excerpt_ids": [
+        "E052"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.WorldGen",
+      "name": "AddGenerationPass",
+      "signature": "private static void AddGenerationPass(GenPass pass)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "line_start": 10481,
+      "line_end": 10484,
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "inspected_excerpt_ids": [
+        "E052"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.WorldGen",
+      "name": "AddGenerationPass",
+      "signature": "private static void AddGenerationPass(string name, double weight, WorldGenLegacyMethod method)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "line_start": 10486,
+      "line_end": 10489,
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "inspected_excerpt_ids": [
+        "E052"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.WorldGen",
+      "name": "AddPasses",
+      "signature": "public static void AddPasses()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "line_start": 11939,
+      "line_end": 23296,
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "inspected_excerpt_ids": [
+        "E013",
+        "E014",
+        "E015",
+        "E016",
+        "E020",
+        "E040",
+        "E042",
+        "E047"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.WorldGen",
+      "name": "DisablePassesForSpecialSeeds",
+      "signature": "public static void DisablePassesForSpecialSeeds(List<GenPass> passes)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "line_start": 23298,
+      "line_end": 23314,
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "inspected_excerpt_ids": [
+        "E041"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.WorldGen",
+      "name": "GrowLivingTree",
+      "signature": "public static bool GrowLivingTree(int i, int j, bool patch = false)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "line_start": 28934,
+      "line_end": 29570,
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "inspected_excerpt_ids": [
+        "E022",
+        "E023"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.WorldGen",
+      "name": "GrowLivingTree_CanPlaceLeaves",
+      "signature": "private static bool GrowLivingTree_CanPlaceLeaves(int i, int j)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "line_start": 29572,
+      "line_end": 29592,
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.WorldGen",
+      "name": "GrowLivingTree_HorizontalTunnel",
+      "signature": "private static bool GrowLivingTree_HorizontalTunnel(int i, int j)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "line_start": 29594,
+      "line_end": 29830,
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.WorldGen",
+      "name": "GrowLivingTree_MakePassage",
+      "signature": "public static void GrowLivingTree_MakePassage(int j, int W, ref int minl, ref int minr, bool noSecretRoom = false)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "line_start": 29832,
+      "line_end": 30103,
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "inspected_excerpt_ids": [
+        "E024"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.WorldGen",
+      "name": "GrowLivingTreePassageRoom",
+      "signature": "private static void GrowLivingTreePassageRoom(int minl, int minr, int Y)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "line_start": 30105,
+      "line_end": 30314,
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "inspected_excerpt_ids": [
+        "E025"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.WorldGen",
+      "name": "makeTemple",
+      "signature": "public static void makeTemple(int x, int y, GenerationProgress progress = null)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "line_start": 34514,
+      "line_end": 35400,
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "inspected_excerpt_ids": [
+        "E017",
+        "E048"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.WorldGen",
+      "name": "makeTemple_GenerateBricks",
+      "signature": "public static void makeTemple_GenerateBricks(int numRooms, Rectangle[] roomRects, int[] roomDepths, bool forceStrictAngles, float progressCount, float progressPercentilePerLoop, GenerationProgress progress = null)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "line_start": 35402,
+      "line_end": 35478,
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.WorldGen",
+      "name": "templePart2",
+      "signature": "public static void templePart2()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "line_start": 35686,
+      "line_end": 35894,
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "inspected_excerpt_ids": [
+        "E018"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.WorldGen",
+      "name": "templeCleaner",
+      "signature": "public static void templeCleaner(int x, int y)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "line_start": 34411,
+      "line_end": 34446,
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.WorldGen",
+      "name": "templePather",
+      "signature": "public static Vector2D templePather(Vector2D templePath, int destX, int destY)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "line_start": 34448,
+      "line_end": 34486,
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.WorldGen",
+      "name": "AddLihzahrdAltar",
+      "signature": "public static void AddLihzahrdAltar(int x, int y)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "line_start": 33144,
+      "line_end": 33166,
+      "sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "inspected_excerpt_ids": [
+        "E049"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.IO.WorldFileData",
+      "name": "SetSeed",
+      "signature": "public void SetSeed(string seedText)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/IO/WorldFileData.cs",
+      "line_start": 393,
+      "line_end": 397,
+      "sha256": "451507754ab5c41e9912ff7c3c51f402124309d200beb0566b457fa70efc2c18",
+      "inspected_excerpt_ids": [
+        "E001"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.IO.WorldFileData",
+      "name": "TranslateSeed",
+      "signature": "public static int TranslateSeed(string seedText)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/IO/WorldFileData.cs",
+      "line_start": 399,
+      "line_end": 410,
+      "sha256": "451507754ab5c41e9912ff7c3c51f402124309d200beb0566b457fa70efc2c18",
+      "inspected_excerpt_ids": [
+        "E001"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.IO.WorldFileData",
+      "name": "TryApplyingCopiedSeed",
+      "signature": "public static bool TryApplyingCopiedSeed(string input, bool playSound, out string processedSeed, out string seedTextIncludingSecrets, out List<string> secretSeedTexts)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/IO/WorldFileData.cs",
+      "line_start": 232,
+      "line_end": 287,
+      "sha256": "451507754ab5c41e9912ff7c3c51f402124309d200beb0566b457fa70efc2c18",
+      "inspected_excerpt_ids": [
+        "E008"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.IO.WorldFile",
+      "name": "LoadWorld",
+      "signature": "public static void LoadWorld()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/IO/WorldFile.cs",
+      "line_start": 646,
+      "line_end": 795,
+      "sha256": "17d45c43ad981505fb55d6067c21908bba10f5ce690c5f194cf24d951b4b83c2",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.IO.WorldFile",
+      "name": "SaveNewWorld",
+      "signature": "public static void SaveNewWorld()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/IO/WorldFile.cs",
+      "line_start": 854,
+      "line_end": 858,
+      "sha256": "17d45c43ad981505fb55d6067c21908bba10f5ce690c5f194cf24d951b4b83c2",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.IO.WorldFile",
+      "name": "SaveWorld",
+      "signature": "public static void SaveWorld(bool resetTime = false, bool useTemps = false, bool canBeSkipped = false)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/IO/WorldFile.cs",
+      "line_start": 860,
+      "line_end": 871,
+      "sha256": "17d45c43ad981505fb55d6067c21908bba10f5ce690c5f194cf24d951b4b83c2",
+      "inspected_excerpt_ids": [
+        "E036"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.IO.WorldFile",
+      "name": "_SaveWorld",
+      "signature": "private static void _SaveWorld(bool useCloudSaving, bool resetTime, bool useTemps, bool canBeSkipped)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/IO/WorldFile.cs",
+      "line_start": 873,
+      "line_end": 909,
+      "sha256": "17d45c43ad981505fb55d6067c21908bba10f5ce690c5f194cf24d951b4b83c2",
+      "inspected_excerpt_ids": [
+        "E036"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.IO.WorldFile",
+      "name": "SaveWorld_Version2",
+      "signature": "public static void SaveWorld_Version2(BinaryWriter writer)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/IO/WorldFile.cs",
+      "line_start": 1186,
+      "line_end": 1204,
+      "sha256": "17d45c43ad981505fb55d6067c21908bba10f5ce690c5f194cf24d951b4b83c2",
+      "inspected_excerpt_ids": [
+        "E037"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.IO.WorldFile",
+      "name": "SaveFileFormatHeader",
+      "signature": "public static int SaveFileFormatHeader(BinaryWriter writer)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/IO/WorldFile.cs",
+      "line_start": 1206,
+      "line_end": 1242,
+      "sha256": "17d45c43ad981505fb55d6067c21908bba10f5ce690c5f194cf24d951b4b83c2",
+      "inspected_excerpt_ids": [
+        "E037"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.IO.WorldFile",
+      "name": "SaveWorldHeader",
+      "signature": "public static int SaveWorldHeader(BinaryWriter writer)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/IO/WorldFile.cs",
+      "line_start": 1257,
+      "line_end": 1272,
+      "sha256": "17d45c43ad981505fb55d6067c21908bba10f5ce690c5f194cf24d951b4b83c2",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.IO.WorldFile",
+      "name": "SaveWorldTiles",
+      "signature": "public static int SaveWorldTiles(BinaryWriter writer)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/IO/WorldFile.cs",
+      "line_start": 1468,
+      "line_end": 1641,
+      "sha256": "17d45c43ad981505fb55d6067c21908bba10f5ce690c5f194cf24d951b4b83c2",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.IO.WorldFile",
+      "name": "LoadWorldTiles",
+      "signature": "public static void LoadWorldTiles(BinaryReader reader, bool[] importance)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/IO/WorldFile.cs",
+      "line_start": 2559,
+      "line_end": 2764,
+      "sha256": "17d45c43ad981505fb55d6067c21908bba10f5ce690c5f194cf24d951b4b83c2",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.WorldBuilding.WorldGenerator",
+      "name": "WorldGenerator",
+      "signature": "public WorldGenerator(int seed, WorldGenConfiguration configuration, GenerationProgress progress = null, Controller controller = null)",
+      "kind": "constructor",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldBuilding/WorldGenerator.cs",
+      "line_start": 408,
+      "line_end": 414,
+      "sha256": "bcc259b02daf4e3b3e42fabd504e7a29d16cf62f0dc5142b17f35b998842a2ba",
+      "inspected_excerpt_ids": [
+        "E003"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.WorldBuilding.WorldGenerator",
+      "name": "RunPass",
+      "signature": "private GenPassResult RunPass(GenPass pass)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldBuilding/WorldGenerator.cs",
+      "line_start": 488,
+      "line_end": 517,
+      "sha256": "bcc259b02daf4e3b3e42fabd504e7a29d16cf62f0dc5142b17f35b998842a2ba",
+      "inspected_excerpt_ids": [
+        "E004"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.WorldBuilding.WorldGenerator",
+      "name": "GenerateWorld",
+      "signature": "public bool GenerateWorld()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldBuilding/WorldGenerator.cs",
+      "line_start": 421,
+      "line_end": 466,
+      "sha256": "bcc259b02daf4e3b3e42fabd504e7a29d16cf62f0dc5142b17f35b998842a2ba",
+      "inspected_excerpt_ids": [
+        "E003"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.Utilities.UnifiedRandom",
+      "name": "SetSeed",
+      "signature": "public void SetSeed(int Seed)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Utilities/UnifiedRandom.cs",
+      "line_start": 28,
+      "line_end": 61,
+      "sha256": "49a21bbbf163feabd01a150a2f6bd8e855925e808b4810b89324b83bd004901a",
+      "inspected_excerpt_ids": [
+        "E046"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.Utilities.UnifiedRandom",
+      "name": "InternalSample",
+      "signature": "private int InternalSample()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Utilities/UnifiedRandom.cs",
+      "line_start": 68,
+      "line_end": 89,
+      "sha256": "49a21bbbf163feabd01a150a2f6bd8e855925e808b4810b89324b83bd004901a",
+      "inspected_excerpt_ids": [
+        "E046"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.Utilities.UnifiedRandom",
+      "name": "Sample",
+      "signature": "protected double Sample()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Utilities/UnifiedRandom.cs",
+      "line_start": 63,
+      "line_end": 66,
+      "sha256": "49a21bbbf163feabd01a150a2f6bd8e855925e808b4810b89324b83bd004901a",
+      "inspected_excerpt_ids": [
+        "E046"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.Utilities.UnifiedRandom",
+      "name": "Next",
+      "signature": "public int Next()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Utilities/UnifiedRandom.cs",
+      "line_start": 106,
+      "line_end": 109,
+      "sha256": "49a21bbbf163feabd01a150a2f6bd8e855925e808b4810b89324b83bd004901a",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.Utilities.UnifiedRandom",
+      "name": "Next",
+      "signature": "public int Next(int minValue, int maxValue)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Utilities/UnifiedRandom.cs",
+      "line_start": 121,
+      "line_end": 133,
+      "sha256": "49a21bbbf163feabd01a150a2f6bd8e855925e808b4810b89324b83bd004901a",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.Utilities.UnifiedRandom",
+      "name": "Next",
+      "signature": "public int Next(int maxValue)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Utilities/UnifiedRandom.cs",
+      "line_start": 135,
+      "line_end": 142,
+      "sha256": "49a21bbbf163feabd01a150a2f6bd8e855925e808b4810b89324b83bd004901a",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.Utilities.UnifiedRandom",
+      "name": "NextDouble",
+      "signature": "public double NextDouble()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Utilities/UnifiedRandom.cs",
+      "line_start": 144,
+      "line_end": 147,
+      "sha256": "49a21bbbf163feabd01a150a2f6bd8e855925e808b4810b89324b83bd004901a",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.GameContent.Generation.Dungeon.DungeonCrawler",
+      "name": "MakeDungeon",
+      "signature": "public static void MakeDungeon(int x, int y, GenerationProgress progress = null)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/DungeonCrawler.cs",
+      "line_start": 344,
+      "line_end": 534,
+      "sha256": "d429b4f8a59fa26897cd1d28706129d23c54b60e663f8481fb9f50e19b732be6",
+      "inspected_excerpt_ids": [
+        "E009",
+        "E010"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.GameContent.Generation.Dungeon.DungeonCrawler",
+      "name": "SetupDungeonData",
+      "signature": "public static void SetupDungeonData(int currentDungeon, bool clearOld = false)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/DungeonCrawler.cs",
+      "line_start": 34,
+      "line_end": 52,
+      "sha256": "d429b4f8a59fa26897cd1d28706129d23c54b60e663f8481fb9f50e19b732be6",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.GameContent.Generation.Dungeon.DungeonCrawler",
+      "name": "SetupDungeonDataVariables",
+      "signature": "public static void SetupDungeonDataVariables(int iteration, UnifiedRandom genRand)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/DungeonCrawler.cs",
+      "line_start": 213,
+      "line_end": 342,
+      "sha256": "d429b4f8a59fa26897cd1d28706129d23c54b60e663f8481fb9f50e19b732be6",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.GameContent.Generation.Dungeon.DungeonCrawler",
+      "name": "SetupDungeonGenVarVariables",
+      "signature": "public static void SetupDungeonGenVarVariables(DungeonGenVars genVars, UnifiedRandom genRand)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/DungeonCrawler.cs",
+      "line_start": 54,
+      "line_end": 211,
+      "sha256": "d429b4f8a59fa26897cd1d28706129d23c54b60e663f8481fb9f50e19b732be6",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.GameContent.Generation.Dungeon.LayoutProviders.LegacyDungeonLayoutProvider",
+      "name": "ProvideLayout",
+      "signature": "public override void ProvideLayout(DungeonData data, GenerationProgress progress, UnifiedRandom genRand, ref int roomDelay)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/LayoutProviders/LegacyDungeonLayoutProvider.cs",
+      "line_start": 17,
+      "line_end": 23,
+      "sha256": "404c1459257371ecc43dbd935db0ae0e821447559daf17c43adc388b15c59c31",
+      "inspected_excerpt_ids": [
+        "E019"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.GameContent.Generation.Dungeon.LayoutProviders.LegacyDungeonLayoutProvider",
+      "name": "LegacyDungeonLayout",
+      "signature": "public void LegacyDungeonLayout(DungeonData data, GenerationProgress progress, UnifiedRandom genRand, ushort tileType, ushort crackedTileType, ushort wallType, int steps, int maxSteps, ref int roomDelay)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/LayoutProviders/LegacyDungeonLayoutProvider.cs",
+      "line_start": 25,
+      "line_end": 106,
+      "sha256": "404c1459257371ecc43dbd935db0ae0e821447559daf17c43adc388b15c59c31",
+      "inspected_excerpt_ids": [
+        "E019"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.GameContent.Generation.Dungeon.Rooms.LegacyDungeonRoom",
+      "name": "GenerateRoom",
+      "signature": "public override bool GenerateRoom(DungeonData data)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Rooms/LegacyDungeonRoom.cs",
+      "line_start": 32,
+      "line_end": 40,
+      "sha256": "a120d220e8500621d3e45558aec999fab17316a64b9b6a40d99e424d98089f99",
+      "inspected_excerpt_ids": [
+        "E031"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.GameContent.Generation.Dungeon.Rooms.LegacyDungeonRoom",
+      "name": "LegacyRoom",
+      "signature": "public void LegacyRoom(DungeonData data, int i, int j, bool generating)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Rooms/LegacyDungeonRoom.cs",
+      "line_start": 106,
+      "line_end": 312,
+      "sha256": "a120d220e8500621d3e45558aec999fab17316a64b9b6a40d99e424d98089f99",
+      "inspected_excerpt_ids": [
+        "E043"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.GameContent.Generation.Dungeon.Rooms.LegacyDungeonRoom",
+      "name": "GetProtectionTypeFromPoint",
+      "signature": "public override ProtectionType GetProtectionTypeFromPoint(int x, int y)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Rooms/LegacyDungeonRoom.cs",
+      "line_start": 58,
+      "line_end": 69,
+      "sha256": "a120d220e8500621d3e45558aec999fab17316a64b9b6a40d99e424d98089f99",
+      "inspected_excerpt_ids": [
+        "E031"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.GameContent.Generation.Dungeon.Halls.LegacyDungeonHall",
+      "name": "GenerateHall",
+      "signature": "public override void GenerateHall(DungeonData data)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Halls/LegacyDungeonHall.cs",
+      "line_start": 51,
+      "line_end": 56,
+      "sha256": "3d3e1b6523f5bf4587676d622fe4a612fe2354892c56e475931ee411e1d3f9e0",
+      "inspected_excerpt_ids": [
+        "E033"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.GameContent.Generation.Dungeon.Halls.LegacyDungeonHall",
+      "name": "GenerateHall",
+      "signature": "public bool GenerateHall(DungeonData data, int x, int y)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Halls/LegacyDungeonHall.cs",
+      "line_start": 58,
+      "line_end": 64,
+      "sha256": "3d3e1b6523f5bf4587676d622fe4a612fe2354892c56e475931ee411e1d3f9e0",
+      "inspected_excerpt_ids": [
+        "E033"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.GameContent.Generation.Dungeon.Halls.LegacyDungeonHall",
+      "name": "LegacyHall",
+      "signature": "public virtual void LegacyHall(DungeonData dungeonData, int i, int j, bool generating = false)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Halls/LegacyDungeonHall.cs",
+      "line_start": 66,
+      "line_end": 881,
+      "sha256": "3d3e1b6523f5bf4587676d622fe4a612fe2354892c56e475931ee411e1d3f9e0",
+      "inspected_excerpt_ids": [
+        "E033",
+        "E044"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.GameContent.Generation.Dungeon.Entrances.LegacyDungeonEntrance",
+      "name": "GenerateEntrance",
+      "signature": "public override bool GenerateEntrance(DungeonData data, int x, int y)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Entrances/LegacyDungeonEntrance.cs",
+      "line_start": 23,
+      "line_end": 29,
+      "sha256": "b8948dc4ec62edb0d42e97cc8e25f5f23c5c15aa60cc895a842cef93c36f0dbf",
+      "inspected_excerpt_ids": [
+        "E035"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.GameContent.Generation.Dungeon.Entrances.LegacyDungeonEntrance",
+      "name": "LegacyEntrance",
+      "signature": "public void LegacyEntrance(DungeonData data, int i, int j, bool generating)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Entrances/LegacyDungeonEntrance.cs",
+      "line_start": 31,
+      "line_end": 715,
+      "sha256": "b8948dc4ec62edb0d42e97cc8e25f5f23c5c15aa60cc895a842cef93c36f0dbf",
+      "inspected_excerpt_ids": [
+        "E035",
+        "E045"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.WorldBuilding.StructureMap",
+      "name": "CanPlace",
+      "signature": "public bool CanPlace(Rectangle area, int padding = 0)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldBuilding/StructureMap.cs",
+      "line_start": 19,
+      "line_end": 23,
+      "sha256": "b405a1623706b48a84ddd56d9d65c810b448ec0cfc4b2fba55a0a4078dab1bfc",
+      "inspected_excerpt_ids": [
+        "E026"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.WorldBuilding.StructureMap",
+      "name": "CanPlace",
+      "signature": "public bool CanPlace(Rectangle area, bool[] validTiles, int padding = 0)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldBuilding/StructureMap.cs",
+      "line_start": 25,
+      "line_end": 75,
+      "sha256": "b405a1623706b48a84ddd56d9d65c810b448ec0cfc4b2fba55a0a4078dab1bfc",
+      "inspected_excerpt_ids": [
+        "E026"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.WorldBuilding.StructureMap",
+      "name": "AddStructure",
+      "signature": "public void AddStructure(Rectangle area, int padding = 0)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldBuilding/StructureMap.cs",
+      "line_start": 104,
+      "line_end": 112,
+      "sha256": "b405a1623706b48a84ddd56d9d65c810b448ec0cfc4b2fba55a0a4078dab1bfc",
+      "inspected_excerpt_ids": [
+        "E027"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.WorldBuilding.StructureMap",
+      "name": "AddProtectedStructure",
+      "signature": "public void AddProtectedStructure(Rectangle area, int padding = 0)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/WorldBuilding/StructureMap.cs",
+      "line_start": 114,
+      "line_end": 124,
+      "sha256": "b405a1623706b48a84ddd56d9d65c810b448ec0cfc4b2fba55a0a4078dab1bfc",
+      "inspected_excerpt_ids": [
+        "E027"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.Tile",
+      "name": "active",
+      "signature": "public bool active()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "line_start": 594,
+      "line_end": 597,
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "inspected_excerpt_ids": [
+        "E028"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.Tile",
+      "name": "active",
+      "signature": "public void active(bool active)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "line_start": 599,
+      "line_end": 609,
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "inspected_excerpt_ids": [
+        "E028"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.Tile",
+      "name": "inActive",
+      "signature": "public bool inActive()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "line_start": 611,
+      "line_end": 614,
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "inspected_excerpt_ids": [
+        "E028"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.Tile",
+      "name": "inActive",
+      "signature": "public void inActive(bool inActive)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "line_start": 616,
+      "line_end": 626,
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "inspected_excerpt_ids": [
+        "E028"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.Tile",
+      "name": "nactive",
+      "signature": "public bool nactive()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "line_start": 240,
+      "line_end": 247,
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "inspected_excerpt_ids": [
+        "E030"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.Tile",
+      "name": "halfBrick",
+      "signature": "public bool halfBrick()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "line_start": 679,
+      "line_end": 682,
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "inspected_excerpt_ids": [
+        "E029"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.Tile",
+      "name": "halfBrick",
+      "signature": "public void halfBrick(bool halfBrick)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "line_start": 684,
+      "line_end": 694,
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "inspected_excerpt_ids": [
+        "E029"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.Tile",
+      "name": "slope",
+      "signature": "public byte slope()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "line_start": 713,
+      "line_end": 716,
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "inspected_excerpt_ids": [
+        "E029"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.Tile",
+      "name": "slope",
+      "signature": "public void slope(byte slope)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "line_start": 718,
+      "line_end": 721,
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "inspected_excerpt_ids": [
+        "E029"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.Tile",
+      "name": "wire",
+      "signature": "public bool wire()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "line_start": 628,
+      "line_end": 631,
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "inspected_excerpt_ids": [
+        "E028"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.Tile",
+      "name": "wire",
+      "signature": "public void wire(bool wire)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "line_start": 633,
+      "line_end": 643,
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.Tile",
+      "name": "wire2",
+      "signature": "public bool wire2()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "line_start": 645,
+      "line_end": 648,
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.Tile",
+      "name": "wire2",
+      "signature": "public void wire2(bool wire2)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "line_start": 650,
+      "line_end": 660,
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.Tile",
+      "name": "wire3",
+      "signature": "public bool wire3()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "line_start": 662,
+      "line_end": 665,
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.Tile",
+      "name": "wire3",
+      "signature": "public void wire3(bool wire3)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "line_start": 667,
+      "line_end": 677,
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.Tile",
+      "name": "wire4",
+      "signature": "public bool wire4()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "line_start": 442,
+      "line_end": 445,
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.Tile",
+      "name": "wire4",
+      "signature": "public void wire4(bool wire4)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "line_start": 447,
+      "line_end": 457,
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.Tile",
+      "name": "actuator",
+      "signature": "public bool actuator()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "line_start": 696,
+      "line_end": 699,
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "inspected_excerpt_ids": [
+        "E029"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.Tile",
+      "name": "actuator",
+      "signature": "public void actuator(bool actuator)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "line_start": 701,
+      "line_end": 711,
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "inspected_excerpt_ids": [
+        "E029"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.Tile",
+      "name": "liquidType",
+      "signature": "public void liquidType(int liquidType)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "line_start": 216,
+      "line_end": 233,
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "inspected_excerpt_ids": [
+        "E030"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.Tile",
+      "name": "liquidType",
+      "signature": "public byte liquidType()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "line_start": 235,
+      "line_end": 238,
+      "sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "inspected_excerpt_ids": [
+        "E030"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.TileObject",
+      "name": "CanPlace",
+      "signature": "public static bool CanPlace(int x, int y, int type, int style, int dir, out TileObject objectData, bool onlyCheck = false, int? forcedRandom = null)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/TileObject.cs",
+      "line_start": 174,
+      "line_end": 887,
+      "sha256": "b8eea7abce48f12e4ff2d1a4b89c31ab4e1fe45c6b45b47d3ae097c18e5b0620",
+      "inspected_excerpt_ids": [
+        "E050"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.ObjectData.TileObjectData",
+      "name": "CheckLiquidPlacement",
+      "signature": "public static bool CheckLiquidPlacement(int type, int style, Tile checkTile)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/ObjectData/TileObjectData.cs",
+      "line_start": 5126,
+      "line_end": 5129,
+      "sha256": "4199874585ee75536536a24785027968f10ce39d84eb7937c9634f9a811cfc70",
+      "inspected_excerpt_ids": [
+        "E051"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.ObjectData.TileObjectData",
+      "name": "LiquidPlace",
+      "signature": "public bool LiquidPlace(Tile checkTile)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/ObjectData/TileObjectData.cs",
+      "line_start": 1853,
+      "line_end": 1908,
+      "sha256": "4199874585ee75536536a24785027968f10ce39d84eb7937c9634f9a811cfc70",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.ObjectData.TileObjectData",
+      "name": "LiquidPlace",
+      "signature": "public static bool LiquidPlace(int type, Tile checkTile)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/ObjectData/TileObjectData.cs",
+      "line_start": 5131,
+      "line_end": 5158,
+      "sha256": "4199874585ee75536536a24785027968f10ce39d84eb7937c9634f9a811cfc70",
+      "inspected_excerpt_ids": [
+        "E051"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.NPC.Spawner",
+      "name": "SpawnNPC",
+      "signature": "public void SpawnNPC()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/NPC.cs",
+      "line_start": 290,
+      "line_end": 307,
+      "sha256": "ff2b422b5f33e4a172136bfc14a453cb784e1b3d8a598d4d168ee1f30af063dc",
+      "inspected_excerpt_ids": [
+        "E034"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.NPC.Spawner",
+      "name": "SpawnNPC",
+      "signature": "public NPC SpawnNPC(int X, int Y, int Type, int Start = 0, float ai0 = 0f, float ai1 = 0f, float ai2 = 0f, float ai3 = 0f, int Target = 255)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/NPC.cs",
+      "line_start": 5283,
+      "line_end": 5316,
+      "sha256": "ff2b422b5f33e4a172136bfc14a453cb784e1b3d8a598d4d168ee1f30af063dc",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.NPC",
+      "name": "SpawnNPC",
+      "signature": "public static void SpawnNPC()",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/NPC.cs",
+      "line_start": 94053,
+      "line_end": 94062,
+      "sha256": "ff2b422b5f33e4a172136bfc14a453cb784e1b3d8a598d4d168ee1f30af063dc",
+      "inspected_excerpt_ids": [
+        "E032"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.NPC.Spawner",
+      "name": "CanSpawnEnemiesNear",
+      "signature": "public static bool CanSpawnEnemiesNear(Player player)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/NPC.cs",
+      "line_start": 345,
+      "line_end": 364,
+      "sha256": "ff2b422b5f33e4a172136bfc14a453cb784e1b3d8a598d4d168ee1f30af063dc",
+      "inspected_excerpt_ids": [
+        "E034"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.NPC.Spawner",
+      "name": "TrySpawnAnNPC",
+      "signature": "private bool TrySpawnAnNPC(Player player)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/NPC.cs",
+      "line_start": 309,
+      "line_end": 343,
+      "sha256": "ff2b422b5f33e4a172136bfc14a453cb784e1b3d8a598d4d168ee1f30af063dc",
+      "inspected_excerpt_ids": [
+        "E034"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.NPC.Spawner",
+      "name": "SetSpawnFlags",
+      "signature": "private void SetSpawnFlags(Player player)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/NPC.cs",
+      "line_start": 366,
+      "line_end": 431,
+      "sha256": "ff2b422b5f33e4a172136bfc14a453cb784e1b3d8a598d4d168ee1f30af063dc",
+      "inspected_excerpt_ids": [
+        "E034",
+        "E039"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.NPC.Spawner",
+      "name": "GetSpawnRate",
+      "signature": "private void GetSpawnRate(Player player, out int spawnRate, out int maxSpawns)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/NPC.cs",
+      "line_start": 484,
+      "line_end": 941,
+      "sha256": "ff2b422b5f33e4a172136bfc14a453cb784e1b3d8a598d4d168ee1f30af063dc",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.NPC.Spawner",
+      "name": "FindSpawnTile",
+      "signature": "public bool FindSpawnTile(Player player, out int spawnTileX, out int spawnTileY, out bool xRange)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/NPC.cs",
+      "line_start": 997,
+      "line_end": 1038,
+      "sha256": "ff2b422b5f33e4a172136bfc14a453cb784e1b3d8a598d4d168ee1f30af063dc",
+      "inspected_excerpt_ids": [
+        "E038"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.NPC.Spawner",
+      "name": "GetSpawnWallType",
+      "signature": "public static int GetSpawnWallType(int spawnTileX, int spawnTileY)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/NPC.cs",
+      "line_start": 1040,
+      "line_end": 1048,
+      "sha256": "ff2b422b5f33e4a172136bfc14a453cb784e1b3d8a598d4d168ee1f30af063dc",
+      "inspected_excerpt_ids": [
+        "E038"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.NPC.Spawner",
+      "name": "PostCheckChosenSpawnTile",
+      "signature": "private bool PostCheckChosenSpawnTile(int spawnTileX, int spawnTileY, int tileType, int wallType)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/NPC.cs",
+      "line_start": 1050,
+      "line_end": 1076,
+      "sha256": "ff2b422b5f33e4a172136bfc14a453cb784e1b3d8a598d4d168ee1f30af063dc",
+      "inspected_excerpt_ids": [
+        "E038"
+      ],
+      "inspection_scope": "bounded excerpts only"
+    },
+    {
+      "container": "Terraria.NPC.Spawner",
+      "name": "SpawnAnNPC",
+      "signature": "public void SpawnAnNPC(int spawnTileX, int spawnTileY, int tileType, int wallType, bool xRange, int target)",
+      "kind": "method",
+      "relative_path": "02_static/decompiled/client/Terraria/NPC.cs",
+      "line_start": 1311,
+      "line_end": 5281,
+      "sha256": "ff2b422b5f33e4a172136bfc14a453cb784e1b3d8a598d4d168ee1f30af063dc",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    },
+    {
+      "container": "Terraria.GameContent.Biomes.TerrainPass",
+      "name": "TerrainPass",
+      "signature": "public TerrainPass()",
+      "kind": "constructor",
+      "relative_path": "02_static/decompiled/client/Terraria/GameContent/Biomes/TerrainPass.cs",
+      "line_start": 51,
+      "line_end": 54,
+      "sha256": "485b3480d61564aa7f0c812f8459b767ddddb784238342772c70186ebf3ab91b",
+      "inspected_excerpt_ids": [],
+      "inspection_scope": "index locator only; body not inspected"
+    }
+  ],
+  "verified_query_routes": [
+    {
+      "record": "query-rng.json",
+      "expected": "Terraria.IO.WorldFileData.TranslateSeed",
+      "status": "PASS"
+    },
+    {
+      "record": "query-generator.json",
+      "expected": "Terraria.WorldBuilding.WorldGenerator.RunPass",
+      "status": "PASS"
+    },
+    {
+      "record": "query-passes.json",
+      "expected": "Terraria.WorldGen.AddPasses",
+      "status": "PASS"
+    },
+    {
+      "record": "query-dungeon-fixed.json",
+      "expected": "Terraria.GameContent.Generation.Dungeon.DungeonCrawler.MakeDungeon  <method>",
+      "status": "PASS"
+    },
+    {
+      "record": "query-temple-make.json",
+      "expected": "Terraria.WorldGen.makeTemple  <method>",
+      "status": "PASS"
+    },
+    {
+      "record": "query-temple-fixed.json",
+      "expected": "Terraria.WorldGen.templePart2",
+      "status": "PASS"
+    },
+    {
+      "record": "query-trees-expanded.json",
+      "expected": "Terraria.WorldGen.GrowLivingTree  <method>",
+      "status": "PASS"
+    },
+    {
+      "record": "query-placement-fixed.json",
+      "expected": "Terraria.WorldBuilding.StructureMap",
+      "status": "PASS"
+    },
+    {
+      "record": "query-tile-active.json",
+      "expected": "Terraria.Tile.active",
+      "status": "PASS"
+    },
+    {
+      "record": "query-saving.json",
+      "expected": "Terraria.IO.WorldFile._SaveWorld",
+      "status": "PASS"
+    },
+    {
+      "record": "query-spawning-fixed.json",
+      "expected": "Terraria.NPC.SpawnNPC  <method>",
+      "status": "PASS"
+    },
+    {
+      "record": "query-spawn-dispatch.json",
+      "expected": "Terraria.NPC.Spawner.CanSpawnEnemiesNear",
+      "status": "PASS"
+    }
+  ]
+}

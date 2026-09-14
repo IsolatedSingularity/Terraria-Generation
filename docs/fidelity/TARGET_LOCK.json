@@ -1,0 +1,217 @@
+{
+  "schema_version": 1,
+  "observed_utc": "2026-09-14T02:31:01.237689+00:00",
+  "scope": "Developer reference bootstrap; no supported independent compatible generator yet",
+  "repository_head": "2ff1d25a0d70c8e343d8e15db138cf7f30a29c55",
+  "target": {
+    "product_version": "1.4.5.7",
+    "file_version_client": "1.4.5.7",
+    "file_version_server": "1.4.5.7",
+    "steam_app_id": 105600,
+    "steam_build_id": "24825745",
+    "selection_reason": "Existing manifest, both PE file versions, matching canonical hashes and index metadata agree. Brief expected 1.4.5.6 is superseded by observed evidence; no download or target upgrade."
+  },
+  "corpus_root_relative": "Game Reference",
+  "artifacts": {
+    "Terraria.exe": {
+      "path": "Game Reference/01_canonical/client/Terraria.exe",
+      "sha256": "840f158abf2e0b699e939630e6f0a7a360588242c1e54598268f5cb4b4e131f9",
+      "manifest_sha256": "840f158abf2e0b699e939630e6f0a7a360588242c1e54598268f5cb4b4e131f9",
+      "matches_manifest": true,
+      "pe_machine": "0x14c"
+    },
+    "TerrariaServer.exe": {
+      "path": "Game Reference/01_canonical/client/TerrariaServer.exe",
+      "sha256": "6cf1100bcfab5733fdb4da745b34551362b24fcebe05ac153f5b59445082ed49",
+      "manifest_sha256": "6cf1100bcfab5733fdb4da745b34551362b24fcebe05ac153f5b59445082ed49",
+      "matches_manifest": true,
+      "pe_machine": "0x14c"
+    },
+    "xnafx40_redist.msi": {
+      "path": "Game Reference/01_canonical/client/xnafx40_redist.msi",
+      "sha256": "e6c41d692ebcba854dad4b1c52bb7ddd05926bad3105595d6596b8bab01c25e7",
+      "manifest_sha256": "e6c41d692ebcba854dad4b1c52bb7ddd05926bad3105595d6596b8bab01c25e7",
+      "matches_manifest": true
+    },
+    "installscript.vdf": {
+      "path": "Game Reference/01_canonical/client/installscript.vdf",
+      "sha256": "1421b07db25febef5e856341c26065599de9da2caa8e7d8b7845d1ba6699b3bc",
+      "manifest_sha256": "1421b07db25febef5e856341c26065599de9da2caa8e7d8b7845d1ba6699b3bc",
+      "matches_manifest": true
+    }
+  },
+  "runtime": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "host_architecture": "x64",
+    "pe_machine": "I386 (0x14c)",
+    "framework_installed": "4.8.09221",
+    "framework_release": 533509,
+    "referenced_xna_assembly_version": "4.0.0.0",
+    "python_for_audit": "3.12.10",
+    "process_result": "BLOCKED",
+    "exit_code": 3762504530,
+    "exit_hex": "0xe0434352",
+    "missing_assembly": "Microsoft.Xna.Framework, Version=4.0.0.0, Culture=neutral, PublicKeyToken=842cf8be1de50553",
+    "dependency_resolution": "Default installed runtime only; no DLL replacement, process resolver or installer executed",
+    "official_dependency_source": "https://www.microsoft.com/en-us/download/details.aspx?id=27598"
+  },
+  "fixture_settings_intended": {
+    "seed": 314159265,
+    "seed_transport": "1.1.1.0.314159265",
+    "width": 4200,
+    "height": 1200,
+    "difficulty": "classic",
+    "game_mode": 0,
+    "evil": "corruption",
+    "secret_seed_flags": 0,
+    "hardmode": false
+  },
+  "fixture_settings_verified_in_generated_world": false,
+  "world_file_format_expected_from_source": 325,
+  "world_parse_status": "BLOCKED_NO_WORLD",
+  "second_fresh_process": "NOT_RUN_FIRST_LAUNCH_FAILED",
+  "semantic_determinism": "BLOCKED_NO_WORLD_OR_VERIFIED_READER",
+  "hashes": {
+    "00_target_lock/TARGET.json": "bbd6b0d05274c76ce1fc3423f771e89431d40f510ad6853654c46fa8597e1659",
+    "00_target_lock/canonical-files.jsonl": "7a5f3b8ab5e4007904e50fba3542a97424635479745104027b9cc9af01b7deb8",
+    "00_target_lock/appmanifest_105600.acf": "5a1c2b510bea6ff8032ebf7d90bc03640c4c320b3934d2257f017997de0ad10d",
+    "00_target_lock/toolchain-runtime.json": "83d6fb3f5942dfe663d7e8cc281879d86aca0252ff571cba8f815f12d3bc0b5c",
+    "Query-Terraria.ps1": "5541db815fe9e9de324cae05a9c932fa89ea9e8e112ec4a7680d0dd073f37c77",
+    "tools/offline/TerrariaQuery/TerrariaIndexer.exe": "953205b405e40772bdf1f7ff7d1715fec9aef81dfc6526d069c2b0e8c950c151",
+    "07_index/library.sqlite": "9f49263649b1a6e3ca14062b4acae62f842da0e111383a999aa1d70b38d68949"
+  },
+  "source_sha256": {
+    "02_static/decompiled/client/Terraria/GameContent/Biomes/TerrainPass.cs": "485b3480d61564aa7f0c812f8459b767ddddb784238342772c70186ebf3ab91b",
+    "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/DungeonCrawler.cs": "d429b4f8a59fa26897cd1d28706129d23c54b60e663f8481fb9f50e19b732be6",
+    "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Entrances/LegacyDungeonEntrance.cs": "b8948dc4ec62edb0d42e97cc8e25f5f23c5c15aa60cc895a842cef93c36f0dbf",
+    "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Halls/LegacyDungeonHall.cs": "3d3e1b6523f5bf4587676d622fe4a612fe2354892c56e475931ee411e1d3f9e0",
+    "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/LayoutProviders/LegacyDungeonLayoutProvider.cs": "404c1459257371ecc43dbd935db0ae0e821447559daf17c43adc388b15c59c31",
+    "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Rooms/LegacyDungeonRoom.cs": "a120d220e8500621d3e45558aec999fab17316a64b9b6a40d99e424d98089f99",
+    "02_static/decompiled/client/Terraria/IO/WorldFile.cs": "17d45c43ad981505fb55d6067c21908bba10f5ce690c5f194cf24d951b4b83c2",
+    "02_static/decompiled/client/Terraria/IO/WorldFileData.cs": "451507754ab5c41e9912ff7c3c51f402124309d200beb0566b457fa70efc2c18",
+    "02_static/decompiled/client/Terraria/NPC.cs": "ff2b422b5f33e4a172136bfc14a453cb784e1b3d8a598d4d168ee1f30af063dc",
+    "02_static/decompiled/client/Terraria/ObjectData/TileObjectData.cs": "4199874585ee75536536a24785027968f10ce39d84eb7937c9634f9a811cfc70",
+    "02_static/decompiled/client/Terraria/Tile.cs": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+    "02_static/decompiled/client/Terraria/TileObject.cs": "b8eea7abce48f12e4ff2d1a4b89c31ab4e1fe45c6b45b47d3ae097c18e5b0620",
+    "02_static/decompiled/client/Terraria/Utilities/UnifiedRandom.cs": "49a21bbbf163feabd01a150a2f6bd8e855925e808b4810b89324b83bd004901a",
+    "02_static/decompiled/client/Terraria/WorldBuilding/StructureMap.cs": "b405a1623706b48a84ddd56d9d65c810b448ec0cfc4b2fba55a0a4078dab1bfc",
+    "02_static/decompiled/client/Terraria/WorldBuilding/WorldGenerator.cs": "bcc259b02daf4e3b3e42fabd504e7a29d16cf62f0dc5142b17f35b998842a2ba",
+    "02_static/decompiled/client/Terraria/WorldGen.cs": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+    "02_static/decompiled/server/Terraria/IO/WorldFile.cs": "17d45c43ad981505fb55d6067c21908bba10f5ce690c5f194cf24d951b4b83c2",
+    "02_static/decompiled/server/Terraria/Main.cs": "41b6199e5f9c43860622fb0223a74497dfc43842577755c078753f67b85c3d7d"
+  },
+  "client_server_source_comparisons": [
+    {
+      "client_path": "02_static/decompiled/client/Terraria/GameContent/Biomes/TerrainPass.cs",
+      "server_path": "02_static/decompiled/server/Terraria/GameContent/Biomes/TerrainPass.cs",
+      "server_sha256": "485b3480d61564aa7f0c812f8459b767ddddb784238342772c70186ebf3ab91b",
+      "byte_identical": true
+    },
+    {
+      "client_path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/DungeonCrawler.cs",
+      "server_path": "02_static/decompiled/server/Terraria/GameContent/Generation/Dungeon/DungeonCrawler.cs",
+      "server_sha256": "d429b4f8a59fa26897cd1d28706129d23c54b60e663f8481fb9f50e19b732be6",
+      "byte_identical": true
+    },
+    {
+      "client_path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Entrances/LegacyDungeonEntrance.cs",
+      "server_path": "02_static/decompiled/server/Terraria/GameContent/Generation/Dungeon/Entrances/LegacyDungeonEntrance.cs",
+      "server_sha256": "b8948dc4ec62edb0d42e97cc8e25f5f23c5c15aa60cc895a842cef93c36f0dbf",
+      "byte_identical": true
+    },
+    {
+      "client_path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Halls/LegacyDungeonHall.cs",
+      "server_path": "02_static/decompiled/server/Terraria/GameContent/Generation/Dungeon/Halls/LegacyDungeonHall.cs",
+      "server_sha256": "3d3e1b6523f5bf4587676d622fe4a612fe2354892c56e475931ee411e1d3f9e0",
+      "byte_identical": true
+    },
+    {
+      "client_path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/LayoutProviders/LegacyDungeonLayoutProvider.cs",
+      "server_path": "02_static/decompiled/server/Terraria/GameContent/Generation/Dungeon/LayoutProviders/LegacyDungeonLayoutProvider.cs",
+      "server_sha256": "404c1459257371ecc43dbd935db0ae0e821447559daf17c43adc388b15c59c31",
+      "byte_identical": true
+    },
+    {
+      "client_path": "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Rooms/LegacyDungeonRoom.cs",
+      "server_path": "02_static/decompiled/server/Terraria/GameContent/Generation/Dungeon/Rooms/LegacyDungeonRoom.cs",
+      "server_sha256": "a120d220e8500621d3e45558aec999fab17316a64b9b6a40d99e424d98089f99",
+      "byte_identical": true
+    },
+    {
+      "client_path": "02_static/decompiled/client/Terraria/IO/WorldFile.cs",
+      "server_path": "02_static/decompiled/server/Terraria/IO/WorldFile.cs",
+      "server_sha256": "17d45c43ad981505fb55d6067c21908bba10f5ce690c5f194cf24d951b4b83c2",
+      "byte_identical": true
+    },
+    {
+      "client_path": "02_static/decompiled/client/Terraria/IO/WorldFileData.cs",
+      "server_path": "02_static/decompiled/server/Terraria/IO/WorldFileData.cs",
+      "server_sha256": "451507754ab5c41e9912ff7c3c51f402124309d200beb0566b457fa70efc2c18",
+      "byte_identical": true
+    },
+    {
+      "client_path": "02_static/decompiled/client/Terraria/NPC.cs",
+      "server_path": "02_static/decompiled/server/Terraria/NPC.cs",
+      "server_sha256": "ff2b422b5f33e4a172136bfc14a453cb784e1b3d8a598d4d168ee1f30af063dc",
+      "byte_identical": true
+    },
+    {
+      "client_path": "02_static/decompiled/client/Terraria/ObjectData/TileObjectData.cs",
+      "server_path": "02_static/decompiled/server/Terraria/ObjectData/TileObjectData.cs",
+      "server_sha256": "4199874585ee75536536a24785027968f10ce39d84eb7937c9634f9a811cfc70",
+      "byte_identical": true
+    },
+    {
+      "client_path": "02_static/decompiled/client/Terraria/Tile.cs",
+      "server_path": "02_static/decompiled/server/Terraria/Tile.cs",
+      "server_sha256": "8f96b324c5c44218f276c124f31ee074fae4387eae490bc7c58f24acddb5be59",
+      "byte_identical": true
+    },
+    {
+      "client_path": "02_static/decompiled/client/Terraria/TileObject.cs",
+      "server_path": "02_static/decompiled/server/Terraria/TileObject.cs",
+      "server_sha256": "b8eea7abce48f12e4ff2d1a4b89c31ab4e1fe45c6b45b47d3ae097c18e5b0620",
+      "byte_identical": true
+    },
+    {
+      "client_path": "02_static/decompiled/client/Terraria/Utilities/UnifiedRandom.cs",
+      "server_path": "02_static/decompiled/server/Terraria/Utilities/UnifiedRandom.cs",
+      "server_sha256": "49a21bbbf163feabd01a150a2f6bd8e855925e808b4810b89324b83bd004901a",
+      "byte_identical": true
+    },
+    {
+      "client_path": "02_static/decompiled/client/Terraria/WorldBuilding/StructureMap.cs",
+      "server_path": "02_static/decompiled/server/Terraria/WorldBuilding/StructureMap.cs",
+      "server_sha256": "b405a1623706b48a84ddd56d9d65c810b448ec0cfc4b2fba55a0a4078dab1bfc",
+      "byte_identical": true
+    },
+    {
+      "client_path": "02_static/decompiled/client/Terraria/WorldBuilding/WorldGenerator.cs",
+      "server_path": "02_static/decompiled/server/Terraria/WorldBuilding/WorldGenerator.cs",
+      "server_sha256": "bcc259b02daf4e3b3e42fabd504e7a29d16cf62f0dc5142b17f35b998842a2ba",
+      "byte_identical": true
+    },
+    {
+      "client_path": "02_static/decompiled/client/Terraria/WorldGen.cs",
+      "server_path": "02_static/decompiled/server/Terraria/WorldGen.cs",
+      "server_sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+      "byte_identical": true
+    }
+  ],
+  "provenance_limits": [
+    "Four selected canonical files matched existing inventory. Full canonical inventory hash scan was not rerun.",
+    "Source and index hashes freshly recorded; no historical source hash manifest was available in the inspected files/schema.",
+    "Index target metadata agrees with binary lock; decompilation was not independently regenerated or checked against IL."
+  ],
+  "query_counts": {
+    "files": 3517,
+    "symbols": 98052,
+    "relations": 1933954,
+    "registries": 31184,
+    "assets": 15997,
+    "worldgen_passes": 0
+  },
+  "sqlite_quick_check": [
+    "ok"
+  ]
+}

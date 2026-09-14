@@ -1,0 +1,566 @@
+{
+  "source": "02_static/decompiled/client/Terraria/WorldGen.cs",
+  "source_sha256": "252accee3c9c50352cceb7ac4403ab477a1299a317681aa94f8192ce55fd6c65",
+  "symbol": "public static void AddPasses()",
+  "symbol_lines": [
+    11939,
+    23296
+  ],
+  "status": "STATIC_INSPECTION_ONLY",
+  "runtime_trace": "BLOCKED_XNA",
+  "registration_site_count": 109,
+  "ordinary_selected_count": 106,
+  "conditions": [
+    "skyblockWorldGen=false excludes 11946 and 11948",
+    "Skyblock.denyAllGeneration=false includes 12922",
+    "SecretSeed.dualDungeons.Enabled=false excludes 15282 and makes DisablePassesForSpecialSeeds return"
+  ],
+  "limitations": "Selection of registrations only; does not prove each pass mutates the world, has unchanged Enabled state, or ran. No ordinary runtime pass manifest exists.",
+  "sites": [
+    {
+      "line": 11941,
+      "identifier": "TerrainPass",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 11946,
+      "identifier": "JunglePass",
+      "selected_for_ordinary_fixture_by_static_inspection": false
+    },
+    {
+      "line": 11948,
+      "identifier": "GenPassNameID.Skyblock",
+      "selected_for_ordinary_fixture_by_static_inspection": false
+    },
+    {
+      "line": 11954,
+      "identifier": "GenPassNameID.DunesAndPyramidLocations",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 12028,
+      "identifier": "GenPassNameID.OceanSand",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 12137,
+      "identifier": "GenPassNameID.SandPatches",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 12168,
+      "identifier": "GenPassNameID.Tunnels",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 12234,
+      "identifier": "GenPassNameID.MountainCaves",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 12308,
+      "identifier": "GenPassNameID.DirtWallBackgrounds",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 12347,
+      "identifier": "GenPassNameID.RocksInDirt",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 12377,
+      "identifier": "GenPassNameID.DirtInRocks",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 12410,
+      "identifier": "GenPassNameID.Clay",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 12459,
+      "identifier": "GenPassNameID.SmallHoles",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 12519,
+      "identifier": "GenPassNameID.DirtLayerCaves",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 12560,
+      "identifier": "GenPassNameID.RockLayerCaves",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 12616,
+      "identifier": "GenPassNameID.SurfaceCaves",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 12726,
+      "identifier": "GenPassNameID.WavyCaves",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 12768,
+      "identifier": "GenPassNameID.IceBiome",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 12879,
+      "identifier": "GenPassNameID.Grass",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 12922,
+      "identifier": "JunglePass",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 12924,
+      "identifier": "GenPassNameID.MudCavesToJungleGrass",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 12957,
+      "identifier": "GenPassNameID.DesertBiome",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 13007,
+      "identifier": "GenPassNameID.GlowingMushroomPatches",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 13229,
+      "identifier": "GenPassNameID.Marble",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 13331,
+      "identifier": "GenPassNameID.Granite",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 13443,
+      "identifier": "GenPassNameID.FloatingIslands",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 13639,
+      "identifier": "GenPassNameID.DirtToMud",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 13659,
+      "identifier": "GenPassNameID.Silt",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 13700,
+      "identifier": "GenPassNameID.OresAndShinies",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 14126,
+      "identifier": "GenPassNameID.Webs",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 14164,
+      "identifier": "GenPassNameID.Underworld",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 14386,
+      "identifier": "GenPassNameID.CorruptionAndCrimson",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 15080,
+      "identifier": "GenPassNameID.Lakes",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 15224,
+      "identifier": "GenPassNameID.StoneToIceAndSiltPlusMudIntoSlush",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 15282,
+      "identifier": "GenPassNameID.DualDungeonsDitherSnake",
+      "selected_for_ordinary_fixture_by_static_inspection": false
+    },
+    {
+      "line": 15284,
+      "identifier": "GenPassNameID.Dungeon",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 15400,
+      "identifier": "GenPassNameID.MountainCaveOpenings",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 15415,
+      "identifier": "GenPassNameID.BeachesAndOceanCleanup",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 15577,
+      "identifier": "GenPassNameID.Gems",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 15666,
+      "identifier": "GenPassNameID.GravitatingSandCleanup",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 15696,
+      "identifier": "GenPassNameID.OceanCaves",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 15724,
+      "identifier": "GenPassNameID.Shimmer",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 15779,
+      "identifier": "GenPassNameID.DirtWallCleanup",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 15895,
+      "identifier": "GenPassNameID.Pyramids",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 16008,
+      "identifier": "GenPassNameID.DirtRockWallRunner",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 16023,
+      "identifier": "GenPassNameID.LivingTrees",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 16264,
+      "identifier": "GenPassNameID.LivingTreeWalls",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 16297,
+      "identifier": "GenPassNameID.DemonAndCrimsonAltars",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 16359,
+      "identifier": "GenPassNameID.SurfaceWaterInJungle",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 16383,
+      "identifier": "GenPassNameID.LihzahrdTemple",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 16477,
+      "identifier": "GenPassNameID.Beehives",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 16538,
+      "identifier": "GenPassNameID.JungleShrines",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 16697,
+      "identifier": "GenPassNameID.SettleLiquids",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 16777,
+      "identifier": "GenPassNameID.RemoveSurfaceWaterAboveSand",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 16809,
+      "identifier": "GenPassNameID.Oasis",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 16835,
+      "identifier": "GenPassNameID.ShellPilesMarblePilesAndSpikePits",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 16989,
+      "identifier": "GenPassNameID.SmoothWorld",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 17182,
+      "identifier": "GenPassNameID.Waterfalls",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 17241,
+      "identifier": "GenPassNameID.FragileIceOverIceBiomeWater",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 17271,
+      "identifier": "GenPassNameID.CaveWallVariety",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 17355,
+      "identifier": "GenPassNameID.LifeCrystals",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 17455,
+      "identifier": "GenPassNameID.Statues",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 17574,
+      "identifier": "GenPassNameID.UndergroundHousesAndBuriedChests",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 17743,
+      "identifier": "GenPassNameID.SurfaceChests",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 17825,
+      "identifier": "GenPassNameID.ChestsInJungleShrines",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 17860,
+      "identifier": "GenPassNameID.UnderwaterChests",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 17972,
+      "identifier": "GenPassNameID.SpiderCaves",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 18045,
+      "identifier": "GenPassNameID.GemCaves",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 18090,
+      "identifier": "GenPassNameID.MossAndMossCaves",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 18326,
+      "identifier": "GenPassNameID.LihzahrdTemplePart2",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 18336,
+      "identifier": "GenPassNameID.CaveWallsInEnclosedSpaces",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 18469,
+      "identifier": "GenPassNameID.UndergroundJungleTrees",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 18488,
+      "identifier": "GenPassNameID.FloatingIslandHouses",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 18504,
+      "identifier": "GenPassNameID.QuickCleanup",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 18625,
+      "identifier": "GenPassNameID.PotsGraveyardsAndBoulderPiles",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 18818,
+      "identifier": "GenPassNameID.Hellforges",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 18869,
+      "identifier": "GenPassNameID.SpreadingGrassOnSurfaceSunflowersEvilsOnSurfaceAndLavaCleanup",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 19079,
+      "identifier": "GenPassNameID.SurfaceOreAndStone",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 19145,
+      "identifier": "GenPassNameID.FallenLogsAndWaterFeatures",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 19289,
+      "identifier": "GenPassNameID.Traps",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 19420,
+      "identifier": "GenPassNameID.Piles",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 20125,
+      "identifier": "GenPassNameID.SpawnPoint",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 20254,
+      "identifier": "GenPassNameID.SurfaceDirtWallsToGrassWalls",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 20350,
+      "identifier": "GenPassNameID.SpawnStarterNPCs",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 20619,
+      "identifier": "GenPassNameID.SunflowersPart2",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 20661,
+      "identifier": "GenPassNameID.Trees",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 20685,
+      "identifier": "GenPassNameID.AlchemyHerbs",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 20702,
+      "identifier": "GenPassNameID.DyePlants",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 20716,
+      "identifier": "GenPassNameID.WebsInSpiderCavesAndHoneyPlusSpeleothemsInBeehives",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 20785,
+      "identifier": "GenPassNameID.GrassPlantsEvilPlantsAndPumpkinsOnSurface",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 20843,
+      "identifier": "GenPassNameID.GlowingMushroomPlantsUndergroundAndJunglePlants",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 20886,
+      "identifier": "GenPassNameID.JunglePlantsPart2",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 20914,
+      "identifier": "GenPassNameID.Vines",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 21168,
+      "identifier": "GenPassNameID.Flowers",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 21320,
+      "identifier": "GenPassNameID.Mushrooms",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 21418,
+      "identifier": "GenPassNameID.ExposedGemsInIceBiome",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 21450,
+      "identifier": "GenPassNameID.ExposedGemsUnderground",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 21491,
+      "identifier": "GenPassNameID.LongMoss",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 21539,
+      "identifier": "GenPassNameID.DirtWallsIntoMudWallsInJungleAndJungleMinMax",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 21594,
+      "identifier": "GenPassNameID.BeeLarvaInBeehives",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 21627,
+      "identifier": "GenPassNameID.MicroBiomes",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 22017,
+      "identifier": "GenPassNameID.SettleLiquidsPart2AndNotTheBees",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 22081,
+      "identifier": "GenPassNameID.CactusPalmTreesAndCoral",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 22293,
+      "identifier": "GenPassNameID.TileCleanup",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 22724,
+      "identifier": "GenPassNameID.LihzahrdAltar",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 22756,
+      "identifier": "GenPassNameID.LilypadsCattailsBambooAndSeaweed",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 22829,
+      "identifier": "GenPassNameID.SpeleothemsAndGemTrees",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 22916,
+      "identifier": "GenPassNameID.BrokenTrapCleanup",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    },
+    {
+      "line": 22939,
+      "identifier": "GenPassNameID.FinalCleanup",
+      "selected_for_ordinary_fixture_by_static_inspection": true
+    }
+  ]
+}
