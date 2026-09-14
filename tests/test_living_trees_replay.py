@@ -221,9 +221,13 @@ def test_leaf_predicate_respects_presence_clouds_trunk_walls_and_bounds():
 
 
 def test_geometry_stops_at_dependency_without_fabricating_a_result():
+    class PrefixReplay(LivingTreesReplay):
+        def unsupported(self, method, *args):
+            raise UnsupportedCallError(method, args, self.rng)
+
     cells, meta = synthetic(314159265)
     original = cells.copy()
-    replay = LivingTreesReplay(cells, meta)
+    replay = PrefixReplay(cells, meta)
     with pytest.raises(UnsupportedCallError) as caught:
         replay.grow(120, 199)
     assert caught.value.method in ("PlaceTile", "PlaceSmallPile")

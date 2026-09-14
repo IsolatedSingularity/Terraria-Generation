@@ -1,7 +1,7 @@
 """Independent ordinary LivingTrees replay prefix for pinned Terraria 1.4.5.7.
 
-This is intentionally incomplete: object placement and connected passages stop
-with an explicit dependency boundary. It is never used by the approximate
+This is intentionally incomplete: unknown object cases and connected passages
+stop with an explicit dependency boundary. It is never used by the approximate
 generator. The caller owns a mutable copy of a captured native Tile array.
 """
 
@@ -77,6 +77,9 @@ class LivingTreesReplay:
         self.clouds = sets["Clouds"]
         self.trace = []
         self.candidates = []
+        self.metadata = metadata
+        self.placement = None
+        self.object_calls = []
 
     def active(self, x, y):
         return bool(int(self.cells["sTileHeader"][x, y]) & 32)
@@ -109,6 +112,35 @@ class LivingTreesReplay:
         return not self.active(x, y) or (kind != 191 and not self.clouds[kind])
 
     def unsupported(self, method, *args):
+        """Resolve only validated object cases; retain every other boundary."""
+        if method in ("PlaceTile", "PlaceSmallPile"):
+            if self.placement is None:
+                from terraexplorer.fidelity.object_placement import ObjectPlacement
+
+                main = self.metadata["globals"]["Terraria.Main"]
+                entities = {
+                    name: [
+                        {"fields": entity, "position": entity["position"]}
+                        for entity in main[name]
+                        if entity["active"]
+                    ]
+                    for name in ("player", "npc")
+                }
+                self.placement = ObjectPlacement(
+                    self.cells,
+                    self.rng,
+                    {
+                        "globals": self.metadata["globals"],
+                        "entities": entities,
+                        "chests": self.metadata["chests"],
+                    },
+                )
+                self.placement.main["tileSolid"] = self.solid_types
+            call = {"method": method, "args": list(args), "rng_before": self.rng.state()}
+            self.object_calls.append(call)
+            result = self.placement.invoke(method, *args)
+            call.update(result=result, rng_after=self.rng.state())
+            return result
         raise UnsupportedCallError(method, args, self.rng)
 
     def grow(self, x, y, patch=False):
@@ -317,6 +349,7 @@ class LivingTreesReplay:
                     continue
                 if r(2) == 0:
                     self.unsupported("PlaceTile", i, j, 187, True, False, -1, r(47, 50))
+                    continue
                 size = r(2)
                 style = r(59, 62) if size == 1 else 72
                 self.unsupported("PlaceSmallPile", i, j, style, size, 185)

@@ -1,7 +1,7 @@
 """Validate local LivingTrees captures and report the independent replay boundary.
 
-Exit 0 means a full match. Exit 2 means an explicit incomplete replay; the JSON
-report remains useful evidence. Proprietary captures/exports must stay in audit/.
+Exit 0 means a full match; 2 means an incomplete replay at a verified exact
+boundary; 1 means divergence or an unverified boundary. Runtime data stays in audit/.
 """
 
 from __future__ import annotations
@@ -158,19 +158,91 @@ def replay(capture: Path, control_world: Path, captured_world: Path, output: Pat
     canonical_actual = canonical_cells(implementation.cells, importance)
     canonical_diff = compare_cells(canonical_pre, canonical_post, canonical_actual)
     checkpoint = None
-    if stopped and (capture / "first-object.json").exists():
-        cp, cp_meta = load_snapshot(capture, "first-object")
-        first_object = next(c for c in calls if c["method"] in ("PlaceTile", "PlaceSmallPile"))
+    previous_checkpoint = None
+    if (capture / "first-object.json").exists():
+
+        class OriginalPrefix(LivingTreesReplay):
+            def unsupported(self, method, *args):
+                raise UnsupportedCallError(method, args, self.rng)
+
+        prefix = OriginalPrefix(pre, before)
+        try:
+            prefix.run()
+        except UnsupportedCallError as exc:
+            old_cells, old_meta = load_snapshot(capture, "first-object")
+            old_call = next(c for c in calls if c["method"] in ("PlaceTile", "PlaceSmallPile"))
+            previous_checkpoint = {
+                "native_comparison": compare_cells(pre, old_cells, prefix.cells),
+                "call_equal": exc.method == old_call["method"]
+                and exc.arguments == old_call["args"],
+                "rng_equal": exc.rng == old_meta["rng"] == old_call["rng"],
+                "tile_solid_table_equal": prefix.solid_types
+                == old_meta["globals"]["Terraria.Main"]["tileSolid"],
+                "chests_equal": before["chests"] == old_meta["chests"],
+            }
+    checkpoint_phase = (
+        "first-passage"
+        if stopped and stopped["method"] == "GrowLivingTree_MakePassage"
+        else "first-object"
+    )
+    if stopped and (capture / f"{checkpoint_phase}.json").exists():
+        cp, cp_meta = load_snapshot(capture, checkpoint_phase)
+        boundary = next(c for c in calls if c["method"] == stopped["method"])
+        expected_objects = [
+            c
+            for c in calls
+            if c["id"] < boundary["id"] and c["method"] in ("PlaceTile", "PlaceSmallPile")
+        ]
+        object_sequence = [
+            {
+                "method": c["method"],
+                "args": c["args"],
+                "rng_before": c["rng"],
+                "result": c["result"],
+                "rng_after": c["rng_after"],
+            }
+            for c in expected_objects
+        ]
+        from scripts.fidelity_living_trees_objects import normalized_events
+
+        nested = []
+        for obj in expected_objects:
+            start = next(
+                i
+                for i, e in enumerate(events)
+                if e.get("id") == obj["id"] and e["event"] == "enter"
+            )
+            end = next(
+                i for i, e in enumerate(events) if e.get("id") == obj["id"] and e["event"] == "exit"
+            )
+            nested.extend(normalized_events(events[start : end + 1]))
+        actual_events = implementation.placement.events if implementation.placement else []
+        global_differences = {
+            t: [
+                f
+                for f, v in fields.items()
+                if v != cp_meta["globals"][t][f]
+                and not (t == "Terraria.Main" and f in ("tileSolid", "statusText", "oldStatusText"))
+            ]
+            for t, fields in before["globals"].items()
+        }
         checkpoint = {
+            "phase": checkpoint_phase,
             "native_comparison": compare_cells(pre, cp, implementation.cells),
-            "call_equal": stopped["method"] == first_object["method"]
-            and stopped["args"] == first_object["args"],
-            "rng_equal": stopped["rng"] == cp_meta["rng"] == first_object["rng"],
+            "call_equal": stopped["method"] == boundary["method"]
+            and stopped["args"] == boundary["args"],
+            "rng_equal": stopped["rng"] == cp_meta["rng"] == boundary["rng"],
             "tile_solid_table_equal": implementation.solid_types
             == cp_meta["globals"]["Terraria.Main"]["tileSolid"],
             "chests_equal": before["chests"] == cp_meta["chests"],
-            "vanilla_call_result": first_object["result"],
-            "vanilla_call_rng_changed": first_object["rng"] != first_object["rng_after"],
+            "unresolved_global_differences": global_differences,
+            "relevant_globals_equal": not any(global_differences.values()),
+            "object_call_count": len(implementation.object_calls),
+            "object_result_rng_sequence_equal": implementation.object_calls == object_sequence,
+            "nested_object_event_count": len(nested),
+            "nested_object_trace_equal": actual_events == nested,
+            "vanilla_call_result": boundary["result"],
+            "vanilla_call_rng_changed": boundary["rng"] != boundary["rng_after"],
         }
     # Exact net-change masks, not an inferred history of individual write operations.
     exports = output.parent / (output.stem + "-exports")
@@ -211,9 +283,35 @@ def replay(capture: Path, control_world: Path, captured_world: Path, output: Pat
         and before["secret_seeds"] == after["secret_seeds"]
         and not any(unresolved_globals.values())
     )
+    checkpoint_equal = (
+        checkpoint is not None
+        and all(
+            checkpoint[key]
+            for key in (
+                "call_equal",
+                "rng_equal",
+                "tile_solid_table_equal",
+                "chests_equal",
+                "relevant_globals_equal",
+                "object_result_rng_sequence_equal",
+                "nested_object_trace_equal",
+            )
+        )
+        and checkpoint["native_comparison"]["equal"]
+        and all(
+            c["entry_equal"] and (not c["result_present"] or c["result_equal"])
+            for c in prefix_comparisons
+        )
+    )
+    if previous_checkpoint is not None:
+        checkpoint_equal = (
+            checkpoint_equal
+            and previous_checkpoint["native_comparison"]["equal"]
+            and all(v for k, v in previous_checkpoint.items() if k != "native_comparison")
+        )
     report = {
         "status": "INCOMPLETE_UNSUPPORTED_CALL"
-        if stopped
+        if stopped and checkpoint_equal
         else "MATCH"
         if native_diff["equal"]
         and sequence_equal
@@ -242,7 +340,10 @@ def replay(capture: Path, control_world: Path, captured_world: Path, output: Pat
         "native_full_post_comparison": native_diff,
         "canonical_full_post_comparison": canonical_diff,
         "first_unsupported_call": stopped,
-        "first_object_checkpoint": checkpoint,
+        "first_object_checkpoint": checkpoint if checkpoint_phase == "first-object" else None,
+        "first_passage_checkpoint": checkpoint if checkpoint_phase == "first-passage" else None,
+        "verified_exact_boundary": checkpoint_equal,
+        "previous_first_object_checkpoint": previous_checkpoint,
         "candidate_x_draws_before_stop": implementation.candidates,
         "invocation_prefix_comparison": prefix_comparisons,
         "full_invocation_result_sequence_equal": sequence_equal,
@@ -288,7 +389,7 @@ def replay(capture: Path, control_world: Path, captured_world: Path, output: Pat
             indent=2,
         )
     )
-    return 0 if report["status"] == "MATCH" else 2
+    return 0 if report["status"] == "MATCH" else 2 if checkpoint_equal else 1
 
 
 def main():
