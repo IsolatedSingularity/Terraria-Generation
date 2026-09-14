@@ -12,7 +12,6 @@ from Advanced.terrariaCorruptionEvolution import (
     createSpreadAnimation,
 )
 
-
 if __name__ == "__main__":
     print("Terraria Crimson Evolution")
     print("=" * 40)
