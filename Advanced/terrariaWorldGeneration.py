@@ -16,6 +16,7 @@ import os
 
 import numpy as np
 
+from Advanced.terrariaCorruptionEvolution import carveVPattern
 from Engine.algorithms import STONE
 from Engine.constants import TINY, LayerDepths
 from Engine.theme import applyTokyoNight, saveTinyGif
@@ -26,8 +27,6 @@ from Engine.worldgen import (
     _miniSurface,
     generateMiniWorld,
 )
-
-from Advanced.terrariaCorruptionEvolution import carveVPattern
 
 applyTokyoNight()
 

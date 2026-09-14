@@ -224,21 +224,45 @@ def digTunnel(
     rng = np.random.default_rng(seed)
     fillType = WATER if wet else AIR
 
+    # Precompute circular mask
+    y_idx, x_idx = np.ogrid[-size : size + 1, -size : size + 1]
+    circle_mask = x_idx**2 + y_idx**2 <= size**2
+    mask_h, mask_w = circle_mask.shape
+
+    immune_list = list(IMMUNE_TILES)
+
     for _ in range(steps):
-        # Circular brush: euclidean distance
-        for dx in range(-size, size + 1):
-            for dy in range(-size, size + 1):
-                if dx * dx + dy * dy > size * size:
-                    continue
+        tx_base = int(cx)
+        ty_base = int(cy)
 
-                tx = int(cx) + dx
-                ty = int(cy) + dy
+        # Calculate bounds
+        x_min = tx_base - size
+        x_max = tx_base + size + 1
+        y_min = ty_base - size
+        y_max = ty_base + size + 1
 
-                if tx < 1 or tx >= maxX - 1 or ty < 1 or ty >= maxY - 1:
-                    continue
+        # Clip to safe bounds
+        safe_x_min = max(1, x_min)
+        safe_x_max = min(maxX - 1, x_max)
+        safe_y_min = max(1, y_min)
+        safe_y_max = min(maxY - 1, y_max)
 
-                if grid[ty, tx] not in IMMUNE_TILES:
-                    grid[ty, tx] = fillType
+        if safe_x_min < safe_x_max and safe_y_min < safe_y_max:
+            # Slices for the grid
+            grid_slice = grid[safe_y_min:safe_y_max, safe_x_min:safe_x_max]
+
+            # Slices for the mask (if it was partially out of bounds)
+            mask_x_start = safe_x_min - x_min
+            mask_x_end = mask_w - (x_max - safe_x_max)
+            mask_y_start = safe_y_min - y_min
+            mask_y_end = mask_h - (y_max - safe_y_max)
+
+            sub_mask = circle_mask[mask_y_start:mask_y_end, mask_x_start:mask_x_end]
+
+            # Apply fill
+            immune = np.isin(grid_slice, immune_list)
+            assign_mask = sub_mask & ~immune
+            grid_slice[assign_mask] = fillType
 
         # Advance along the direction vector with slight randomization
         cx += xDir + rng.uniform(-0.2, 0.2)
