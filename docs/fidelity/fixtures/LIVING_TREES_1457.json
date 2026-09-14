@@ -1,0 +1,1886 @@
+{
+  "target": "Terraria 1.4.5.7 / Steam BuildID 24825745 / world format 325",
+  "baseline_head": "80a7e9522c114cdd2388a435cecfcc15d977310c",
+  "seed_selection": "314159265 primary; 1 and 2 fixed before generation, without tree-selection filtering",
+  "scope": "Ordinary Small 4200x1200 Classic Corruption, no secret options, pre-Hardmode",
+  "outcome": "ORACLE_VERIFIED_REPLAY_INCOMPLETE",
+  "local_evidence_root": "audit/living-trees-replay-20260914",
+  "fixtures": [
+    {
+      "seed": "314159265",
+      "status": "INCOMPLETE_UNSUPPORTED_CALL",
+      "control_sha256": "89b383b6d4e7d8a959c3679350271c84fec0cc311f3dc8994c43e5b48db70487",
+      "captured_world_sha256": "36c940edbb352eb3e16f7d05dd5f7141ce6496f42c0552e65fcb734cc74f8dd4",
+      "pass": {
+        "Name": "Living Trees",
+        "DurationMs": 40870,
+        "RandNext": 97760788,
+        "Hash": null,
+        "Skipped": false
+      },
+      "pass_rng_initial_sha256": "d059a87252c104b76f55d049bcdd6f6bdb17365ba0d01c5f0d9c1b7fdb454d21",
+      "pass_rng_final_sha256": "4289cd8356a49646134c9fa2ada152ea29daccfe7497e2c52dae9bd991798c86",
+      "manifest_RandNext_verified": 97760788,
+      "manifest_rng_state_after_draw_sha256": "8f112f6b887092a67258bda0569276a7bfd1725490588aed580216422ae1211f",
+      "native_pre_sha256": "be0e5209d9de2dcbba2dcc95cf571bf448ede3679ac150cd4cb6b05e43758c77",
+      "native_post_sha256": "0bb2cb2d402c6567eda692b62ccfe78008eaafaab27ca5171d31136099c65821",
+      "canonical_pre_sha256": "4b95871a669124fcdb377f8f791b05fef7e30c416c5df9d1bd4acfa7b03c26af",
+      "canonical_post_sha256": "ddda6407655bdeb052656762f0069e1ad46ffe0b81de4b72e9c8b683c87915ff",
+      "canonical_actual_sha256": "dcb02d18fc449f4cf38260d073c828aad2cbe372f0b21a9f1bb38eaacf21ae06",
+      "native_full_post_comparison": {
+        "expected_changed_cells": 6664,
+        "actual_changed_cells": 651,
+        "missing_changed_cells": 6013,
+        "extra_changed_cells": 0,
+        "different_cells": 6100,
+        "per_field_differences": {
+          "type": 5211,
+          "wall": 1665,
+          "liquid": 5,
+          "sTileHeader": 4255,
+          "bTileHeader": 0,
+          "bTileHeader2": 0,
+          "bTileHeader3": 0,
+          "frameX": 251,
+          "frameY": 251
+        },
+        "missing_field_writes": {
+          "type": 5206,
+          "wall": 1665,
+          "liquid": 5,
+          "sTileHeader": 4209,
+          "bTileHeader": 0,
+          "bTileHeader2": 0,
+          "bTileHeader3": 0,
+          "frameX": 251,
+          "frameY": 251
+        },
+        "extra_field_writes": {
+          "type": 0,
+          "wall": 0,
+          "liquid": 0,
+          "sTileHeader": 46,
+          "bTileHeader": 0,
+          "bTileHeader2": 0,
+          "bTileHeader3": 0,
+          "frameX": 0,
+          "frameY": 0
+        },
+        "first_differences": [
+          {
+            "x": 549,
+            "y": 258,
+            "fields": {
+              "type": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 549,
+            "y": 259,
+            "fields": {
+              "type": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 549,
+            "y": 260,
+            "fields": {
+              "type": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 549,
+            "y": 261,
+            "fields": {
+              "type": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 549,
+            "y": 262,
+            "fields": {
+              "type": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 549,
+            "y": 263,
+            "fields": {
+              "type": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 549,
+            "y": 264,
+            "fields": {
+              "type": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 549,
+            "y": 265,
+            "fields": {
+              "type": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 549,
+            "y": 266,
+            "fields": {
+              "type": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 549,
+            "y": 267,
+            "fields": {
+              "type": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          }
+        ],
+        "equal": false
+      },
+      "canonical_full_post_comparison": {
+        "expected_changed_cells": 6635,
+        "actual_changed_cells": 651,
+        "missing_changed_cells": 5984,
+        "extra_changed_cells": 0,
+        "different_cells": 6071,
+        "per_field_differences": {
+          "active": 4255,
+          "tile": 5356,
+          "wall": 1665,
+          "frame_x": 136,
+          "frame_y": 136,
+          "tile_paint": 0,
+          "wall_paint": 0,
+          "liquid_kind": 5,
+          "liquid_amount": 5,
+          "shape": 0,
+          "wires_actuator_inactive": 0,
+          "coatings": 0
+        },
+        "missing_field_writes": {
+          "active": 4209,
+          "tile": 5289,
+          "wall": 1665,
+          "frame_x": 136,
+          "frame_y": 136,
+          "tile_paint": 0,
+          "wall_paint": 0,
+          "liquid_kind": 5,
+          "liquid_amount": 5,
+          "shape": 0,
+          "wires_actuator_inactive": 0,
+          "coatings": 0
+        },
+        "extra_field_writes": {
+          "active": 46,
+          "tile": 62,
+          "wall": 0,
+          "frame_x": 0,
+          "frame_y": 0,
+          "tile_paint": 0,
+          "wall_paint": 0,
+          "liquid_kind": 0,
+          "liquid_amount": 0,
+          "shape": 0,
+          "wires_actuator_inactive": 0,
+          "coatings": 0
+        },
+        "first_differences": [
+          {
+            "x": 549,
+            "y": 258,
+            "fields": {
+              "tile": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 549,
+            "y": 259,
+            "fields": {
+              "tile": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 549,
+            "y": 260,
+            "fields": {
+              "tile": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 549,
+            "y": 261,
+            "fields": {
+              "tile": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 549,
+            "y": 262,
+            "fields": {
+              "tile": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 549,
+            "y": 263,
+            "fields": {
+              "tile": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 549,
+            "y": 264,
+            "fields": {
+              "tile": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 549,
+            "y": 265,
+            "fields": {
+              "tile": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 549,
+            "y": 266,
+            "fields": {
+              "tile": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 549,
+            "y": 267,
+            "fields": {
+              "tile": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          }
+        ],
+        "equal": false
+      },
+      "first_object_checkpoint": {
+        "native_comparison": {
+          "expected_changed_cells": 651,
+          "actual_changed_cells": 651,
+          "missing_changed_cells": 0,
+          "extra_changed_cells": 0,
+          "different_cells": 0,
+          "per_field_differences": {
+            "type": 0,
+            "wall": 0,
+            "liquid": 0,
+            "sTileHeader": 0,
+            "bTileHeader": 0,
+            "bTileHeader2": 0,
+            "bTileHeader3": 0,
+            "frameX": 0,
+            "frameY": 0
+          },
+          "missing_field_writes": {
+            "type": 0,
+            "wall": 0,
+            "liquid": 0,
+            "sTileHeader": 0,
+            "bTileHeader": 0,
+            "bTileHeader2": 0,
+            "bTileHeader3": 0,
+            "frameX": 0,
+            "frameY": 0
+          },
+          "extra_field_writes": {
+            "type": 0,
+            "wall": 0,
+            "liquid": 0,
+            "sTileHeader": 0,
+            "bTileHeader": 0,
+            "bTileHeader2": 0,
+            "bTileHeader3": 0,
+            "frameX": 0,
+            "frameY": 0
+          },
+          "first_differences": [],
+          "equal": true
+        },
+        "call_equal": true,
+        "rng_equal": true,
+        "tile_solid_table_equal": true,
+        "chests_equal": true,
+        "vanilla_call_result": false,
+        "vanilla_call_rng_changed": false
+      },
+      "invocation_prefix_comparison": [
+        {
+          "index": 0,
+          "args": [
+            575,
+            217,
+            false
+          ],
+          "entry_equal": true,
+          "result_present": false,
+          "result_equal": null
+        }
+      ],
+      "full_invocation_result_sequence_equal": false,
+      "full_pass_final_rng_equal": false,
+      "full_pass_tile_solid_table_equal": false,
+      "chests": {
+        "pre_count": 18,
+        "post_count": 19,
+        "replay_equal": false
+      },
+      "invocation_counts": {
+        "GrowLivingTree": 4,
+        "PlaceTile": 159,
+        "PlaceSmallPile": 11,
+        "GrowLivingTree_MakePassage": 2,
+        "GrowLivingTreePassageRoom": 1,
+        "GrowLivingTree_HorizontalTunnel": 2
+      },
+      "tree_invocations": [
+        {
+          "args": [
+            575,
+            217,
+            false
+          ],
+          "result": true,
+          "rng_before_sha256": "885c415508aca447e6cdcd31d58f248b2754d8ce896b692dbb49f34d8efbb776",
+          "rng_after_sha256": "0825aa39593f4e14eeee372239ade8ce29cfbc040e71c962f36963d189077c19"
+        },
+        {
+          "args": [
+            590,
+            234,
+            true
+          ],
+          "result": false,
+          "rng_before_sha256": "8f38339224ac88299be4acf9d4049635429d99597b439267118cf2a758683407",
+          "rng_after_sha256": "dd8394dc6c5614e3855d2fe638ec7f6ee2cd01270f2494d6ad9cf9496eb17889"
+        },
+        {
+          "args": [
+            608,
+            232,
+            true
+          ],
+          "result": true,
+          "rng_before_sha256": "a312c9485e6b25c7881c1edbbbef12d9ecdb0f0e238078e99e259f3df718e736",
+          "rng_after_sha256": "55f503ffe4a4c6270b1595e62dd7d91fca6a7dbf4c54b0f2c10e89577418f4b7"
+        },
+        {
+          "args": [
+            626,
+            231,
+            true
+          ],
+          "result": false,
+          "rng_before_sha256": "cfd1762bcb41fa477820fe78fb4d1b6ee5f09c9910103300f898669c5ea8ffae",
+          "rng_after_sha256": "4289cd8356a49646134c9fa2ada152ea29daccfe7497e2c52dae9bd991798c86"
+        }
+      ],
+      "capture_file_sha256": {
+        "calls.jsonl": "bd38558f13d93eec46cf5805006b4c764c64f5f146c959a207c474b9df0258c7",
+        "first-object.json": "3cfa3b3363771de456704a86d50b6c73bc66b023935db15eff8036813b300f32",
+        "first-object.raw.gz": "e164ab497e5c7a2cf99a26a8b64181da53b99ab9f932b2b79de8ad7607fe7378",
+        "installed.json": "df125a4c4de0ff84538e9c8994cfdb5ba29529c83c625be31b04dbf2cb29174d",
+        "instrumentation.json": "b4b092fd1d9b39a947532868596bb626f845ebde9d86b2d088b8102b8c1a587b",
+        "pass-config.json": "5d58bcc106ddd4794abdaaf540f405b57445a7345af521fb1f64f7d5fe77c6eb",
+        "pass-result.json": "d4dcb4dfeae2c32ad792f58f95070399321862dc9f59fe422dcb95ea8f100d2b",
+        "post.json": "7309b21316f21552e02243a72d94214ae4348db680716d23c5a4b1f60168e275",
+        "post.raw.gz": "d6f4b425d27aab6a0068f41527f280803951221b0eb9be49423b703f1436eea7",
+        "pre.json": "931e0f3d0b575adbabcbef4937341e22ab27e2ad020c0baeaf58ea22e1ccefab",
+        "pre.raw.gz": "e2016b4ca2b0a0d3458b69e1ed193740c7477d09ebfc0652c4f4abf4259dad96"
+      },
+      "export_file_sha256": {
+        "actual.canonical.gz": "13fedf61f07841feaf37c43444c55a440839b387e8f07dafdc11c02ac31726bb",
+        "canonical-active.mask.gz": "e459f79a64d55b0807373e6b08f66ac207bb8ddfd03d77263d829255795134b1",
+        "canonical-all.mask.gz": "c94f73c2969bccf3a0fce55ea501fe0c4f9796804a6faaf81612d14141478092",
+        "canonical-coatings.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "canonical-frame_x.mask.gz": "010ac5c5abfb6fb29a275ca5a667ad05a1d37f1bb76ca684d10d1f259a1f92ea",
+        "canonical-frame_y.mask.gz": "010ac5c5abfb6fb29a275ca5a667ad05a1d37f1bb76ca684d10d1f259a1f92ea",
+        "canonical-liquid_amount.mask.gz": "68afbafd6a9c9f06a7aa65ad32f5a019df4c81eb7722c8c306877e9f055ee9d2",
+        "canonical-liquid_kind.mask.gz": "68afbafd6a9c9f06a7aa65ad32f5a019df4c81eb7722c8c306877e9f055ee9d2",
+        "canonical-shape.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "canonical-tile.mask.gz": "779242e9e869f80f832afba18f47952310de103d67ffdb06af5adfd61f946d11",
+        "canonical-tile_paint.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "canonical-wall.mask.gz": "30641ca76a94c4a972555ed6479889cc9a02af0249faac9028ad6251e541b285",
+        "canonical-wall_paint.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "canonical-wires_actuator_inactive.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "native-all.mask.gz": "4e5d0472fecbc6cfbffcde1bd8e7f818c205eb318ef8735ebe04f322174ba4b3",
+        "native-bTileHeader.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "native-bTileHeader2.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "native-bTileHeader3.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "native-frameX.mask.gz": "40066502f1669c549c25ffa02a7b17bc75de299832f5680180cb6f30c7476a4e",
+        "native-frameY.mask.gz": "40066502f1669c549c25ffa02a7b17bc75de299832f5680180cb6f30c7476a4e",
+        "native-liquid.mask.gz": "68afbafd6a9c9f06a7aa65ad32f5a019df4c81eb7722c8c306877e9f055ee9d2",
+        "native-sTileHeader.mask.gz": "e459f79a64d55b0807373e6b08f66ac207bb8ddfd03d77263d829255795134b1",
+        "native-type.mask.gz": "e46055efdb55c5c6aaf6a576e58dc27d1f9b80f0e5816ce123db6375b61fe546",
+        "native-wall.mask.gz": "30641ca76a94c4a972555ed6479889cc9a02af0249faac9028ad6251e541b285",
+        "post.canonical.gz": "6cadbcd100ef654956dd7c61b5c995468dd4358e6d2b426bff212b872de33b34",
+        "pre.canonical.gz": "0120ee56acc5d987d4893ee0f49434bb539cb6af47d25b0d2cc356de1a02c093"
+      },
+      "observed_global_field_changes": {
+        "Terraria.Main": [
+          "statusText",
+          "tileSolid",
+          "chest",
+          "oldStatusText"
+        ],
+        "Terraria.WorldGen": [],
+        "Terraria.WorldBuilding.GenVars": [],
+        "Terraria.ID.TileID+Sets": []
+      },
+      "first_unsupported_call": {
+        "method": "PlaceTile",
+        "args": [
+          585,
+          219,
+          187,
+          true,
+          false,
+          -1,
+          49
+        ],
+        "reason": "Independent implementation stops before PlaceTile(585, 219, 187, True, False, -1, 49)",
+        "rng_sha256": "3014ed73187ecfcd7ea448c74d564364f6040cd7ab2f1897b364a07a0b5a56a3"
+      },
+      "all_secret_seed_options_disabled": true,
+      "secret_seed_option_count": 37,
+      "final_saved_semantic_equal": true,
+      "final_canonical_cells_sha256": "97d590a10019a682b04bdbf076c70b18f8f557fc9c6c0ce3964158994eac9b4c",
+      "raw_saved_hashes_equal": false,
+      "replay_report_relative": "audit/living-trees-replay-20260914/replay-314159265.json",
+      "replay_report_sha256": "f7c71de00379e19ef3d63165f6e2104880cf74aa5ce13e4348d0bbdcc60542d4",
+      "runtime_runs": {
+        "control": {
+          "world_size": 3011311,
+          "world_sha256": "89b383b6d4e7d8a959c3679350271c84fec0cc311f3dc8994c43e5b48db70487",
+          "started_utc": "2026-09-14T15:51:39.830753+00:00",
+          "generation_and_load_seconds": 14.25,
+          "elapsed_seconds": 44.34399999980815,
+          "child_exit_code": 1,
+          "status": "SAVED_AND_LOADED",
+          "shutdown_status": "FORCED_OR_FAILED_EXIT",
+          "stdout_sha256": "ede7467f633d325eb2f687f81f2da7861763d6bc5d1fd343c0e7c6e82d845a9b",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "evidence_directory": "audit/living-trees-replay-20260914/seed-314159265-control",
+          "result_json_sha256": "88e01dfc30417a32150b27789653ea1ba620ec72ea408928bd1c10adb6262d2c"
+        },
+        "capture-final": {
+          "world_size": 3011320,
+          "world_sha256": "36c940edbb352eb3e16f7d05dd5f7141ce6496f42c0552e65fcb734cc74f8dd4",
+          "started_utc": "2026-09-14T16:03:56.957770+00:00",
+          "generation_and_load_seconds": 56.765000000130385,
+          "elapsed_seconds": 86.90599999995902,
+          "child_exit_code": 1,
+          "status": "SAVED_AND_LOADED",
+          "shutdown_status": "FORCED_OR_FAILED_EXIT",
+          "stdout_sha256": "2f7097c5d8b730ddaa34124044414303099e04fe1717949357115813aff97857",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "evidence_directory": "audit/living-trees-replay-20260914/seed-314159265-capture-final",
+          "result_json_sha256": "95dcb18eb3ec949f2b442027fd59fbc430050c576d746f2365365a694b5ad554"
+        }
+      }
+    },
+    {
+      "seed": "1",
+      "status": "INCOMPLETE_UNSUPPORTED_CALL",
+      "control_sha256": "504bbdd4c9f534c21ccbe60f6c65f2e55d3158d70038b015ac6d1c5cc8e8e2bb",
+      "captured_world_sha256": "4b08cde3cc3e91e8633824b5dd941a92bb0c056b8f427cdb36b29a00d2155713",
+      "pass": {
+        "Name": "Living Trees",
+        "DurationMs": 39584,
+        "RandNext": 102480169,
+        "Hash": null,
+        "Skipped": false
+      },
+      "pass_rng_initial_sha256": "3371b231aac316498a7d2ee2dbe9400a213d6ae940668aaa53cae3e0fa7714b1",
+      "pass_rng_final_sha256": "064e7f1a8faac2ae2bdd6e84625defe4709bc36e6fc76c20227de6c16d98e3a1",
+      "manifest_RandNext_verified": 102480169,
+      "manifest_rng_state_after_draw_sha256": "f01a0a5befd7ee9db1ae6187d5660f49c9fea0dbb4f553005cdda6070b5f8924",
+      "native_pre_sha256": "57db4bf20383eecbfec936dd2773e4e4b0092c525ac720411c4f4ec2af32ec52",
+      "native_post_sha256": "e11aa2c259802a2303f2979f26063225447af17ec1341082919f73b67999d8eb",
+      "canonical_pre_sha256": "c19c41747248e919606710a20b2983512df07e07482d432dabc25df32d8e3cfc",
+      "canonical_post_sha256": "32bfc1236ed61dfd4de700f7ba81675448cbbe4a98d8bcfc6c155e1087dbecf7",
+      "canonical_actual_sha256": "b5f5c22f2e008a96fcc27b11270376117ef2c6bc7a1434fdd0e992120124ac67",
+      "native_full_post_comparison": {
+        "expected_changed_cells": 7065,
+        "actual_changed_cells": 613,
+        "missing_changed_cells": 6452,
+        "extra_changed_cells": 0,
+        "different_cells": 6504,
+        "per_field_differences": {
+          "type": 5668,
+          "wall": 1877,
+          "liquid": 0,
+          "sTileHeader": 4550,
+          "bTileHeader": 0,
+          "bTileHeader2": 0,
+          "bTileHeader3": 0,
+          "frameX": 245,
+          "frameY": 245
+        },
+        "missing_field_writes": {
+          "type": 5665,
+          "wall": 1877,
+          "liquid": 0,
+          "sTileHeader": 4530,
+          "bTileHeader": 0,
+          "bTileHeader2": 0,
+          "bTileHeader3": 0,
+          "frameX": 245,
+          "frameY": 245
+        },
+        "extra_field_writes": {
+          "type": 0,
+          "wall": 0,
+          "liquid": 0,
+          "sTileHeader": 20,
+          "bTileHeader": 0,
+          "bTileHeader2": 0,
+          "bTileHeader3": 0,
+          "frameX": 0,
+          "frameY": 0
+        },
+        "first_differences": [
+          {
+            "x": 3701,
+            "y": 191,
+            "fields": {
+              "type": {
+                "expected": 192,
+                "actual": 0
+              },
+              "sTileHeader": {
+                "expected": 32,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 3701,
+            "y": 192,
+            "fields": {
+              "type": {
+                "expected": 192,
+                "actual": 0
+              },
+              "sTileHeader": {
+                "expected": 32,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 3701,
+            "y": 193,
+            "fields": {
+              "type": {
+                "expected": 192,
+                "actual": 0
+              },
+              "sTileHeader": {
+                "expected": 32,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 3701,
+            "y": 194,
+            "fields": {
+              "type": {
+                "expected": 192,
+                "actual": 0
+              },
+              "sTileHeader": {
+                "expected": 32,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 3701,
+            "y": 195,
+            "fields": {
+              "type": {
+                "expected": 192,
+                "actual": 0
+              },
+              "sTileHeader": {
+                "expected": 32,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 3701,
+            "y": 196,
+            "fields": {
+              "type": {
+                "expected": 192,
+                "actual": 0
+              },
+              "sTileHeader": {
+                "expected": 32,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 3701,
+            "y": 197,
+            "fields": {
+              "type": {
+                "expected": 192,
+                "actual": 0
+              },
+              "sTileHeader": {
+                "expected": 32,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 3702,
+            "y": 187,
+            "fields": {
+              "frameX": {
+                "expected": 0,
+                "actual": -1
+              },
+              "frameY": {
+                "expected": 0,
+                "actual": -1
+              }
+            }
+          },
+          {
+            "x": 3702,
+            "y": 188,
+            "fields": {
+              "type": {
+                "expected": 192,
+                "actual": 0
+              },
+              "sTileHeader": {
+                "expected": 32,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 3702,
+            "y": 189,
+            "fields": {
+              "type": {
+                "expected": 192,
+                "actual": 0
+              },
+              "sTileHeader": {
+                "expected": 32,
+                "actual": 0
+              }
+            }
+          }
+        ],
+        "equal": false
+      },
+      "canonical_full_post_comparison": {
+        "expected_changed_cells": 7027,
+        "actual_changed_cells": 613,
+        "missing_changed_cells": 6414,
+        "extra_changed_cells": 0,
+        "different_cells": 6466,
+        "per_field_differences": {
+          "active": 4550,
+          "tile": 5748,
+          "wall": 1877,
+          "frame_x": 127,
+          "frame_y": 127,
+          "tile_paint": 0,
+          "wall_paint": 0,
+          "liquid_kind": 0,
+          "liquid_amount": 0,
+          "shape": 0,
+          "wires_actuator_inactive": 0,
+          "coatings": 0
+        },
+        "missing_field_writes": {
+          "active": 4530,
+          "tile": 5705,
+          "wall": 1877,
+          "frame_x": 127,
+          "frame_y": 127,
+          "tile_paint": 0,
+          "wall_paint": 0,
+          "liquid_kind": 0,
+          "liquid_amount": 0,
+          "shape": 0,
+          "wires_actuator_inactive": 0,
+          "coatings": 0
+        },
+        "extra_field_writes": {
+          "active": 20,
+          "tile": 34,
+          "wall": 0,
+          "frame_x": 0,
+          "frame_y": 0,
+          "tile_paint": 0,
+          "wall_paint": 0,
+          "liquid_kind": 0,
+          "liquid_amount": 0,
+          "shape": 0,
+          "wires_actuator_inactive": 0,
+          "coatings": 0
+        },
+        "first_differences": [
+          {
+            "x": 3701,
+            "y": 191,
+            "fields": {
+              "active": {
+                "expected": 1,
+                "actual": 0
+              },
+              "tile": {
+                "expected": 192,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 3701,
+            "y": 192,
+            "fields": {
+              "active": {
+                "expected": 1,
+                "actual": 0
+              },
+              "tile": {
+                "expected": 192,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 3701,
+            "y": 193,
+            "fields": {
+              "active": {
+                "expected": 1,
+                "actual": 0
+              },
+              "tile": {
+                "expected": 192,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 3701,
+            "y": 194,
+            "fields": {
+              "active": {
+                "expected": 1,
+                "actual": 0
+              },
+              "tile": {
+                "expected": 192,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 3701,
+            "y": 195,
+            "fields": {
+              "active": {
+                "expected": 1,
+                "actual": 0
+              },
+              "tile": {
+                "expected": 192,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 3701,
+            "y": 196,
+            "fields": {
+              "active": {
+                "expected": 1,
+                "actual": 0
+              },
+              "tile": {
+                "expected": 192,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 3701,
+            "y": 197,
+            "fields": {
+              "active": {
+                "expected": 1,
+                "actual": 0
+              },
+              "tile": {
+                "expected": 192,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 3702,
+            "y": 188,
+            "fields": {
+              "active": {
+                "expected": 1,
+                "actual": 0
+              },
+              "tile": {
+                "expected": 192,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 3702,
+            "y": 189,
+            "fields": {
+              "active": {
+                "expected": 1,
+                "actual": 0
+              },
+              "tile": {
+                "expected": 192,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 3702,
+            "y": 190,
+            "fields": {
+              "active": {
+                "expected": 1,
+                "actual": 0
+              },
+              "tile": {
+                "expected": 192,
+                "actual": 0
+              }
+            }
+          }
+        ],
+        "equal": false
+      },
+      "first_object_checkpoint": {
+        "native_comparison": {
+          "expected_changed_cells": 613,
+          "actual_changed_cells": 613,
+          "missing_changed_cells": 0,
+          "extra_changed_cells": 0,
+          "different_cells": 0,
+          "per_field_differences": {
+            "type": 0,
+            "wall": 0,
+            "liquid": 0,
+            "sTileHeader": 0,
+            "bTileHeader": 0,
+            "bTileHeader2": 0,
+            "bTileHeader3": 0,
+            "frameX": 0,
+            "frameY": 0
+          },
+          "missing_field_writes": {
+            "type": 0,
+            "wall": 0,
+            "liquid": 0,
+            "sTileHeader": 0,
+            "bTileHeader": 0,
+            "bTileHeader2": 0,
+            "bTileHeader3": 0,
+            "frameX": 0,
+            "frameY": 0
+          },
+          "extra_field_writes": {
+            "type": 0,
+            "wall": 0,
+            "liquid": 0,
+            "sTileHeader": 0,
+            "bTileHeader": 0,
+            "bTileHeader2": 0,
+            "bTileHeader3": 0,
+            "frameX": 0,
+            "frameY": 0
+          },
+          "first_differences": [],
+          "equal": true
+        },
+        "call_equal": true,
+        "rng_equal": true,
+        "tile_solid_table_equal": true,
+        "chests_equal": true,
+        "vanilla_call_result": true,
+        "vanilla_call_rng_changed": false
+      },
+      "invocation_prefix_comparison": [
+        {
+          "index": 0,
+          "args": [
+            3784,
+            228,
+            false
+          ],
+          "entry_equal": true,
+          "result_present": false,
+          "result_equal": null
+        }
+      ],
+      "full_invocation_result_sequence_equal": false,
+      "full_pass_final_rng_equal": false,
+      "full_pass_tile_solid_table_equal": false,
+      "chests": {
+        "pre_count": 26,
+        "post_count": 27,
+        "replay_equal": false
+      },
+      "invocation_counts": {
+        "GrowLivingTree": 4,
+        "PlaceSmallPile": 10,
+        "PlaceTile": 170,
+        "GrowLivingTree_MakePassage": 2,
+        "GrowLivingTreePassageRoom": 1,
+        "GrowLivingTree_HorizontalTunnel": 2
+      },
+      "tree_invocations": [
+        {
+          "args": [
+            3784,
+            228,
+            false
+          ],
+          "result": true,
+          "rng_before_sha256": "acec7d70269f134627853c4cbea2c37764a4f1e2bdc5bd61022aa5852028f9b7",
+          "rng_after_sha256": "a0d44443db2b8d7a559ca72ccd03d5b619b40e13bbeaf776f0dd1a088392d9cf"
+        },
+        {
+          "args": [
+            3768,
+            227,
+            true
+          ],
+          "result": false,
+          "rng_before_sha256": "9383e3fc6dc58e4e5e0cebfe0b1c07a3783dde836c5e145173ac808c9c483985",
+          "rng_after_sha256": "684d7b16ff503bb2d58a28fd8f0628e0cce79a05e86cfb92d5239e2339a797df"
+        },
+        {
+          "args": [
+            3748,
+            227,
+            true
+          ],
+          "result": false,
+          "rng_before_sha256": "717ac219fb9ed65b2df6572dc5adceee912bf363f788651b94ed66bcbb94f3ab",
+          "rng_after_sha256": "28385bba3eff6df68d886af8e8a5c919de1695e87b88491391249b679286f91e"
+        },
+        {
+          "args": [
+            3725,
+            227,
+            true
+          ],
+          "result": true,
+          "rng_before_sha256": "a76d0e4d7160462d9016a8eb430a927b514be5891d0125f82478c7f7b71da1d4",
+          "rng_after_sha256": "c5a26019e1c4343732bba2e14843b6ca5dd5964e6290acd2ce55bd73c9ed4522"
+        }
+      ],
+      "capture_file_sha256": {
+        "calls.jsonl": "6c66523ee3255f1182564d430e66764f44c6d45d9f894bdeb72823b007969b07",
+        "first-object.json": "ff77c17b39e26f0a379e2f9494b4aab56e066f82d26c610865997b7bcb674676",
+        "first-object.raw.gz": "f393196231504395b98d1b10a89d11b973f61a3a462ce23555db8540b2b8891d",
+        "installed.json": "13f0c51d766754f059440a8b575e1af3becfdd2fa4920a3fbfa323a7f2cd99d2",
+        "instrumentation.json": "b4b092fd1d9b39a947532868596bb626f845ebde9d86b2d088b8102b8c1a587b",
+        "pass-config.json": "5d58bcc106ddd4794abdaaf540f405b57445a7345af521fb1f64f7d5fe77c6eb",
+        "pass-result.json": "93a4679278ab24030026bc10a1566999ac604bd28c5317b73d7d0b89f033d2a2",
+        "post.json": "2668553ff4ff96d2bc05f262534a5dbb328d552f15d1a6d3b8c04fc1c6c4a6cb",
+        "post.raw.gz": "b2bf78ad9068bc31b23a9aea15317cde8a8ef9f3895ab4d1778c7ee0c34db58d",
+        "pre.json": "ec2d26dfadc3d6a54946d3499d5e85d5aae5a80f7bc16bd8049520c11e186766",
+        "pre.raw.gz": "b4f2cb1ab8c923865d70d330bad85dd6d0b8d36d85a02adb338884e25ab200b1"
+      },
+      "export_file_sha256": {
+        "actual.canonical.gz": "888b60e91e7cc00962403dc71f847002ed5f4ca15a9940347908f7dc1050b347",
+        "canonical-active.mask.gz": "da9203cc25b8b90bd9c08216040ce34ca3e896b6f2b268d0841698c2e9e9ec97",
+        "canonical-all.mask.gz": "8cc251eecbb558257daf0de8a22c1d91c7335e3d35d117ac54c5a627ec6febd2",
+        "canonical-coatings.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "canonical-frame_x.mask.gz": "167c00bc80bddf946784f481d5993a6c53fb4f40a698fbffab5d9fa759fedebc",
+        "canonical-frame_y.mask.gz": "167c00bc80bddf946784f481d5993a6c53fb4f40a698fbffab5d9fa759fedebc",
+        "canonical-liquid_amount.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "canonical-liquid_kind.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "canonical-shape.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "canonical-tile.mask.gz": "5ae894feada832311e2c59c2bbfffd5d87c912992fcd9d8eb1ba0789858f7140",
+        "canonical-tile_paint.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "canonical-wall.mask.gz": "6e7ed784aeabc086339566bcd3caa8546c78c4450536fd2fbe11c798f8d9b313",
+        "canonical-wall_paint.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "canonical-wires_actuator_inactive.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "native-all.mask.gz": "ecc87be44a3330bd5453aaee3de6b75f4347d2409faddcfec965b855632de56c",
+        "native-bTileHeader.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "native-bTileHeader2.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "native-bTileHeader3.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "native-frameX.mask.gz": "70fdc10b7eb6ecc7009dea693337b3bed474fec055e8f42adc6ac60e6404b63d",
+        "native-frameY.mask.gz": "70fdc10b7eb6ecc7009dea693337b3bed474fec055e8f42adc6ac60e6404b63d",
+        "native-liquid.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "native-sTileHeader.mask.gz": "da9203cc25b8b90bd9c08216040ce34ca3e896b6f2b268d0841698c2e9e9ec97",
+        "native-type.mask.gz": "5dc25ab3c5d334cf3310ba446755388b394e3958c050fd00e073754e9edbb6d6",
+        "native-wall.mask.gz": "6e7ed784aeabc086339566bcd3caa8546c78c4450536fd2fbe11c798f8d9b313",
+        "post.canonical.gz": "c3e39e4ccf7ec359c18cb68d9644896220e8f128b5ee2e3b5cd9a27df670e207",
+        "pre.canonical.gz": "526e459c5ec3053bb95a127adcd1fb87c34e4336bddfadbf032463abe114ab7f"
+      },
+      "observed_global_field_changes": {
+        "Terraria.Main": [
+          "statusText",
+          "tileSolid",
+          "chest",
+          "oldStatusText"
+        ],
+        "Terraria.WorldGen": [],
+        "Terraria.WorldBuilding.GenVars": [],
+        "Terraria.ID.TileID+Sets": []
+      },
+      "first_unsupported_call": {
+        "method": "PlaceSmallPile",
+        "args": [
+          3765,
+          227,
+          59,
+          1,
+          185
+        ],
+        "reason": "Independent implementation stops before PlaceSmallPile(3765, 227, 59, 1, 185)",
+        "rng_sha256": "df7fade065e6c770a40a3252a279bd21d691cd2ce80b4a6f0a122c4d3815ab3a"
+      },
+      "all_secret_seed_options_disabled": true,
+      "secret_seed_option_count": 37,
+      "final_saved_semantic_equal": true,
+      "final_canonical_cells_sha256": "9218e5c906e47e2b615e39ccf7ae5299e8eeb5695ba35bcd0651be306f5d471e",
+      "raw_saved_hashes_equal": false,
+      "replay_report_relative": "audit/living-trees-replay-20260914/replay-1.json",
+      "replay_report_sha256": "f910797282e8068243e8858b855509037a5b773c93e465c9e342e0d4e15ac1fb",
+      "runtime_runs": {
+        "control": {
+          "world_size": 2950078,
+          "world_sha256": "504bbdd4c9f534c21ccbe60f6c65f2e55d3158d70038b015ac6d1c5cc8e8e2bb",
+          "started_utc": "2026-09-14T15:56:52.391393+00:00",
+          "generation_and_load_seconds": 12.391000000061467,
+          "elapsed_seconds": 42.54700000002049,
+          "child_exit_code": 1,
+          "status": "SAVED_AND_LOADED",
+          "shutdown_status": "FORCED_OR_FAILED_EXIT",
+          "stdout_sha256": "df4fa497149aa5a1b3fafdfa8f6d1cf7c7c3c7ecb925a44b077be9e5185c665c",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "evidence_directory": "audit/living-trees-replay-20260914/seed-1-control",
+          "result_json_sha256": "c6b5e90cc7b6650a98b58fb04a184b2cdc5aebbce7ff2537c568d4baf973309e"
+        },
+        "capture-final": {
+          "world_size": 2950084,
+          "world_sha256": "4b08cde3cc3e91e8633824b5dd941a92bb0c056b8f427cdb36b29a00d2155713",
+          "started_utc": "2026-09-14T16:05:27.136869+00:00",
+          "generation_and_load_seconds": 53.531999999890104,
+          "elapsed_seconds": 83.68799999984913,
+          "child_exit_code": 1,
+          "status": "SAVED_AND_LOADED",
+          "shutdown_status": "FORCED_OR_FAILED_EXIT",
+          "stdout_sha256": "5ba56a246a6c142bd0061e318aa9e59e13baa7508b9fc57b7d44f08cee31b631",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "evidence_directory": "audit/living-trees-replay-20260914/seed-1-capture-final",
+          "result_json_sha256": "b732854dc4b020a0de9251ddb8ca21cf7a9f9e3f0b5eb3592970393d6cffdb5f"
+        }
+      }
+    },
+    {
+      "seed": "2",
+      "status": "INCOMPLETE_UNSUPPORTED_CALL",
+      "control_sha256": "119ccf8afc41638d5353b7fe463b3bca58c33bee31c9d88b4d2add4a659cbaa8",
+      "captured_world_sha256": "d53d6af47508d53fb62e6e4260684475cc15bed77d03a9e50e999659c8d15ceb",
+      "pass": {
+        "Name": "Living Trees",
+        "DurationMs": 26171,
+        "RandNext": 1335059873,
+        "Hash": null,
+        "Skipped": false
+      },
+      "pass_rng_initial_sha256": "8e97ba5f971bdb874542a1de435e72be3acd87288e93ca3d29367b3a6aac3fa7",
+      "pass_rng_final_sha256": "bf71d061c549fb0ce3c07205d7b6e86d34f11f39c90bcb80e42b1423682387ba",
+      "manifest_RandNext_verified": 1335059873,
+      "manifest_rng_state_after_draw_sha256": "c2faa22a85b47f42163bfab43ec76ba81288aa3cdd76b4ca2662ececd3f1f66d",
+      "native_pre_sha256": "b34795af3d79dd7ceeef9781b0681cb1744d5451156bb0b73daa02712c71affb",
+      "native_post_sha256": "e372b383bd2353331198dd8617a0ae651e58b41776504514dc23d94a93c282d7",
+      "canonical_pre_sha256": "6117d3d7c06dd091c258ab35952bd4774fb7969e4becee19553c39b800e78988",
+      "canonical_post_sha256": "12366384b3e3d7c5227daf7a77e550a40e1c929162085a765dff27797e41d01c",
+      "canonical_actual_sha256": "b3ef59eceb3edd54dc0c7a74197c09de96d478acc3cbfb787379c6c1567a2bab",
+      "native_full_post_comparison": {
+        "expected_changed_cells": 11331,
+        "actual_changed_cells": 567,
+        "missing_changed_cells": 10764,
+        "extra_changed_cells": 0,
+        "different_cells": 10834,
+        "per_field_differences": {
+          "type": 9754,
+          "wall": 2262,
+          "liquid": 0,
+          "sTileHeader": 8157,
+          "bTileHeader": 0,
+          "bTileHeader2": 0,
+          "bTileHeader3": 0,
+          "frameX": 442,
+          "frameY": 442
+        },
+        "missing_field_writes": {
+          "type": 9751,
+          "wall": 2262,
+          "liquid": 0,
+          "sTileHeader": 8137,
+          "bTileHeader": 0,
+          "bTileHeader2": 0,
+          "bTileHeader3": 0,
+          "frameX": 442,
+          "frameY": 442
+        },
+        "extra_field_writes": {
+          "type": 0,
+          "wall": 0,
+          "liquid": 0,
+          "sTileHeader": 20,
+          "bTileHeader": 0,
+          "bTileHeader2": 0,
+          "bTileHeader3": 0,
+          "frameX": 0,
+          "frameY": 0
+        },
+        "first_differences": [
+          {
+            "x": 1521,
+            "y": 273,
+            "fields": {
+              "type": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 1521,
+            "y": 274,
+            "fields": {
+              "type": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 1521,
+            "y": 275,
+            "fields": {
+              "type": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 1521,
+            "y": 276,
+            "fields": {
+              "type": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 1521,
+            "y": 277,
+            "fields": {
+              "type": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 1521,
+            "y": 278,
+            "fields": {
+              "type": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 1521,
+            "y": 279,
+            "fields": {
+              "type": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 1521,
+            "y": 280,
+            "fields": {
+              "type": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 1521,
+            "y": 281,
+            "fields": {
+              "type": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 1522,
+            "y": 273,
+            "fields": {
+              "type": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          }
+        ],
+        "equal": false
+      },
+      "canonical_full_post_comparison": {
+        "expected_changed_cells": 11277,
+        "actual_changed_cells": 567,
+        "missing_changed_cells": 10710,
+        "extra_changed_cells": 0,
+        "different_cells": 10780,
+        "per_field_differences": {
+          "active": 8157,
+          "tile": 9828,
+          "wall": 2262,
+          "frame_x": 247,
+          "frame_y": 247,
+          "tile_paint": 0,
+          "wall_paint": 0,
+          "liquid_kind": 0,
+          "liquid_amount": 0,
+          "shape": 0,
+          "wires_actuator_inactive": 0,
+          "coatings": 0
+        },
+        "missing_field_writes": {
+          "active": 8137,
+          "tile": 9775,
+          "wall": 2262,
+          "frame_x": 247,
+          "frame_y": 247,
+          "tile_paint": 0,
+          "wall_paint": 0,
+          "liquid_kind": 0,
+          "liquid_amount": 0,
+          "shape": 0,
+          "wires_actuator_inactive": 0,
+          "coatings": 0
+        },
+        "extra_field_writes": {
+          "active": 20,
+          "tile": 48,
+          "wall": 0,
+          "frame_x": 0,
+          "frame_y": 0,
+          "tile_paint": 0,
+          "wall_paint": 0,
+          "liquid_kind": 0,
+          "liquid_amount": 0,
+          "shape": 0,
+          "wires_actuator_inactive": 0,
+          "coatings": 0
+        },
+        "first_differences": [
+          {
+            "x": 1521,
+            "y": 273,
+            "fields": {
+              "tile": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 1521,
+            "y": 274,
+            "fields": {
+              "tile": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 1521,
+            "y": 275,
+            "fields": {
+              "tile": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 1521,
+            "y": 276,
+            "fields": {
+              "tile": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 1521,
+            "y": 277,
+            "fields": {
+              "tile": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 1521,
+            "y": 278,
+            "fields": {
+              "tile": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 1521,
+            "y": 279,
+            "fields": {
+              "tile": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 1521,
+            "y": 280,
+            "fields": {
+              "tile": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 1521,
+            "y": 281,
+            "fields": {
+              "tile": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          },
+          {
+            "x": 1522,
+            "y": 273,
+            "fields": {
+              "tile": {
+                "expected": 191,
+                "actual": 0
+              }
+            }
+          }
+        ],
+        "equal": false
+      },
+      "first_object_checkpoint": {
+        "native_comparison": {
+          "expected_changed_cells": 567,
+          "actual_changed_cells": 567,
+          "missing_changed_cells": 0,
+          "extra_changed_cells": 0,
+          "different_cells": 0,
+          "per_field_differences": {
+            "type": 0,
+            "wall": 0,
+            "liquid": 0,
+            "sTileHeader": 0,
+            "bTileHeader": 0,
+            "bTileHeader2": 0,
+            "bTileHeader3": 0,
+            "frameX": 0,
+            "frameY": 0
+          },
+          "missing_field_writes": {
+            "type": 0,
+            "wall": 0,
+            "liquid": 0,
+            "sTileHeader": 0,
+            "bTileHeader": 0,
+            "bTileHeader2": 0,
+            "bTileHeader3": 0,
+            "frameX": 0,
+            "frameY": 0
+          },
+          "extra_field_writes": {
+            "type": 0,
+            "wall": 0,
+            "liquid": 0,
+            "sTileHeader": 0,
+            "bTileHeader": 0,
+            "bTileHeader2": 0,
+            "bTileHeader3": 0,
+            "frameX": 0,
+            "frameY": 0
+          },
+          "first_differences": [],
+          "equal": true
+        },
+        "call_equal": true,
+        "rng_equal": true,
+        "tile_solid_table_equal": true,
+        "chests_equal": true,
+        "vanilla_call_result": true,
+        "vanilla_call_rng_changed": false
+      },
+      "invocation_prefix_comparison": [
+        {
+          "index": 0,
+          "args": [
+            1770,
+            254,
+            false
+          ],
+          "entry_equal": true,
+          "result_present": true,
+          "result_equal": true
+        },
+        {
+          "index": 1,
+          "args": [
+            2798,
+            272,
+            false
+          ],
+          "entry_equal": true,
+          "result_present": true,
+          "result_equal": true
+        },
+        {
+          "index": 2,
+          "args": [
+            1545,
+            231,
+            false
+          ],
+          "entry_equal": true,
+          "result_present": false,
+          "result_equal": null
+        }
+      ],
+      "full_invocation_result_sequence_equal": false,
+      "full_pass_final_rng_equal": false,
+      "full_pass_tile_solid_table_equal": false,
+      "chests": {
+        "pre_count": 21,
+        "post_count": 23,
+        "replay_equal": false
+      },
+      "invocation_counts": {
+        "GrowLivingTree": 12,
+        "PlaceSmallPile": 14,
+        "PlaceTile": 241,
+        "GrowLivingTree_MakePassage": 4,
+        "GrowLivingTreePassageRoom": 2,
+        "GrowLivingTree_HorizontalTunnel": 1
+      },
+      "tree_invocations": [
+        {
+          "args": [
+            1770,
+            254,
+            false
+          ],
+          "result": false,
+          "rng_before_sha256": "91a7a1d5e31aab4bd8544b99342572904bb7837f0eeee59d19fe43ce0e9eb4a5",
+          "rng_after_sha256": "9ec1691370e6034b30000a81d8f43050be42c8df6e5ef10e0d7fcc7acf6aeb1a"
+        },
+        {
+          "args": [
+            2798,
+            272,
+            false
+          ],
+          "result": false,
+          "rng_before_sha256": "d323c0a997a45dc2aa49f4c013b672cf824f76dd49392a39c4c85c7a9f92cd48",
+          "rng_after_sha256": "9e7d54b655b6589008f98f54a7d7e728dd20c8e6792154e87a20080192829050"
+        },
+        {
+          "args": [
+            1545,
+            231,
+            false
+          ],
+          "result": true,
+          "rng_before_sha256": "3353a7adcf41b29bccd1c59127aba31c9bd12a49a9b0c61bd0172a58db330e63",
+          "rng_after_sha256": "570f2d2a79b1eaefedb93eb84d9d0081beafa1b7e110f4be8029a2cc22380d95"
+        },
+        {
+          "args": [
+            1520,
+            227,
+            true
+          ],
+          "result": false,
+          "rng_before_sha256": "448db17cd8ac0e85def2350a0ab7a3e7ad58d397656987e016f66fd6a628af3a",
+          "rng_after_sha256": "448db17cd8ac0e85def2350a0ab7a3e7ad58d397656987e016f66fd6a628af3a"
+        },
+        {
+          "args": [
+            1575,
+            239,
+            true
+          ],
+          "result": false,
+          "rng_before_sha256": "1d3e3232f9e017968dec0bcd5095b6549e00ac83d7be81864a6412b46c57d49c",
+          "rng_after_sha256": "2312db9b40aeff9179c31b946c047ca06332b8e6af1fff5d069bd224bbc2cdb6"
+        },
+        {
+          "args": [
+            1593,
+            247,
+            true
+          ],
+          "result": true,
+          "rng_before_sha256": "fa9d309eb827cf352ed6997078640ac0eb1647876da54794236b0d4a3da953ce",
+          "rng_after_sha256": "d970331d0d587e82036d5be4ea1e96f46b565f5ad50ca402d731c95184fc87e6"
+        },
+        {
+          "args": [
+            3727,
+            281,
+            false
+          ],
+          "result": false,
+          "rng_before_sha256": "5a502af15d07959fe6d1dfa00f55e575b3e4803f334301cad2316a0cbd6b66c4",
+          "rng_after_sha256": "3b1c11a7f42c60c9d58298f8b8cb3acb97aaa67cd0d03ed51de7992aac4e9ec9"
+        },
+        {
+          "args": [
+            2856,
+            248,
+            false
+          ],
+          "result": true,
+          "rng_before_sha256": "befc5650564b8a8a83b2177a276a762423986ae307558dbb94a69b7795bc0257",
+          "rng_after_sha256": "4de13e5104d50e53cc0d42416ef3113074d2a1ef9bcab5e784f13ad19b253ed8"
+        },
+        {
+          "args": [
+            2826,
+            249,
+            true
+          ],
+          "result": false,
+          "rng_before_sha256": "3f2c32123eb30527e967f527218b4473eef46ed59c6181df525acf863368c8ec",
+          "rng_after_sha256": "b5f82edb875a0874e743f88dddbbe6fa91b0ae8f720a33c9791717e85bcc35ee"
+        },
+        {
+          "args": [
+            2796,
+            271,
+            true
+          ],
+          "result": false,
+          "rng_before_sha256": "e6682896ca01257b333f06860148c3f5f7fa2d8b4e5e355f55215c616c5d5c73",
+          "rng_after_sha256": "d15c6c5791564dae46fa6c0107644009fbdce96fe01958fcedbfd44116193ec1"
+        },
+        {
+          "args": [
+            2870,
+            249,
+            true
+          ],
+          "result": false,
+          "rng_before_sha256": "d07a7197e509533cffbed1d054c9ef5349a1506da38e31e87b395c1f5445ac9d",
+          "rng_after_sha256": "fc61a9024d76b4059f8767077f1ea983e758e81dd599c20f1b0bd037746c02d1"
+        },
+        {
+          "args": [
+            2891,
+            263,
+            true
+          ],
+          "result": true,
+          "rng_before_sha256": "123a094a2b74e1434d28c4f4a7e2d8b6abc23050ac05da7134766ca191266a00",
+          "rng_after_sha256": "bf71d061c549fb0ce3c07205d7b6e86d34f11f39c90bcb80e42b1423682387ba"
+        }
+      ],
+      "capture_file_sha256": {
+        "calls.jsonl": "2ad7e1bcac20ebc4e01202265ade28c760d7bf7d8d5267dab3d322129ef9c919",
+        "first-object.json": "849d43432b1fd8aa4c5a51269a87d0f56efff2c915c176ae0a2fdd4c8d2fb9a8",
+        "first-object.raw.gz": "d50810aad265c7a40bc60dc3dbe1ff54ba7ff7ce8a268c4fd59c2ae54f6f1d9c",
+        "installed.json": "803d3413a295ba6aeddd7d2a169f2374d06608081f09b11891221f6ad67b9e71",
+        "instrumentation.json": "b4b092fd1d9b39a947532868596bb626f845ebde9d86b2d088b8102b8c1a587b",
+        "pass-config.json": "5d58bcc106ddd4794abdaaf540f405b57445a7345af521fb1f64f7d5fe77c6eb",
+        "pass-result.json": "98cfbbbcfb437dd60f7b856036c7c164b14d50a9cddfdf5f6d3925dbb18d8ca2",
+        "post.json": "3d692cbccbc0743a96c994164561e93462a903b2c38b773cbffd56cc6bd4819a",
+        "post.raw.gz": "cdac0052fc655ba68fdc7235bf65b54bfb7daa1306c75877ad9e269d63115bd6",
+        "pre.json": "69dc9d840e2d128682da9159dc8a0ca98c969762b4c7273e3b9eaf863b7a6501",
+        "pre.raw.gz": "ed6dc522ce236525ee7989c014eb2cdd74e61654ba7351c41d7cd390d31704aa"
+      },
+      "export_file_sha256": {
+        "actual.canonical.gz": "b5583dd5740d0ab2ae6e7f45430ac792534f0cb3545ec21faaf455c16b49e5bb",
+        "canonical-active.mask.gz": "b3af8a8f3536fc3065831c9a22a2e19c8b286dac0123934e4e9b78797abe93d0",
+        "canonical-all.mask.gz": "23798d3fa99f8c4d6823d341e8030c623ea37b70d8ea59b5215f57beaec19e1d",
+        "canonical-coatings.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "canonical-frame_x.mask.gz": "e60d4ef9d15b10e9a8c83822f496d757d554918b006208d15d119c8e046a5a9e",
+        "canonical-frame_y.mask.gz": "e60d4ef9d15b10e9a8c83822f496d757d554918b006208d15d119c8e046a5a9e",
+        "canonical-liquid_amount.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "canonical-liquid_kind.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "canonical-shape.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "canonical-tile.mask.gz": "004712a3c5f136b8475cf90b5cf7efe0dcb53e7030d2f7484dce9f9f0c34f4b9",
+        "canonical-tile_paint.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "canonical-wall.mask.gz": "57f107ddd68a1a7fba1955e8d20609b1ee783d5cf487754973f1fcb8270572d2",
+        "canonical-wall_paint.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "canonical-wires_actuator_inactive.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "native-all.mask.gz": "3b5c82d52fdcfec0dbe3f744f730f0700051568fcb8f48d44ed5cc425b63e8ee",
+        "native-bTileHeader.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "native-bTileHeader2.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "native-bTileHeader3.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "native-frameX.mask.gz": "7895d600df06e467bf90f748a2dcd1d5f63572295c652f90ed48ce6cf3fbe1ed",
+        "native-frameY.mask.gz": "7895d600df06e467bf90f748a2dcd1d5f63572295c652f90ed48ce6cf3fbe1ed",
+        "native-liquid.mask.gz": "ea5028b33172193f803098ed221131928fb2be58e0b1001331ee9d28fcadc75f",
+        "native-sTileHeader.mask.gz": "b3af8a8f3536fc3065831c9a22a2e19c8b286dac0123934e4e9b78797abe93d0",
+        "native-type.mask.gz": "53468c04efee934ae57a6d7117923fc1a015d6180bd906092a8db80d2ad97ca3",
+        "native-wall.mask.gz": "57f107ddd68a1a7fba1955e8d20609b1ee783d5cf487754973f1fcb8270572d2",
+        "post.canonical.gz": "fa5a5edb894774ac5092fbd601a2f51f6d0121e962adaabd56688fb33bd7cfd8",
+        "pre.canonical.gz": "a4822fbeeb0d11cf79a16a59e8343020a7c759adc64a90fb25a5b528adbde552"
+      },
+      "observed_global_field_changes": {
+        "Terraria.Main": [
+          "statusText",
+          "tileSolid",
+          "chest",
+          "oldStatusText"
+        ],
+        "Terraria.WorldGen": [],
+        "Terraria.WorldBuilding.GenVars": [],
+        "Terraria.ID.TileID+Sets": []
+      },
+      "first_unsupported_call": {
+        "method": "PlaceSmallPile",
+        "args": [
+          1550,
+          231,
+          72,
+          0,
+          185
+        ],
+        "reason": "Independent implementation stops before PlaceSmallPile(1550, 231, 72, 0, 185)",
+        "rng_sha256": "edd2c385d9b4bb1dace0a7eba587baf34a925a4761061dea8664a1126acf8452"
+      },
+      "all_secret_seed_options_disabled": true,
+      "secret_seed_option_count": 37,
+      "final_saved_semantic_equal": true,
+      "final_canonical_cells_sha256": "465169a48f5226cf959b94af0183fe6251378d772f2200aada77a650d649a5a6",
+      "raw_saved_hashes_equal": false,
+      "replay_report_relative": "audit/living-trees-replay-20260914/replay-2.json",
+      "replay_report_sha256": "f168aa5aebfb9963977d8ab18888c177f9e1e2c626941deac95bdff690fdffe1",
+      "runtime_runs": {
+        "control": {
+          "world_size": 3017753,
+          "world_sha256": "119ccf8afc41638d5353b7fe463b3bca58c33bee31c9d88b4d2add4a659cbaa8",
+          "started_utc": "2026-09-14T15:58:47.003699+00:00",
+          "generation_and_load_seconds": 12.702999999979511,
+          "elapsed_seconds": 42.875,
+          "child_exit_code": 1,
+          "status": "SAVED_AND_LOADED",
+          "shutdown_status": "FORCED_OR_FAILED_EXIT",
+          "stdout_sha256": "f57bb841a0c735f8b9cb27a448c8866b713f89346075129759f5dd83952dbdc8",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "evidence_directory": "audit/living-trees-replay-20260914/seed-2-control",
+          "result_json_sha256": "dc34abf2f7e342ee9c69069ed78de85e68a170227d04fe9e7745b56a70611532"
+        },
+        "capture-final": {
+          "world_size": 3017756,
+          "world_sha256": "d53d6af47508d53fb62e6e4260684475cc15bed77d03a9e50e999659c8d15ceb",
+          "started_utc": "2026-09-14T16:06:53.760991+00:00",
+          "generation_and_load_seconds": 39.92199999978766,
+          "elapsed_seconds": 70.06299999984913,
+          "child_exit_code": 1,
+          "status": "SAVED_AND_LOADED",
+          "shutdown_status": "FORCED_OR_FAILED_EXIT",
+          "stdout_sha256": "4e37702f2f8ac16c081e2f02fd693b551f9a14cdbb61cdee3ff7e6bda028581a",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "evidence_directory": "audit/living-trees-replay-20260914/seed-2-capture-final",
+          "result_json_sha256": "2fe4f57c374cd01f76baeb9a7a2d06f8eb3d2db392889944d2cf39492d429aa4"
+        }
+      }
+    }
+  ],
+  "local_tool_sha256": {
+    "CaptureHost.cs": "ce8122319696fa316421366f3619831184c7f089f66d3eca8d86d93cebddc20e",
+    "CaptureHost.exe": "fd3c6f13aef2d964739c1e0a004d52bba3154d4c8494296c12f11a49c1959fa4",
+    "RngOracle.cs": "8327ee5b77d92eabb97167f6144c5104585dfb72231195269ef4d9316638c3a1",
+    "RngOracle.exe": "246040ac6a12dd78958eb3a08b2df926c5d6cb7f657df1ce8560ecf88e32bf7d",
+    "rng-runtime.json": "185ba2e0b2e5190660aa92fa1f9e1f4ba8ed9142446de15778e711d96c53e7d0",
+    "run_fixture.py": "ff8a3fdd13ce0e245b7d4a3d78aa531738b038877f1e24ac499f297db81aa290",
+    "baseline.json": "696925b40d5a71540eb6c0e50954fc39bdd23f13bb46c946035585f92a9b7d06"
+  },
+  "unchanged_baseline_files": 146,
+  "changed_baseline_files": [],
+  "pin_checks": {
+    "00_target_lock/TARGET.json": true,
+    "00_target_lock/canonical-files.jsonl": true,
+    "00_target_lock/appmanifest_105600.acf": true,
+    "00_target_lock/toolchain-runtime.json": true,
+    "Query-Terraria.ps1": true,
+    "tools/offline/TerrariaQuery/TerrariaIndexer.exe": true,
+    "07_index/library.sqlite": true,
+    "02_static/decompiled/client/Terraria/GameContent/Biomes/TerrainPass.cs": true,
+    "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/DungeonCrawler.cs": true,
+    "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Entrances/LegacyDungeonEntrance.cs": true,
+    "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Halls/LegacyDungeonHall.cs": true,
+    "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/LayoutProviders/LegacyDungeonLayoutProvider.cs": true,
+    "02_static/decompiled/client/Terraria/GameContent/Generation/Dungeon/Rooms/LegacyDungeonRoom.cs": true,
+    "02_static/decompiled/client/Terraria/IO/WorldFile.cs": true,
+    "02_static/decompiled/client/Terraria/IO/WorldFileData.cs": true,
+    "02_static/decompiled/client/Terraria/NPC.cs": true,
+    "02_static/decompiled/client/Terraria/ObjectData/TileObjectData.cs": true,
+    "02_static/decompiled/client/Terraria/Tile.cs": true,
+    "02_static/decompiled/client/Terraria/TileObject.cs": true,
+    "02_static/decompiled/client/Terraria/Utilities/UnifiedRandom.cs": true,
+    "02_static/decompiled/client/Terraria/WorldBuilding/StructureMap.cs": true,
+    "02_static/decompiled/client/Terraria/WorldBuilding/WorldGenerator.cs": true,
+    "02_static/decompiled/client/Terraria/WorldGen.cs": true,
+    "02_static/decompiled/server/Terraria/IO/WorldFile.cs": true,
+    "02_static/decompiled/server/Terraria/Main.cs": true,
+    "Game Reference/01_canonical/client/Terraria.exe": true,
+    "Game Reference/01_canonical/client/TerrariaServer.exe": true,
+    "Game Reference/01_canonical/client/xnafx40_redist.msi": true,
+    "Game Reference/01_canonical/client/installscript.vdf": true
+  },
+  "validation_evidence_sha256": {
+    "ci-0.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ci-0.stdout.txt": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "ci-1.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ci-1.stdout.txt": "1e8100ce5112b41053a89fae8931d735807139a983d212a9a9d2a8fab1194b67",
+    "ci-2.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ci-2.stdout.txt": "a3ee8cc563d620855a76e1c43ed6f1118b5d68435d0c1b38b01ae7646398501f",
+    "ci-3.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ci-3.stdout.txt": "90dbc9dff31992bb55ae4e2ba2d7629ba8fbeadf1a5663e0c3c068c011afe64b",
+    "ci-commands.json": "076bc21297866295a94ca2d24b618f3a5950972be9a181972f310580ce308ed1",
+    "rng-revalidated.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "rng-revalidated.stdout.txt": "3ba59670d3c6d64d09597ba4195a77657852de7daf6223fb38351a09d42d2b20",
+    "rng-revalidation.json": "54243046717ac2a513a218178c79ceaa07fc8a763498821396012cf12f958c10",
+    "verification-commands.json": "424c451c44ce55d3fff3a2ca46a64ad3bdfef76afded6230f78407116ee6d864",
+    "verify-0.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verify-0.stdout.txt": "b7fd8ce329e52522de93c7ecc7ec9c65ad0b1d954abc63e1571c7075e283a64a",
+    "verify-1.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verify-1.stdout.txt": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "verify-2.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verify-2.stdout.txt": "5ca244569da80befece26f67203367f23d8524c0c596eb035355f84d562501ae",
+    "verify-3.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verify-3.stdout.txt": "7030ff98edb6177f4345b070e48664f3993251ede5f31a643556d70f1a1c7179",
+    "verify-4.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verify-4.stdout.txt": "df39ce1dadf3a046db46cdda06153567beabf8ef57c0f191ab47afcd4e688c5e"
+  },
+  "versionable_code_sha256": {
+    "terraexplorer/fidelity/unified_random.py": "a3e1762d6f1ff6c0e4aa88d22b2bad873e47f81f88522764c996c0873f390a11",
+    "terraexplorer/fidelity/living_trees.py": "6355ea129356bc29be1df3e441923107395c3052e3e17f2eb0bc63d555308d71",
+    "terraexplorer/fidelity/pass_snapshot.py": "e74d4198bf9921ecc243b9c7dcf5a363d4135f8ed2157a1d5a0093ad599393d9",
+    "scripts/fidelity_living_trees_replay.py": "b00bc17a06ec0dfcd060557a0bf1286c4678c5914f75e369d4169380345bf662",
+    "tests/test_living_trees_replay.py": "68f59a2ea1c8cfce50b9e7cba709a770278b44b2a06ca8530e60d85b7f59c159",
+    "tests/fixtures/terraria1457_rng.json": "b6874abed8cb979a7d779f1726a15f5821dba91dbdc2d1d3029b029cc90af005"
+  }
+}

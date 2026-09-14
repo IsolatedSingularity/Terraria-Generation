@@ -1,0 +1,773 @@
+{
+  "target": "Terraria 1.4.5.7 UnifiedRandom",
+  "assembly_name": "TerrariaServer, Version=1.4.5.7, Culture=neutral, PublicKeyToken=null",
+  "mvid": "35d4cff3-78f4-4892-9290-7e8f7a7da04c",
+  "server_sha256": "6cf1100bcfab5733fdb4da745b34551362b24fcebe05ac153f5b59445082ed49",
+  "runtime_evidence_sha256": "185ba2e0b2e5190660aa92fa1f9e1f4ba8ed9142446de15778e711d96c53e7d0",
+  "state_hash_encoding": "UTF-8 JSON sorted keys, separators comma and colon; inext plus all 56 seed_array words",
+  "cases": [
+    {
+      "seed": 314159265,
+      "initial_state_sha256": "d059a87252c104b76f55d049bcdd6f6bdb17365ba0d01c5f0d9c1b7fdb454d21",
+      "operations": [
+        {
+          "method": "Next",
+          "args": [],
+          "value": 964854390,
+          "double_bits": null,
+          "state_sha256": "05660bface1bcb24571b30ec18d72562b992bd8cfffe399343e860e5ff6df471"
+        },
+        {
+          "method": "Next",
+          "args": [
+            3
+          ],
+          "value": 0,
+          "double_bits": null,
+          "state_sha256": "885c415508aca447e6cdcd31d58f248b2754d8ce896b692dbb49f34d8efbb776"
+        },
+        {
+          "method": "Next",
+          "args": [
+            2,
+            3
+          ],
+          "value": 2,
+          "double_bits": null,
+          "state_sha256": "1236f067ca55621e9fab0a9cbb8f38d276bb133e977577cb54a1c66d8051d03e"
+        },
+        {
+          "method": "Next",
+          "args": [
+            0
+          ],
+          "value": 0,
+          "double_bits": null,
+          "state_sha256": "69898961173155c5ea367d2d59b7920615fa6a5ac95e942299507facdae6c804"
+        },
+        {
+          "method": "Next",
+          "args": [
+            -10,
+            11
+          ],
+          "value": -3,
+          "double_bits": null,
+          "state_sha256": "1c51fcd2d3743f8e6bdaf3095199ad4e386a8be8a7fcd3a7561f5e866d53f583"
+        },
+        {
+          "method": "Next",
+          "args": [
+            -2147483648,
+            2147483647
+          ],
+          "value": -411017773,
+          "double_bits": null,
+          "state_sha256": "82b053e2d795869cb3f012eed2dea1bba9fcf80fb78630c0e654e94dd3d05361"
+        },
+        {
+          "method": "NextDouble",
+          "args": [],
+          "value": 0.6924768568447217,
+          "double_bits": "3fe628c539ac518a",
+          "state_sha256": "9d5f19a825e7eb6f38bdb6361813edcedeb1ddf818d94ea1a48c88bb06e23532"
+        },
+        {
+          "method": "NextDouble",
+          "args": [],
+          "value": 0.6478572118318906,
+          "double_bits": "3fe4bb3f0c29767e",
+          "state_sha256": "1963bf40a02d891d704fd31c1337d2dbd7bee556560ed10deac7312dd7bc91c9"
+        },
+        {
+          "method": "Next",
+          "args": [
+            5,
+            5
+          ],
+          "value": 5,
+          "double_bits": null,
+          "state_sha256": "15c62abe8ff08ce08f84de04b679ad270523987897330efe881c630dd04b2ec2"
+        },
+        {
+          "method": "Next",
+          "args": [
+            2147483647
+          ],
+          "value": 972945151,
+          "double_bits": null,
+          "state_sha256": "3665d985b27ea603d83e0907da20fe88157c6baf9578f224b701d44118e1cdca"
+        },
+        {
+          "method": "Peek",
+          "args": [],
+          "value": 1588793865,
+          "double_bits": null,
+          "state_sha256": "3665d985b27ea603d83e0907da20fe88157c6baf9578f224b701d44118e1cdca"
+        },
+        {
+          "method": "Next",
+          "args": [],
+          "value": 1588793865,
+          "double_bits": null,
+          "state_sha256": "cc8e29f61f7a65de02cfd27326772f7f5b5b7bb9ac9b718f92c2567565320e1b"
+        }
+      ],
+      "after_1000_more_next_sha256": "b5c25e5a7bffc4d07e10e890ed0db82337cc47048a704a0caabd41e7e4c3a147"
+    },
+    {
+      "seed": 0,
+      "initial_state_sha256": "a5ecdad7b894a9d41230f727c1a1b60de7f84791c05a4a1a2db397be3c280bb5",
+      "operations": [
+        {
+          "method": "Next",
+          "args": [],
+          "value": 1559595546,
+          "double_bits": null,
+          "state_sha256": "7eefe24f025252b73e84b478937ca54401fca1ac53960ef6e006512fad0e0e9d"
+        },
+        {
+          "method": "Next",
+          "args": [
+            3
+          ],
+          "value": 2,
+          "double_bits": null,
+          "state_sha256": "d7c5bb1b84c30da0d694982b6de60f4d5b426557e280832fa8d44fba5d6f07a4"
+        },
+        {
+          "method": "Next",
+          "args": [
+            2,
+            3
+          ],
+          "value": 2,
+          "double_bits": null,
+          "state_sha256": "70b18ccfcea76d703a3835f3fe098e0886d542faf0ec9e74247bafcfafee18cb"
+        },
+        {
+          "method": "Next",
+          "args": [
+            0
+          ],
+          "value": 0,
+          "double_bits": null,
+          "state_sha256": "44a8188db808c5d589fa90dc74240012eebc8e19f516871ffeafea16d9dc4686"
+        },
+        {
+          "method": "Next",
+          "args": [
+            -10,
+            11
+          ],
+          "value": -6,
+          "double_bits": null,
+          "state_sha256": "1eef23ba4de74dccd66aac0933f22e452e03cff3cb53b112d08234089c354f61"
+        },
+        {
+          "method": "Next",
+          "args": [
+            -2147483648,
+            2147483647
+          ],
+          "value": -1200195959,
+          "double_bits": null,
+          "state_sha256": "35616c8c9857c7c39b2a5546ead06c820a0e2a92607340b44c10f63eaafb9ab4"
+        },
+        {
+          "method": "NextDouble",
+          "args": [],
+          "value": 0.44217787331071584,
+          "double_bits": "3fdc4ca46c389949",
+          "state_sha256": "7c3ace457db628ed572bb24a89a846aa78e98a0f410b49e32c1b98a0fc8067e5"
+        },
+        {
+          "method": "NextDouble",
+          "args": [],
+          "value": 0.9775497531413798,
+          "double_bits": "3fef48166b7e902d",
+          "state_sha256": "a3aa565ebc03fb0e91ed5f55b0cb24b027362c5267413bfc96c4720471117f75"
+        },
+        {
+          "method": "Next",
+          "args": [
+            5,
+            5
+          ],
+          "value": 5,
+          "double_bits": null,
+          "state_sha256": "91f50c71ab5d732ee5033c4d29c062ab86bb9e777500acc8ade09272553c885f"
+        },
+        {
+          "method": "Next",
+          "args": [
+            2147483647
+          ],
+          "value": 626863973,
+          "double_bits": null,
+          "state_sha256": "32aae8befdaff6762d26067b5d1856076da5037439c8d2cdc9b988b5aac07de8"
+        },
+        {
+          "method": "Peek",
+          "args": [],
+          "value": 1003550677,
+          "double_bits": null,
+          "state_sha256": "32aae8befdaff6762d26067b5d1856076da5037439c8d2cdc9b988b5aac07de8"
+        },
+        {
+          "method": "Next",
+          "args": [],
+          "value": 1003550677,
+          "double_bits": null,
+          "state_sha256": "af062bdb958e6a681f4316b0fcef9a4aef917bc5deee2d6938764b91f44b2447"
+        }
+      ],
+      "after_1000_more_next_sha256": "b2a3c143a9d52e12083eaf17108d2f2cc50f543ab306b8d3f5c9f01803bb6d68"
+    },
+    {
+      "seed": 1,
+      "initial_state_sha256": "3371b231aac316498a7d2ee2dbe9400a213d6ae940668aaa53cae3e0fa7714b1",
+      "operations": [
+        {
+          "method": "Next",
+          "args": [],
+          "value": 534011718,
+          "double_bits": null,
+          "state_sha256": "be2927362879903af79d1c50add094e1307242536d3dac3cd2079f57d5fcb850"
+        },
+        {
+          "method": "Next",
+          "args": [
+            3
+          ],
+          "value": 0,
+          "double_bits": null,
+          "state_sha256": "faebd7752ba4262da260a142506a912e3be6cbb89459285a45903791f121b5a3"
+        },
+        {
+          "method": "Next",
+          "args": [
+            2,
+            3
+          ],
+          "value": 2,
+          "double_bits": null,
+          "state_sha256": "6469453300f485581188c44cb1e165eee6d2fdc683e5a88c2f6c13d8fa23ea89"
+        },
+        {
+          "method": "Next",
+          "args": [
+            0
+          ],
+          "value": 0,
+          "double_bits": null,
+          "state_sha256": "cbae454692b22088faa9751fb5a3d551b35d5f05372d1bf42597ff038d61dcce"
+        },
+        {
+          "method": "Next",
+          "args": [
+            -10,
+            11
+          ],
+          "value": 3,
+          "double_bits": null,
+          "state_sha256": "0e3fb1a8674f5f3c69911e2a5a1fe7f8b407db6b581bd8a37d488b38cba3c5ee"
+        },
+        {
+          "method": "Next",
+          "args": [
+            -2147483648,
+            2147483647
+          ],
+          "value": -929393561,
+          "double_bits": null,
+          "state_sha256": "c417e7f5cf6e627e8533990991e69e4b4b4e7c73458af1f4a4bd303a3f5327d8"
+        },
+        {
+          "method": "NextDouble",
+          "args": [],
+          "value": 0.9438622761256351,
+          "double_bits": "3fee341ea8fc683d",
+          "state_sha256": "7443735fc1e070d3e6ed6962c91f2d275b0b5ab85dd9d223f66d07e3130e8eb7"
+        },
+        {
+          "method": "NextDouble",
+          "args": [],
+          "value": 0.10126645355544353,
+          "double_bits": "3fb9ec992a33d932",
+          "state_sha256": "e13064caecf5564ea79e84e557e0b0507991e79b1364100c4289bf1a546e2e89"
+        },
+        {
+          "method": "Next",
+          "args": [
+            5,
+            5
+          ],
+          "value": 5,
+          "double_bits": null,
+          "state_sha256": "772aeaa67b35b9876b2ce8e511be56d5c9158acc443e4cf74b977fe11715cf9d"
+        },
+        {
+          "method": "Next",
+          "args": [
+            2147483647
+          ],
+          "value": 61497087,
+          "double_bits": null,
+          "state_sha256": "3ca241b5beebe7d87688bf70ad6ab4962b5f0edd31e8ae1384a5d448c1feb3a8"
+        },
+        {
+          "method": "Peek",
+          "args": [],
+          "value": 532638534,
+          "double_bits": null,
+          "state_sha256": "3ca241b5beebe7d87688bf70ad6ab4962b5f0edd31e8ae1384a5d448c1feb3a8"
+        },
+        {
+          "method": "Next",
+          "args": [],
+          "value": 532638534,
+          "double_bits": null,
+          "state_sha256": "36003bd7a82e42ed871c5eb451f4760d6de13f27bb1498b5d080c030f35f2b44"
+        }
+      ],
+      "after_1000_more_next_sha256": "fea1dbdcf47ae8262af976c9d43abdfcd3874744035d580b0f854595c874503c"
+    },
+    {
+      "seed": 2,
+      "initial_state_sha256": "8e97ba5f971bdb874542a1de435e72be3acd87288e93ca3d29367b3a6aac3fa7",
+      "operations": [
+        {
+          "method": "Next",
+          "args": [],
+          "value": 1655911537,
+          "double_bits": null,
+          "state_sha256": "168c0b4faf2b83c2ff95ba9b683e2c33da8804d36521e1d517a5e304c28f6a4a"
+        },
+        {
+          "method": "Next",
+          "args": [
+            3
+          ],
+          "value": 1,
+          "double_bits": null,
+          "state_sha256": "91a7a1d5e31aab4bd8544b99342572904bb7837f0eeee59d19fe43ce0e9eb4a5"
+        },
+        {
+          "method": "Next",
+          "args": [
+            2,
+            3
+          ],
+          "value": 2,
+          "double_bits": null,
+          "state_sha256": "ffe972692c6217a2b1a569364b4578754cb66ea49f4b45bdb3f54edf4948664c"
+        },
+        {
+          "method": "Next",
+          "args": [
+            0
+          ],
+          "value": 0,
+          "double_bits": null,
+          "state_sha256": "dcd095ac71b948f1d39cecf62a2460899473b31f7e1fdbe62d687c4421696e9c"
+        },
+        {
+          "method": "Next",
+          "args": [
+            -10,
+            11
+          ],
+          "value": -8,
+          "double_bits": null,
+          "state_sha256": "10f3241fe8c1625947076415aa57a0a949496b9d6f7799aa3a1ad3782ec74ce0"
+        },
+        {
+          "method": "Next",
+          "args": [
+            -2147483648,
+            2147483647
+          ],
+          "value": 658591160,
+          "double_bits": null,
+          "state_sha256": "437923be4b79dfebe4197ba620b872cb013c3401041961d14c3448ac86982154"
+        },
+        {
+          "method": "NextDouble",
+          "args": [],
+          "value": 0.44554667894055444,
+          "double_bits": "3fdc83d637b907ac",
+          "state_sha256": "b6ac4843ad7b0c94d2b7e126f095c5136a48618d1ecc238eae04bcb58b242390"
+        },
+        {
+          "method": "NextDouble",
+          "args": [],
+          "value": 0.22498315396950727,
+          "double_bits": "3fcccc3f7c39987f",
+          "state_sha256": "cc44ba0960cc802d45ae96102e71862cfd3cc7deeeffd72ccade7e15e465af80"
+        },
+        {
+          "method": "Next",
+          "args": [
+            5,
+            5
+          ],
+          "value": 5,
+          "double_bits": null,
+          "state_sha256": "732172aa38b5f2bac95560c5194b65bd39c69212aa8233b26ddedb763575fde7"
+        },
+        {
+          "method": "Next",
+          "args": [
+            2147483647
+          ],
+          "value": 1643613848,
+          "double_bits": null,
+          "state_sha256": "f5bd1b03fa5cada4e83bfebf7018fdde751dae909314055f9cd8fe4c407fa98e"
+        },
+        {
+          "method": "Peek",
+          "args": [],
+          "value": 61726391,
+          "double_bits": null,
+          "state_sha256": "f5bd1b03fa5cada4e83bfebf7018fdde751dae909314055f9cd8fe4c407fa98e"
+        },
+        {
+          "method": "Next",
+          "args": [],
+          "value": 61726391,
+          "double_bits": null,
+          "state_sha256": "2497851fff01dced5d53f98b3102522c19cbea28c19f19bc3f626986c88d6a99"
+        }
+      ],
+      "after_1000_more_next_sha256": "d9c99c167e651d6ab07bc386d3f22ef91929106f0e3e240fb0bc197c099852d9"
+    },
+    {
+      "seed": -1,
+      "initial_state_sha256": "3371b231aac316498a7d2ee2dbe9400a213d6ae940668aaa53cae3e0fa7714b1",
+      "operations": [
+        {
+          "method": "Next",
+          "args": [],
+          "value": 534011718,
+          "double_bits": null,
+          "state_sha256": "be2927362879903af79d1c50add094e1307242536d3dac3cd2079f57d5fcb850"
+        },
+        {
+          "method": "Next",
+          "args": [
+            3
+          ],
+          "value": 0,
+          "double_bits": null,
+          "state_sha256": "faebd7752ba4262da260a142506a912e3be6cbb89459285a45903791f121b5a3"
+        },
+        {
+          "method": "Next",
+          "args": [
+            2,
+            3
+          ],
+          "value": 2,
+          "double_bits": null,
+          "state_sha256": "6469453300f485581188c44cb1e165eee6d2fdc683e5a88c2f6c13d8fa23ea89"
+        },
+        {
+          "method": "Next",
+          "args": [
+            0
+          ],
+          "value": 0,
+          "double_bits": null,
+          "state_sha256": "cbae454692b22088faa9751fb5a3d551b35d5f05372d1bf42597ff038d61dcce"
+        },
+        {
+          "method": "Next",
+          "args": [
+            -10,
+            11
+          ],
+          "value": 3,
+          "double_bits": null,
+          "state_sha256": "0e3fb1a8674f5f3c69911e2a5a1fe7f8b407db6b581bd8a37d488b38cba3c5ee"
+        },
+        {
+          "method": "Next",
+          "args": [
+            -2147483648,
+            2147483647
+          ],
+          "value": -929393561,
+          "double_bits": null,
+          "state_sha256": "c417e7f5cf6e627e8533990991e69e4b4b4e7c73458af1f4a4bd303a3f5327d8"
+        },
+        {
+          "method": "NextDouble",
+          "args": [],
+          "value": 0.9438622761256351,
+          "double_bits": "3fee341ea8fc683d",
+          "state_sha256": "7443735fc1e070d3e6ed6962c91f2d275b0b5ab85dd9d223f66d07e3130e8eb7"
+        },
+        {
+          "method": "NextDouble",
+          "args": [],
+          "value": 0.10126645355544353,
+          "double_bits": "3fb9ec992a33d932",
+          "state_sha256": "e13064caecf5564ea79e84e557e0b0507991e79b1364100c4289bf1a546e2e89"
+        },
+        {
+          "method": "Next",
+          "args": [
+            5,
+            5
+          ],
+          "value": 5,
+          "double_bits": null,
+          "state_sha256": "772aeaa67b35b9876b2ce8e511be56d5c9158acc443e4cf74b977fe11715cf9d"
+        },
+        {
+          "method": "Next",
+          "args": [
+            2147483647
+          ],
+          "value": 61497087,
+          "double_bits": null,
+          "state_sha256": "3ca241b5beebe7d87688bf70ad6ab4962b5f0edd31e8ae1384a5d448c1feb3a8"
+        },
+        {
+          "method": "Peek",
+          "args": [],
+          "value": 532638534,
+          "double_bits": null,
+          "state_sha256": "3ca241b5beebe7d87688bf70ad6ab4962b5f0edd31e8ae1384a5d448c1feb3a8"
+        },
+        {
+          "method": "Next",
+          "args": [],
+          "value": 532638534,
+          "double_bits": null,
+          "state_sha256": "36003bd7a82e42ed871c5eb451f4760d6de13f27bb1498b5d080c030f35f2b44"
+        }
+      ],
+      "after_1000_more_next_sha256": "fea1dbdcf47ae8262af976c9d43abdfcd3874744035d580b0f854595c874503c"
+    },
+    {
+      "seed": -2147483648,
+      "initial_state_sha256": "2d0f3eae310c037eb2840ed3a165d20bee098179843926761f681cb973c991a8",
+      "operations": [
+        {
+          "method": "Next",
+          "args": [],
+          "value": 1559595546,
+          "double_bits": null,
+          "state_sha256": "30d333ad50494faa1f759e4951db662863a64763599fd185b3ea4ab6bdfb4efd"
+        },
+        {
+          "method": "Next",
+          "args": [
+            3
+          ],
+          "value": 2,
+          "double_bits": null,
+          "state_sha256": "ef8443c57b982f57f6078968107f8c98132f6ce6c60189826faf028ef22965d5"
+        },
+        {
+          "method": "Next",
+          "args": [
+            2,
+            3
+          ],
+          "value": 2,
+          "double_bits": null,
+          "state_sha256": "a383ffb1c5494c86d0ac11e41c8745b3cf12b53909af16951e277f558bc6f8d9"
+        },
+        {
+          "method": "Next",
+          "args": [
+            0
+          ],
+          "value": 0,
+          "double_bits": null,
+          "state_sha256": "4b2ffadfeea4892eced1edfc302056763d664e1a6772542428f83bbdc18d7e56"
+        },
+        {
+          "method": "Next",
+          "args": [
+            -10,
+            11
+          ],
+          "value": -6,
+          "double_bits": null,
+          "state_sha256": "f03cd3617b6292ea78114c5d0b223dd0cac11ca979f63185a36c80e71f781b6a"
+        },
+        {
+          "method": "Next",
+          "args": [
+            -2147483648,
+            2147483647
+          ],
+          "value": -1200195957,
+          "double_bits": null,
+          "state_sha256": "c34726db34b4ae3d07a0924cf032ed253bbc9aa87ba3ba5f7c2704b04fd9faad"
+        },
+        {
+          "method": "NextDouble",
+          "args": [],
+          "value": 0.44217787331071584,
+          "double_bits": "3fdc4ca46c389949",
+          "state_sha256": "66d54b5c314694cc1c2e911215d5da1e2050cadba04d8a50bf56bff93b3d22a1"
+        },
+        {
+          "method": "NextDouble",
+          "args": [],
+          "value": 0.9775497531413798,
+          "double_bits": "3fef48166b7e902d",
+          "state_sha256": "5244423e0c27823a7341ab749048600b8ed6384a6bdcf1c2a6bf9605e8149782"
+        },
+        {
+          "method": "Next",
+          "args": [
+            5,
+            5
+          ],
+          "value": 5,
+          "double_bits": null,
+          "state_sha256": "c006f853b639208b59b84dab3c5bf89450def36edb61bd679ce8f49cfd469fed"
+        },
+        {
+          "method": "Next",
+          "args": [
+            2147483647
+          ],
+          "value": 626863973,
+          "double_bits": null,
+          "state_sha256": "00990d4980400e30e1625272309bea8aef7b36a31d4c1714cddfdf47a6e10523"
+        },
+        {
+          "method": "Peek",
+          "args": [],
+          "value": 1003550677,
+          "double_bits": null,
+          "state_sha256": "00990d4980400e30e1625272309bea8aef7b36a31d4c1714cddfdf47a6e10523"
+        },
+        {
+          "method": "Next",
+          "args": [],
+          "value": 1003550677,
+          "double_bits": null,
+          "state_sha256": "a896b78243c7112fc45822e2215dc88cee5377d6b676317d490c656a82a31cde"
+        }
+      ],
+      "after_1000_more_next_sha256": "f51eeb9d77985d7258b01dc2c1ec7ad81774dda9287f3f24207d4d1000e342b4"
+    },
+    {
+      "seed": 2147483647,
+      "initial_state_sha256": "2d0f3eae310c037eb2840ed3a165d20bee098179843926761f681cb973c991a8",
+      "operations": [
+        {
+          "method": "Next",
+          "args": [],
+          "value": 1559595546,
+          "double_bits": null,
+          "state_sha256": "30d333ad50494faa1f759e4951db662863a64763599fd185b3ea4ab6bdfb4efd"
+        },
+        {
+          "method": "Next",
+          "args": [
+            3
+          ],
+          "value": 2,
+          "double_bits": null,
+          "state_sha256": "ef8443c57b982f57f6078968107f8c98132f6ce6c60189826faf028ef22965d5"
+        },
+        {
+          "method": "Next",
+          "args": [
+            2,
+            3
+          ],
+          "value": 2,
+          "double_bits": null,
+          "state_sha256": "a383ffb1c5494c86d0ac11e41c8745b3cf12b53909af16951e277f558bc6f8d9"
+        },
+        {
+          "method": "Next",
+          "args": [
+            0
+          ],
+          "value": 0,
+          "double_bits": null,
+          "state_sha256": "4b2ffadfeea4892eced1edfc302056763d664e1a6772542428f83bbdc18d7e56"
+        },
+        {
+          "method": "Next",
+          "args": [
+            -10,
+            11
+          ],
+          "value": -6,
+          "double_bits": null,
+          "state_sha256": "f03cd3617b6292ea78114c5d0b223dd0cac11ca979f63185a36c80e71f781b6a"
+        },
+        {
+          "method": "Next",
+          "args": [
+            -2147483648,
+            2147483647
+          ],
+          "value": -1200195957,
+          "double_bits": null,
+          "state_sha256": "c34726db34b4ae3d07a0924cf032ed253bbc9aa87ba3ba5f7c2704b04fd9faad"
+        },
+        {
+          "method": "NextDouble",
+          "args": [],
+          "value": 0.44217787331071584,
+          "double_bits": "3fdc4ca46c389949",
+          "state_sha256": "66d54b5c314694cc1c2e911215d5da1e2050cadba04d8a50bf56bff93b3d22a1"
+        },
+        {
+          "method": "NextDouble",
+          "args": [],
+          "value": 0.9775497531413798,
+          "double_bits": "3fef48166b7e902d",
+          "state_sha256": "5244423e0c27823a7341ab749048600b8ed6384a6bdcf1c2a6bf9605e8149782"
+        },
+        {
+          "method": "Next",
+          "args": [
+            5,
+            5
+          ],
+          "value": 5,
+          "double_bits": null,
+          "state_sha256": "c006f853b639208b59b84dab3c5bf89450def36edb61bd679ce8f49cfd469fed"
+        },
+        {
+          "method": "Next",
+          "args": [
+            2147483647
+          ],
+          "value": 626863973,
+          "double_bits": null,
+          "state_sha256": "00990d4980400e30e1625272309bea8aef7b36a31d4c1714cddfdf47a6e10523"
+        },
+        {
+          "method": "Peek",
+          "args": [],
+          "value": 1003550677,
+          "double_bits": null,
+          "state_sha256": "00990d4980400e30e1625272309bea8aef7b36a31d4c1714cddfdf47a6e10523"
+        },
+        {
+          "method": "Next",
+          "args": [],
+          "value": 1003550677,
+          "double_bits": null,
+          "state_sha256": "a896b78243c7112fc45822e2215dc88cee5377d6b676317d490c656a82a31cde"
+        }
+      ],
+      "after_1000_more_next_sha256": "f51eeb9d77985d7258b01dc2c1ec7ad81774dda9287f3f24207d4d1000e342b4"
+    }
+  ]
+}
