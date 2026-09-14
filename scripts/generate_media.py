@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import math
 import platform
@@ -13,6 +14,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
+from scripts.media_views import crop_world, detail, overview
 from terraexplorer.config import Evil, WorldConfig, WorldScale
 from terraexplorer.generation import advance_biome_spread, apply_hardmode
 from terraexplorer.model import GeneratedWorld, StructureMarker
@@ -20,6 +22,7 @@ from terraexplorer.passes import PASS_SPECS, Fidelity
 from terraexplorer.pipeline import TerraExplorerPipeline, generate_world
 from terraexplorer.render import GENERATION_MILESTONES, add_title_bar, render_world
 from terraexplorer.simulations import simulate_catastrophe_chain
+from terraexplorer.spawn_opportunity import ground_candidate_mass
 from terraexplorer.tiles import TILE_STYLES, Biome, Liquid, Tile, Wall
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -223,7 +226,7 @@ def _save_readme_generation_gif(config: WorldConfig, path: Path) -> None:
             return
         frames.append(
             add_title_bar(
-                render_world(world, scale=4, markers=True),
+                overview(world),
                 spec.name,
                 spec.phase.value,
             )
@@ -233,7 +236,7 @@ def _save_readme_generation_gif(config: WorldConfig, path: Path) -> None:
     meteor_world = _with_media_meteorite(final_world)
     frames.append(
         add_title_bar(
-            render_world(meteor_world, scale=4, markers=True),
+            overview(meteor_world),
             "METEORITE IMPACT",
             "post-generation world event",
         )
@@ -411,7 +414,9 @@ def _build_feature_distribution(world: GeneratedWorld) -> Image.Image:
 
 
 def build_world_media() -> None:
-    config = WorldConfig(seed="TerraExplorer", evil=Evil.CORRUPTION, hardmode=True)
+    config = WorldConfig(
+        seed="TerraExplorer", scale=WorldScale.SMALL, evil=Evil.CORRUPTION, hardmode=True
+    )
     _save_readme_generation_gif(config, MEDIA / "terraexplorer_generation.gif")
     reference_world = _with_media_meteorite(_large_reference_world())
     _build_feature_distribution(reference_world).save(
@@ -438,20 +443,31 @@ def build_idle_world_evolution() -> None:
         ),
         (
             "idle_opposition.gif",
-            "Two Fronts at Dusk",
+            "Two Fronts at Dusk 20",
             Evil.CORRUPTION,
             True,
             "CORRUPTION AGAINST HALLOW",
         ),
     )
     for filename, seed, evil, include_hallow, title in scenarios:
-        config = WorldConfig(seed=seed, evil=evil)
+        config = WorldConfig(seed=seed, evil=evil, scale=WorldScale.SMALL)
         world = generate_world(config)
         rng = np.random.default_rng(config.seed_value ^ 0x1D1E5EED)
         if include_hallow:
             apply_hardmode(world, rng)
         else:
             world.metadata["hardmode"] = True
+
+        # A native-tile detail window keeps front motion legible. Include a
+        # 32-tile halo while evolving; only the interior is rendered.
+        center_x = int(world.metadata["evil_x"])
+        center_y = world.layers.world_surface + 35
+        if include_hallow:
+            center_y = world.layers.underworld - 40
+            # Fixed seed chosen for two native conversion legs close enough
+            # to share a detail view. No bands are painted into the crop.
+            center_x = round(sum(world.metadata["hardmode_origins"]) / 2)
+        world = crop_world(world, center_x - 152, center_y - 102, 304, 204)
 
         frames: list[Image.Image] = []
         captures = 9
@@ -465,12 +481,12 @@ def build_idle_world_evolution() -> None:
             hallow_count = int(
                 np.count_nonzero(np.isin(world.tiles, (Tile.PEARLSTONE, Tile.HALLOW_GRASS)))
             )
-            subtitle = f"cycle {capture_index:02d} | evil {evil_count:,} tiles"
+            subtitle = f"batch {capture_index:02d} | native Small-world crop | evil {evil_count:,}"
             if include_hallow:
                 subtitle += f" | Hallow {hallow_count:,} tiles"
             frames.append(
                 add_title_bar(
-                    render_world(world, scale=4, markers=True),
+                    detail(world, 32, 32, 240, 140, 4),
                     title,
                     subtitle,
                 )
@@ -544,84 +560,41 @@ def _paint_hazard_ellipse(
 
 def _seed_media_hazards(world: GeneratedWorld, scenario: str) -> tuple[Biome, ...]:
     _clear_media_hazards(world)
-    if scenario == "corruption":
-        x = 62
-        for y in range(int(world.surface[x]), world.layers.rock_layer + 28, 8):
-            _paint_hazard_ellipse(world, Biome.CORRUPTION, x, y, 6, 9)
-        return (Biome.CORRUPTION,)
-    if scenario == "crimson":
-        x = 184
-        y = (world.layers.world_surface + world.layers.rock_layer) // 2
-        _paint_hazard_ellipse(world, Biome.CRIMSON, x, y, 15, 12)
-        _paint_hazard_ellipse(world, Biome.CRIMSON, x - 11, y + 22, 11, 9)
-        return (Biome.CRIMSON,)
-    if scenario == "hallow":
-        for index in range(5):
-            _paint_hazard_ellipse(
-                world,
-                Biome.HALLOW,
-                54 + index * 11,
-                world.layers.rock_layer + 8 + index * 10,
-                8,
-                7,
-            )
-        return (Biome.HALLOW,)
-    _paint_hazard_ellipse(world, Biome.CORRUPTION, 40, world.layers.world_surface + 18, 13, 16)
-    _paint_hazard_ellipse(world, Biome.CRIMSON, 200, world.layers.rock_layer + 20, 15, 13)
-    for index in range(4):
-        _paint_hazard_ellipse(
-            world,
-            Biome.HALLOW,
-            74 + index * 25,
-            world.layers.underworld - 18 - index * 9,
-            9,
-            7,
-        )
-    return (Biome.CORRUPTION, Biome.CRIMSON, Biome.HALLOW)
+    world.metadata["hardmode"] = True
+    evil = Biome.CORRUPTION if world.config.evil is Evil.CORRUPTION else Biome.CRIMSON
+    hazards = (evil, Biome.HALLOW) if scenario == "all" else (evil,)
+    for index, biome in enumerate(hazards):
+        x0, x1 = (105, 111) if index == 0 else (155, 161)
+        patch = world.tiles[:, x0:x1]
+        valid = np.isin(patch, (Tile.STONE, Tile.GRASS, Tile.JUNGLE_GRASS, Tile.SAND, Tile.ICE))
+        stone, grass = _HAZARD_TILES[biome]
+        grassy = valid & np.isin(patch, (Tile.GRASS, Tile.JUNGLE_GRASS))
+        patch[valid & ~grassy] = stone
+        patch[grassy] = grass
+        world.biomes[:, x0:x1][valid] = biome
+    return hazards
 
 
-def _install_media_containment(
-    world: GeneratedWorld,
-    technique: str,
-) -> tuple[np.ndarray, int]:
-    protected = np.zeros(world.shape, dtype=bool)
-    barrier_x = int(world.metadata.get("spawn_x", world.shape[1] // 2))
+def _install_media_containment(world: GeneratedWorld, technique: str) -> tuple[np.ndarray, int]:
+    barrier_x = 120
     if technique == "trench":
-        world.tiles[: world.layers.underworld, barrier_x - 1 : barrier_x + 2] = Tile.AIR
-        world.walls[: world.layers.underworld, barrier_x - 1 : barrier_x + 2] = Wall.NONE
-        world.liquid_amount[: world.layers.underworld, barrier_x - 1 : barrier_x + 2] = 0
+        world.tiles[:, barrier_x - 1 : barrier_x + 2] = Tile.AIR
+        world.walls[:, barrier_x - 1 : barrier_x + 2] = Wall.NONE
+        world.liquid_amount[:, barrier_x - 1 : barrier_x + 2] = 0
+        world.liquid_kind[:, barrier_x - 1 : barrier_x + 2] = Liquid.NONE
     elif technique == "sunflowers":
-        for x in range(barrier_x - 10, barrier_x + 11, 2):
-            y = int(world.surface[x])
-            world.tiles[max(0, y - 1), x] = Tile.SUNFLOWER
-        sunflower = world.tiles == Tile.SUNFLOWER
-        for dy in range(-2, 3):
-            for dx in range(-2, 3):
-                protected |= np.roll(np.roll(sunflower, dy, axis=0), dx, axis=1)
-        protected[:2] = False
-        protected[-2:] = False
-        protected[:, :2] = False
-        protected[:, -2:] = False
+        for x in range(barrier_x - 8, barrier_x + 9, 2):
+            y = int(np.clip(world.surface[x], 2, world.shape[0] - 2))
+            world.tiles[y - 1, x] = Tile.SUNFLOWER
     elif technique == "chlorophyte":
-        center_y = (world.layers.rock_layer + world.layers.underworld) // 2
-        cluster = ((0, 0), (-1, 0), (1, 0), (0, -1), (0, 1))
-        for dx, dy in cluster:
-            world.tiles[center_y + dy, barrier_x + dx] = Tile.CHLOROPHYTE
-        chlorophyte = world.tiles == Tile.CHLOROPHYTE
-        nearby_count = np.zeros(world.shape, dtype=np.uint8)
-        for dy in range(-5, 6):
-            for dx in range(-5, 6):
-                nearby_count += np.roll(np.roll(chlorophyte, dy, axis=0), dx, axis=1)
-        protected = nearby_count >= 3
+        world.tiles[95:98, barrier_x - 1 : barrier_x + 2] = Tile.CHLOROPHYTE
     else:
-        x0, x1 = barrier_x - 22, barrier_x + 23
-        top = int(np.min(world.surface[x0:x1])) - 2
-        bottom = world.layers.rock_layer + 18
-        world.tiles[top:bottom, x0 : x0 + 2] = Tile.OBSIDIAN_BRICK
-        world.tiles[top:bottom, x1 - 2 : x1] = Tile.OBSIDIAN_BRICK
-        world.tiles[bottom - 2 : bottom, x0:x1] = Tile.OBSIDIAN_BRICK
-        protected[top:bottom, x0:x1] = True
-    return protected, barrier_x
+        x0, x1, top, bottom = 117, 151, 30, 120
+        world.tiles[top:bottom, x0 : x0 + 3] = Tile.OBSIDIAN_BRICK
+        world.tiles[top:bottom, x1 - 3 : x1] = Tile.OBSIDIAN_BRICK
+        world.tiles[top : top + 3, x0:x1] = Tile.OBSIDIAN_BRICK
+        world.tiles[bottom - 3 : bottom, x0:x1] = Tile.OBSIDIAN_BRICK
+    return np.zeros(world.shape, dtype=bool), barrier_x
 
 
 def _advance_media_hazards(
@@ -632,43 +605,8 @@ def _advance_media_hazards(
     *,
     iterations: int,
 ) -> None:
-    for _ in range(iterations):
-        for biome in hazards:
-            stone, grass_tile = _HAZARD_TILES[biome]
-            sources = np.argwhere(
-                (world.biomes == biome) & np.isin(world.tiles, (stone, grass_tile))
-            )
-            if not len(sources):
-                continue
-            attempts = min(900, max(300, len(sources) // 2))
-            surface_limit = world.surface[sources[:, 1]] + 4
-            weights = np.where(sources[:, 0] <= surface_limit, 2.0, 1.0)
-            weights /= weights.sum()
-            selected = sources[rng.choice(len(sources), size=attempts, replace=True, p=weights)]
-            offsets = rng.integers(-3, 4, size=(attempts, 2))
-            targets = selected + offsets
-            valid = (
-                (targets[:, 0] >= 1)
-                & (targets[:, 0] < world.shape[0] - 1)
-                & (targets[:, 1] >= 1)
-                & (targets[:, 1] < world.shape[1] - 1)
-                & np.any(offsets != 0, axis=1)
-            )
-            if not np.any(valid):
-                continue
-            target_y, target_x = targets[valid].T
-            vulnerable = np.isin(world.tiles[target_y, target_x], _HAZARD_HOSTS)
-            occupied = np.isin(world.biomes[target_y, target_x], hazards)
-            accepted = vulnerable & ~occupied & ~protected[target_y, target_x]
-            target_y = target_y[accepted]
-            target_x = target_x[accepted]
-            grassy = np.isin(
-                world.tiles[target_y, target_x],
-                (Tile.GRASS, Tile.JUNGLE_GRASS),
-            )
-            world.tiles[target_y[~grassy], target_x[~grassy]] = stone
-            world.tiles[target_y[grassy], target_x[grassy]] = grass_tile
-            world.biomes[target_y, target_x] = biome
+    del hazards, protected
+    advance_biome_spread(world, rng, iterations=iterations)
 
 
 def build_hazard_containment_animation() -> None:
@@ -688,7 +626,9 @@ def build_hazard_containment_animation() -> None:
         tuple[str, str, GeneratedWorld, tuple[Biome, ...], np.ndarray, int, np.random.Generator]
     ] = []
     for scenario, seed, evil, technique, title in scenarios:
-        world = generate_world(WorldConfig(seed=seed, evil=evil))
+        source = generate_world(WorldConfig(seed=seed, evil=evil, scale=WorldScale.SMALL))
+        x = int(source.metadata["spawn_x"])
+        world = crop_world(source, x - 120, int(source.surface[x]) - 24, 240, 140)
         hazards = _seed_media_hazards(world, scenario)
         protected, barrier_x = _install_media_containment(world, technique)
         rng = np.random.default_rng(world.config.seed_value ^ 0x48415A)
@@ -707,7 +647,7 @@ def build_hazard_containment_animation() -> None:
                 add_title_bar(
                     image,
                     title,
-                    f"seed {seed} | cycle {cycle:02d} | infected {count_text}",
+                    f"controlled crop | batch {cycle:02d} | infected {count_text}",
                 )
             )
             if cycle < 7:
@@ -743,21 +683,23 @@ def build_biome_study() -> None:
         ("UNDERGROUND OCEAN", Evil.CORRUPTION),
         ("SPIDER NEST", Evil.CRIMSON),
     )
-    candidate_seeds = (
-        "Ash Compass",
-        "Blue Furnace",
-        "Broken Meridian",
-        "Cinder Archive",
-        "Deep Lantern",
-        "Emerald Hunger",
-        "Frost Engine",
-        "Glass Horizon",
-        "Iron Orchard",
-        "Mapmakers Rest",
-        "Red Descent",
-        "Salt Cathedral",
-        "Violet Scar",
-        "World Below",
+    fixed_seeds = dict(
+        zip(
+            (s[0] for s in studies),
+            (
+                "Violet Scar",
+                "Salt Cathedral",
+                "World Below",
+                "Red Descent",
+                "Glass Horizon",
+                "Cinder Archive",
+                "Emerald Hunger",
+                "Iron Orchard",
+                "Ash Compass",
+                "Deep Lantern",
+            ),
+            strict=True,
+        )
     )
     cards: list[Image.Image] = []
     selected_seeds: dict[str, str] = {}
@@ -766,7 +708,7 @@ def build_biome_study() -> None:
     crop_width, crop_height = 48, 72
     for label, evil in studies:
         best: tuple[float, str, GeneratedWorld, int, int, int, str] | None = None
-        for seed in candidate_seeds:
+        for seed in (fixed_seeds[label],):
             if seed in used_seeds:
                 continue
             if label != "UNDERGROUND OCEAN" and seed in {"Ash Compass", "Frost Engine"}:
@@ -792,20 +734,7 @@ def build_biome_study() -> None:
         del score
         used_seeds.add(seed)
         selected_seeds[label] = seed
-        image = render_world(
-            world,
-            scale=scale,
-            markers=False,
-            biome_overlay=True,
-            material_texture=False,
-        ).crop(
-            (
-                left * scale,
-                top * scale,
-                (left + crop_width) * scale,
-                (top + crop_height) * scale,
-            )
-        )
+        image = detail(world, left, top, crop_width, crop_height, scale)
         cards.append(
             add_title_bar(
                 image,
@@ -834,9 +763,9 @@ def build_biome_study() -> None:
     )
 
 
-@lru_cache(maxsize=32)
+@lru_cache(maxsize=2)
 def _biome_candidate_world(seed: str, evil: Evil) -> GeneratedWorld:
-    return generate_world(WorldConfig(seed=seed, evil=evil))
+    return generate_world(WorldConfig(seed=seed, evil=evil, scale=WorldScale.SMALL))
 
 
 def _biome_subject(
@@ -1248,29 +1177,26 @@ def build_depth_descent() -> None:
         generate_world(
             WorldConfig(
                 seed="The Long Way Down",
+                scale=WorldScale.SMALL,
                 evil=Evil.CRIMSON,
                 hardmode=True,
             )
         )
     )
-    scale = 4
+    scale = 960 / world.shape[1]
     vertical_exaggeration = 1.7
-    base_image = render_world(
-        world,
-        scale=scale,
-        markers=True,
-        biome_overlay=True,
-    )
+    base_image = overview(world)
+    scale_y = base_image.height / world.shape[0]
     world_image = base_image.resize(
         (base_image.width, round(base_image.height * vertical_exaggeration)),
         Image.Resampling.NEAREST,
     )
     grid = ImageDraw.Draw(world_image, "RGBA")
-    for tile_x in range(0, world.shape[1], 30):
+    for tile_x in range(0, world.shape[1], 500):
         screen_x = tile_x * scale
         grid.line((screen_x, 0, screen_x, world_image.height), fill=(231, 237, 247, 34), width=1)
-    for tile_y in range(0, world.shape[0], 25):
-        screen_y = round(tile_y * scale * vertical_exaggeration)
+    for tile_y in range(0, world.shape[0], 100):
+        screen_y = round(tile_y * scale_y * vertical_exaggeration)
         grid.line((0, screen_y, world_image.width, screen_y), fill=(231, 237, 247, 38), width=1)
     for tile_y, color in (
         (round(world.layers.world_surface * 0.67), (99, 211, 193, 220)),
@@ -1278,7 +1204,7 @@ def build_depth_descent() -> None:
         (world.layers.rock_layer, (228, 184, 92, 230)),
         (world.layers.underworld, (239, 98, 98, 230)),
     ):
-        screen_y = round(tile_y * scale * vertical_exaggeration)
+        screen_y = round(tile_y * scale_y * vertical_exaggeration)
         grid.line((0, screen_y, world_image.width, screen_y), fill=color, width=2)
 
     viewport_width, viewport_height = world_image.width, 238
@@ -1288,7 +1214,7 @@ def build_depth_descent() -> None:
     frames: list[Image.Image] = []
 
     for top in positions:
-        tile_y = round((top + viewport_height // 2) / (scale * vertical_exaggeration))
+        tile_y = round((top + viewport_height // 2) / (scale_y * vertical_exaggeration))
         layer = _depth_name(world, tile_y)
         crop = world_image.crop((0, top, viewport_width, top + viewport_height))
         frames.append(
@@ -1311,77 +1237,8 @@ def build_depth_descent() -> None:
 
 
 def _spawn_heat_scores(world: GeneratedWorld) -> np.ndarray:
-    """Estimate relative hostile spawn opportunity from local world state."""
-
-    height, width = world.shape
-    air = world.tiles == Tile.AIR
-    solid = ~air
-    valid_space = np.zeros(world.shape, dtype=bool)
-    valid_space[2:-1] = air[2:-1] & air[1:-2] & air[:-3] & solid[3:]
-    valid_space &= world.liquid_kind != Liquid.LAVA
-
-    yy, xx = np.indices(world.shape)
-    depth_weight = np.full(world.shape, 0.46, dtype=np.float32)
-    depth_weight[yy < round(world.layers.world_surface * 0.45)] = 0.22
-    depth_weight[(yy >= world.layers.world_surface) & (yy < world.layers.rock_layer)] = 0.72
-    depth_weight[(yy >= world.layers.rock_layer) & (yy < world.layers.underworld)] = 1.0
-    depth_weight[yy >= world.layers.underworld] = 0.88
-
-    biome_weight = np.ones(world.shape, dtype=np.float32)
-    for biome, multiplier in (
-        (Biome.JUNGLE, 1.35),
-        (Biome.DESERT, 1.18),
-        (Biome.CORRUPTION, 1.24),
-        (Biome.CRIMSON, 1.24),
-        (Biome.HALLOW, 1.16),
-        (Biome.OCEAN, 1.12),
-        (Biome.MUSHROOM, 1.08),
-        (Biome.DUNGEON, 1.32),
-        (Biome.UNDERWORLD, 1.22),
-    ):
-        biome_weight[world.biomes == biome] = multiplier
-    biome_weight[world.walls == Wall.SPIDER] = 1.28
-    biome_weight[world.tiles == Tile.METEORITE] = 1.30
-
-    surface_distance = yy - world.surface[None, :]
-    darkness_weight = np.clip(0.66 + np.maximum(surface_distance, 0) / 115.0, 0.66, 1.22)
-    scores = valid_space.astype(np.float32) * depth_weight * biome_weight * darkness_weight
-
-    maximum = float(scores.max(initial=0.0))
-    if maximum > 0:
-        scores /= maximum
-    regional = (
-        np.asarray(
-            Image.fromarray(np.uint8(scores * 255), mode="L").filter(
-                ImageFilter.GaussianBlur(radius=12)
-            ),
-            dtype=np.float32,
-        )
-        / 255.0
-    )
-    scores = np.maximum(scores * 0.35, regional)
-
-    spawn_x = int(world.metadata.get("spawn_x", width // 2))
-    spawn_y = int(world.surface[spawn_x])
-    safe_zone = (np.abs(xx - spawn_x) <= 62) & (np.abs(yy - spawn_y) <= 34)
-    scores[safe_zone] = 0.0
-
-    housing = (np.abs(xx - spawn_x) <= 20) & (np.abs(yy - spawn_y) <= 14)
-    scores[housing] = 0.0
-
-    candle_x = min(width - 90, spawn_x + max(90, width // 9))
-    candle_y = int(world.surface[candle_x])
-    candle_range = (np.abs(xx - candle_x) <= 85) & (np.abs(yy - candle_y) <= 62)
-    scores[candle_range] *= 0.77
-
-    sunflower_x = max(40, spawn_x - max(70, width // 12))
-    sunflower_y = int(world.surface[sunflower_x])
-    sunflower_range = (np.abs(xx - sunflower_x) <= 42) & (np.abs(yy - sunflower_y) <= 30)
-    scores[sunflower_range] *= 0.83
-    maximum = float(scores.max(initial=0.0))
-    if maximum > 0:
-        scores /= maximum
-    return scores
+    """Normalized candidate-column mass; the plot is conditional on player eligibility."""
+    return ground_candidate_mass(world).astype(np.float32) / 103.0
 
 
 def _viridis(values: np.ndarray) -> np.ndarray:
@@ -1450,7 +1307,8 @@ def build_spawn_heatmap() -> None:
         font=title_font,
     )
     subtitle = (
-        "relative hostile spawn opportunity | valid space, depth, biome, light, and suppression"
+        "eligible ground-candidate column mass | source-backed search geometry"
+        " | no biome/light weights"
     )
     subtitle_font = font(13)
     draw.text(
@@ -1467,47 +1325,18 @@ def build_spawn_heatmap() -> None:
     draw.text((603, legend_y - 2), "LOW", fill=MUTED, font=font(11, bold=True))
     draw.text((921, legend_y - 2), "HIGH", fill=MUTED, font=font(11, bold=True))
 
-    image_x, image_y, image_width, image_height = 80, 94, 1400, 400
-    spawn_x = int(world.metadata["spawn_x"])
-    spawn_y = int(world.surface[spawn_x])
-    controls = (
-        ("NPC HOUSING + SAFE ZONE", spawn_x, spawn_y, 62, 34, ACCENT),
-        (
-            "PEACE CANDLE | ATTEMPTS -23% | CAP -30%",
-            min(world.shape[1] - 90, spawn_x + max(90, world.shape[1] // 9)),
-            None,
-            85,
-            62,
-            GOLD,
-        ),
-        (
-            "SUNFLOWER | ATTEMPTS -17% | CAP -20%",
-            max(40, spawn_x - max(70, world.shape[1] // 12)),
-            None,
-            42,
-            30,
-            "#e9d45c",
-        ),
+    lines = (
+        "GROUND CANDIDATE MASS | 2 x 3 clearance | downward search up to 103 tiles",
+        "Hypothetical off-screen player; eligible floor in range; no town, buffs or events",
+        "Conditional geometry only: no NPC rate, population cap, enemy selection or sky spawns",
     )
-    label_font = font(11, bold=True)
-    for label, center_x, center_y, radius_x, radius_y, color in controls:
-        center_y = int(world.surface[center_x]) if center_y is None else center_y
-        x0 = image_x + round((center_x - radius_x) / world.shape[1] * image_width)
-        x1 = image_x + round((center_x + radius_x) / world.shape[1] * image_width)
-        y0 = image_y + round((center_y - radius_y) / world.shape[0] * image_height)
-        y1 = image_y + round((center_y + radius_y) / world.shape[0] * image_height)
-        draw.rectangle((x0, y0, x1, y1), outline=color, width=2)
-        draw.text((max(image_x, x0), max(image_y, y0 - 15)), label, fill=color, font=label_font)
-
-    enemy_lines = (
-        "Surface: Slime, Zombie   |   Jungle: Hornet, Man Eater   |   Desert: Antlion",
-        "Caverns: Bat, Skeleton   |   Dungeon: Angry Bones   |   Ocean: Crab, Shark",
-        "Evil: Eater of Souls / Crimera   |   Meteorite: Meteor Head   |   "
-        "Underworld: Demon, Hellbat",
-    )
-    for index, line in enumerate(enemy_lines):
-        width = draw.textlength(line, font=font(12))
-        draw.text(((canvas.width - width) / 2, 516 + index * 23), line, fill=TEXT, font=font(12))
+    for index, line in enumerate(lines):
+        draw.text(
+            ((canvas.width - draw.textlength(line, font=font(12))) / 2, 516 + index * 23),
+            line,
+            fill=TEXT,
+            font=font(12),
+        )
     canvas.save(MEDIA / "spawn_heatmap.png", optimize=True)
 
 
@@ -1563,18 +1392,30 @@ def build_fidelity_chart() -> None:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", type=Path, default=MEDIA)
+    parser.add_argument("--branding", action="store_true")
+    parser.add_argument(
+        "--only", nargs="+", choices=("world", "idle", "biomes", "containment", "depth", "spawn")
+    )
+    args = parser.parse_args()
+    globals()["MEDIA"] = args.output.resolve()
     MEDIA.mkdir(parents=True, exist_ok=True)
-    ASSETS.mkdir(parents=True, exist_ok=True)
-    build_icon()
-    build_world_media()
-    build_idle_world_evolution()
-    build_biome_study()
-    build_hazard_containment_animation()
-    build_depth_descent()
-    build_spawn_heatmap()
-    build_performance_chart()
-    build_fidelity_chart()
-    print(f"Wrote TerraExplorer media to {MEDIA}")
+    if args.branding:
+        build_icon()
+    builders = {
+        "world": build_world_media,
+        "idle": build_idle_world_evolution,
+        "biomes": build_biome_study,
+        "containment": build_hazard_containment_animation,
+        "depth": build_depth_descent,
+        "spawn": build_spawn_heatmap,
+    }
+    for name, builder in builders.items():
+        if args.only is None or name in args.only:
+            print(f"Building {name}", flush=True)
+            builder()
+    print(f"Wrote TerraExplorer media to {MEDIA}", flush=True)
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@
 <!--
 AGENT NOTE:
 For technical generation references, biome mechanics, and the optional local version-locked vanilla Terraria implementation corpus, please refer to the ignored `Game Reference/` directory when it is present. It is not included in public clones.
-Check `Game Reference/README.md` for instructions on how to use `Query-TerrariaLibrary.ps1` to query the corpus and find specific method ranges. Do not attempt to read massive files like `WorldGen.cs` in full.
+Start at `Game Reference/08_agent_library/START_HERE.md`, then use `Query-Terraria.ps1` and the topic routers to locate specific method ranges. Do not read massive files like `WorldGen.cs` in full.
 -->
 
 <p align="center">
@@ -26,16 +26,18 @@ for the moment before the first torch is placed, when the map is still becoming
 itself. Terrain rises. Caverns split. The Dungeon drives downward. The Jungle
 closes over its Temple. Far below, lava waits beneath ruined towers.
 
-This is original Python code and original art inspired by public Terraria world
-rules. It does not read or write `.wld` files, copy private game code, or ship
-Re-Logic sprites.
+This is an independent Python generator with original art. Small-world mechanics
+are checked against a local Terraria 1.4.5.7 source corpus and real generated
+worlds. The optional fidelity tools import `.wld` files for comparison; imported
+cells are never inputs to the product generator. No game binaries, source dumps,
+oracle worlds, or Re-Logic sprites are shipped.
 
 ## A world from one seed
 
 > The machine does not guess twice.
 
-Every named pass receives its own random stream. For text seed (s) and pass
-label (p), TerraExplorer derives
+Every named pass receives an isolated random stream. For a nonnumeric text seed
+(s) and pass label (p), the default stream is
 
 $$
 s_{32}=\mathrm{CRC32}(s), \qquad
@@ -43,18 +45,24 @@ r_p=\mathrm{PCG64}\!\left(\mathrm{uint64}
 \left(\mathrm{BLAKE2s}(s_{32}\mathbin{:}p)\right)\right).
 $$
 
-The important consequence is practical: editing `Dungeon` cannot silently
-reshuffle `Living Trees`, ore veins, or every later pass.
+Numeric seeds retain their low 32 bits. Small-world Terrain, Dungeon, Temple,
+and Living Tree handlers instead start separate `UnifiedRandom` instances from
+that normalized seed. The RNG implementation is independently tested against
+Terraria; the full pipeline does not reproduce its shared RNG history.
+Changing one pass does not consume another pass's stream, although changes to
+the terrain can still affect later placement decisions.
 
 ```python
-from terraexplorer import Evil, WorldConfig, generate_world
+from terraexplorer import Evil, WorldConfig, WorldScale, generate_world
 
-config = WorldConfig(seed="mechanical-tree", evil=Evil.CRIMSON)
+config = WorldConfig(seed="mechanical-tree", evil=Evil.CRIMSON, scale=WorldScale.SMALL)
 world = generate_world(config)
 ```
 
 The animation records real pipeline snapshots, not painted transitions. Each
-frame is a state produced by the same handlers used by the API, CLI, and GUI.
+frame is a state produced by the same Small-world handlers used by the API, CLI,
+and GUI. The `4200 x 1200` grid is rendered into the existing `960 x 560` overview
+area; horizontal and vertical display scales differ. Simulation uses native tiles.
 
 ![A TerraExplorer world taking shape](docs/media/terraexplorer_generation.gif)
 
@@ -93,12 +101,14 @@ new generation run.
 For a headless run:
 
 ```bash
-terraexplorer generate --seed "mechanical-tree" --evil crimson --hardmode \
+terraexplorer generate --seed "mechanical-tree" --scale small --evil crimson --hardmode \
   --png world.png --npz world.npz --json world.json --gif generation.gif
 ```
 
-Preview worlds are fast `240 x 140` experiments. Small worlds use the much
-deeper `4200 x 1200` grid. Windows packaging produces
+The GUI defaults to Small, and Fit shows the complete map. Preview worlds remain
+fast `240 x 140` experiments using the older compact algorithms; API and CLI
+defaults remain Preview for compatibility. Select `small` for the updated
+`4200 x 1200` generator. Windows packaging produces
 `dist/TerraExplorer.exe`.
 
 ## Idle World Evolution
@@ -113,7 +123,7 @@ $$
 (y,x)\in S,\ |\Delta x|\le3,\ |\Delta y|\le3\}.
 $$
 
-The Terraria 1.4.5.6 reference dispatches separate overground and underground
+The Terraria 1.4.5.7 reference dispatches separate overground and underground
 tile-update streams at relative rates of two to one. TerraExplorer preserves
 that distinction inside each educational batch:
 
@@ -138,9 +148,10 @@ for _ in range(12):
     advance_biome_spread(world, rng)
 ```
 
-Each study uses a different seed and a complete generated Preview world. The
-panels are now separate, full-width animations, which makes structures, biome
-fronts, and deep paths easier to inspect. Natural materials can convert;
+Each study uses a fixed seed and a `240 x 140` native-tile detail from a generated
+Small world, displayed at four pixels per tile. A 32-tile surrounding margin is
+simulated too; this finite crop is a local experiment, not full-world evolution.
+Natural materials can convert;
 Corruption, Crimson, and Hallow cannot overwrite one another, so opposed fronts
 meet and harden into a boundary.
 
@@ -158,15 +169,17 @@ structure are different.
 
 ![Corruption and Hallow spreading against each other](docs/media/idle_opposition.gif)
 
-The last world begins after the Hardmode V cuts two diagonal bands through the
-Caverns. Corruption and Hallow consume pure hosts until they collide. Neither is
-allowed to convert the other's established material.
+The last world, `Two Fronts at Dusk 20`, shows the inward-sloping Hardmode bands
+near the bottom of the Caverns. This fixed seed places both legs within one
+detail view. Corruption and Hallow consume pure hosts; the spread routine does
+not convert the other's established material. Initial Hardmode conversion is a
+separate operation and can overwrite existing infection.
 
 ## Feature Distribution
 
 > Every ruin is a decision written into stone.
 
-Every generated structure records a bounding box
+Structure markers record placement bounds
 
 $$
 B_i=(x_i,y_i,w_i,h_i), \qquad
@@ -174,7 +187,7 @@ q_i=\left(x_i+\frac{w_i}{2},y_i+\frac{h_i}{2}\right).
 $$
 
 The figure projects those bounds and biome masks into one `4200 x 1200` world.
-Repeated instances all remain visible and retain their full generated bounds;
+Repeated instances retain their recorded bounds;
 one external label names each feature class so the annotation layer stays
 readable.
 
@@ -198,8 +211,10 @@ without changing the core 107-pass generator.
 
 > A biome is not a color. It is terrain with a history.
 
-Biome regions start from clipped seeded bands, but the atlas crop is selected
-by a separate presentation objective. For candidate crop (C), visible-state
+Small worlds use drifting Snow boundaries, overlapping Jungle mud runners,
+clustered Underground Desert cavities, and connected evil scars. Several minor
+biomes remain simplified patches. The atlas uses ten fixed seeds and selects a
+crop within each world by a presentation objective. For candidate crop (C), visible-state
 mask (V), target mask (M), area (A), and target center (c_M), the optimizer
 maximizes
 
@@ -213,11 +228,13 @@ This favors biome purity first and centering second. Relevant structures and
 caves remain part of the crop rather than being painted into it.
 
 ```python
-crop, score = _best_subject_crop(world, subject_mask, width=48, height=72)
-selected = max(candidate_seeds, key=lambda seed: score_for(seed))
+left, top, score, count = _best_subject_crop(
+    world, subject_mask, center, 48, 72, surface_aligned=True
+)
+# Seed is fixed before generation; only the crop is optimized.
 ```
 
-![Ten independently optimized biome studies](docs/media/biome_atlas.png)
+![Ten biome studies from fixed Small-world seeds](docs/media/biome_atlas.png)
 
 Every panel represents the same `48 x 72` tiles at the same six-pixel scale.
 The seeds are printed in the figure and recorded here:
@@ -241,12 +258,12 @@ Cobweb-filled Spider pocket. The exact optimizer output is also tracked in
 > A wall is an argument with time.
 
 The media study advances hostile biome fronts through valid host materials
-within a three-tile neighborhood. A containment mask (K) rejects otherwise
-valid targets:
+within a three-tile neighborhood. For the randomly sampled candidate set (A_t),
+valid unoccupied hosts (V_t), and applicable protection mask (K_t), one update is
 
 $$
 S_{t+1}=S_t\cup
-\{z:z\in\mathcal N_3(S_t),\ z\in V,\ z\notin K\}.
+\{z:z\in A_t\cap\mathcal N_3(S_t),\ z\in V_t,\ z\notin K_t\}.
 $$
 
 Surface source tiles receive twice the sampling weight of underground sources.
@@ -264,27 +281,30 @@ world.biomes[target_y[accepted], target_x[accepted]] = biome
 
 `Violet Quarantine` uses a three-tile trench against Corruption. `Red Garden`
 uses a Sunflower cordon against Crimson. `Verdant Defense` places a Chlorophyte
-cluster against Corruption. `Three Front Siege` protects a brick bastion while
-all three hazards advance from different regions. These are explanatory
-generated-world studies, not frame-exact game timing, and the public
-containment API is unchanged.
+cluster against Corruption. The retained seed `Three Front Siege` now tests
+Crimson and Hallow outside a three-tile brick bastion. The interior has no
+artificial immunity mask. Each panel uses a generated `240 x 140` Small-world
+crop at two pixels per tile, with deliberately seeded test fronts and barriers.
+They share the runtime spread routine. Sunflowers and Chlorophyte provide local
+defense; these panels do not prove that either contains an entire biome.
 
 ## World Layers
 
 > Depth is not distance. Depth is what the world permits to survive.
 
-For world height (H), the generator stores three primary boundaries. The
-animation adds a visualization-only Space guide and stretches vertical render
-coordinates:
+Small-world Terrain produces a surface profile (s) and per-column rock profile
+(r). Its global boundaries come from their extrema, not fixed height fractions:
 
 $$
-y_{surface}=\mathrm{round}(0.19H),\quad
-y_{rock}=\mathrm{round}(0.46H),\quad
-y_{space}=\mathrm{round}(0.67y_{surface}),\quad
-y'=1.7y.
+y_{surface}=\max_x s(x)+25,\qquad
+y_{rock}=y_{surface}+6\left\lfloor\frac{\max_x r(x)-y_{surface}}6\right\rfloor,
+\qquad y_{underworld}=H-200.
 $$
 
-The stretch changes pixels only. Tile coordinates, structure placement, and
+Later passes can alter local terrain without moving these global layer guides.
+The Space guide is visualization-only, at `round(0.67 * world_surface)`.
+The descent stretches the `960 x 560` overview vertically by 1.7, so native
+tile y maps to `y * (560 / 1200) * 1.7` display pixels. Tile coordinates and
 simulation boundaries remain untouched.
 
 ```python
@@ -305,35 +325,34 @@ biomes, structures, Meteorite, and Underworld ruins stay visible.
 
 > The world does not choose an enemy until it finds somewhere to stand.
 
-The heat score combines valid three-tile standing space (I), a depth factor
-(D), biome factor (B), moderate-to-low light factor (L), and suppression factor
-(S):
+The heat score measures conditional ground-candidate geometry. Let (I) indicate
+a supported floor with the source's two-column, three-row clearance, excluding
+lava and two-cell-deep Honey or Shimmer. Let (R) be the number of consecutive
+eligible starting cells directly above that floor. Then
 
 $$
-H(y,x)=I(y,x)D(y)B(y,x)L(y,x)S(y,x).
+H(y,x)=I(y,x)\frac{\min(R(y,x),103)}{103}.
 $$
 
-The score is zero inside the modeled spawn-safe and occupied housing zone. Its
-attempt-frequency component is multiplied by `1/1.3` inside Peace Candle range
-and `1/1.2` near a Sunflower. The figure also labels their separate modeled
-maximum-spawn factors, `0.70` and `0.80`; those caps are not compounded into the
-standing-space heat value. A local Gaussian aggregation turns valid individual
-spawn tiles into a readable regional opportunity map.
+The cap comes from the 104-tile-high search rectangle at the source's reference
+screen size. The hypothetical player is off screen with the floor in range;
+the world spawn point does not create a permanent safe bubble. Starting cells
+above `round(0.35 * world_surface)` are excluded from this ground-only study.
+Tile solidity uses TerraExplorer's smaller registry. Player-safe walls, towns,
+buffs, events, time, difficulty, spawn caps, and NPC selection are not simulated.
+Three-by-three maximum pooling makes floor samples legible at overview scale.
 
 ```python
-valid = three_air_tiles & solid_floor & ~lava
-heat = valid * depth_weight * biome_weight * darkness_weight
-heat[safe_zone | npc_housing] = 0.0
+from terraexplorer.spawn_opportunity import ground_candidate_mass
+heat = ground_candidate_mass(world) / 103.0
 ```
 
-![Relative hostile spawn heat across the Ash Compass world](docs/media/spawn_heatmap.png)
+![Conditional ground-candidate opportunity across the Ash Compass world](docs/media/spawn_heatmap.png)
 
 This uses the same `Ash Compass` `4200 x 1200` world and identical
 post-generation Meteorite overlay as Feature Distribution. The `viridis`
-overlay represents relative hostile spawn opportunity, not an exact per-tick
-enemy simulator. The legend names common or mechanically relevant enemies for
-the major regions, while the marked control zones make town, Peace Candle, and
-Sunflower suppression inspectable.
+overlay represents normalized starting-column mass. It is neither a spawn rate
+nor the probability that the game's complete 50-attempt search succeeds.
 
 ## Data model
 
@@ -379,15 +398,15 @@ name.
 
 TerraExplorer preserves the public 107-step Terraria 1.4.4.9 generation order as
 its stable pipeline contract. Accuracy work is checked against an optional local
-Terraria 1.4.5.6 implementation corpus without silently changing that ordering
+Terraria 1.4.5.7 implementation corpus without silently changing that ordering
 or claiming seed compatibility with Terraria.
 
 | Surface | Fidelity target |
 |---|---|
 | Pipeline order | Stable 1.4.4.9-inspired 107-step contract |
-| Mechanical and visual research | Version-locked 1.4.5.6 local reference |
-| RNG and IDs | TerraExplorer-specific; not Terraria-compatible |
-| Output | NumPy/PNG/GIF/JSON/NPZ, never `.wld` |
+| Mechanical and visual research | Version-locked 1.4.5.7 local reference and three ordinary Small oracle worlds |
+| RNG and IDs | Tested UnifiedRandom in selected handlers; independent pass streams and simulation IDs |
+| Product output | NumPy/PNG/GIF/JSON/NPZ; optional separate `.wld` comparison tools |
 
 The generator uses its own IDs, algorithms, random streams, and art. The current
 inventory contains 68 modeled passes, 38 approximated passes, and one documented
@@ -397,6 +416,8 @@ one- or two-floor underground cabins in addition to loose treasure.
 
 Modeled means a distinct operation changes world state or metadata. It does not
 mean byte-for-byte compatibility. The
+[generation upgrade report](docs/fidelity/HIGH_FIDELITY_GENERATION_REPORT.md)
+records source ranges, measured improvements and remaining gaps. The
 [fidelity inventory](docs/FIDELITY.md) states those boundaries; the
 [visual and structural audit](docs/VISUAL_FIDELITY.md) records figure-level
 evidence and remaining discrepancies; the
@@ -412,8 +433,8 @@ The landscape rules are checked against public Terraria Wiki descriptions of
 [world layers](https://terraria.wiki.gg/wiki/Layers),
 [Ocean caves](https://terraria.wiki.gg/wiki/Ocean_cave), and
 [Spider Nests](https://terraria.wiki.gg/wiki/Spider_Cavern). Public wiki
-mechanics take precedence when a supplied visual reference conflicts with a
-documented rule. The
+descriptions provide context; the pinned local implementation and runtime oracle
+are the primary evidence for this upgrade. The
 [reference atlas](docs/references/information/README.md) guides composition,
 silhouette, and visual inspection within those rules.
 
@@ -422,10 +443,11 @@ silhouette, and visual inspection within those rules.
 Liquid transfer is conservative but does not model Terraria's complete settling
 cadence or pressure behavior. Biome spread now samples sources and reproduces
 the audited Sunflower and Chlorophyte proximity rules, but its iterations remain
-uncalibrated batches. Secret-seed branches, richer structure variants,
-biome-transition microterrain, and independent
-high-resolution validation of the Small-world generator remain useful next
-experiments.
+uncalibrated batches. Dungeon exploration and entrance geometry remain too
+compact; Floating Islands, cabins and several minor biomes retain representative
+geometry. Temple decoration, Living Tree rooms, full tile shapes, converted
+sand/ice IDs, shared RNG history, and secret-seed branches remain incomplete.
+The three-world comparison measures improvement, not general seed compatibility.
 
 `Engine/`, `Code/`, and `Advanced/` are labeled research archives. They are not
 part of the runtime package and must not be imported into it.
@@ -441,12 +463,15 @@ pytest --cov=terraexplorer
 python -m build
 ```
 
-Rebuild the tracked original media with:
+Rebuild the nine generation figures and seed manifest with:
 
 ```bash
 python -m scripts.generate_media
 python -m scripts.capture_gui  # requires a visible Windows desktop
 ```
+
+Use `--output audit/media-check` for a fresh output directory. Branding assets
+are left alone unless `--branding` is explicitly supplied.
 
 CI tests Python 3.11, 3.12, and 3.13 on Windows and Ubuntu. Windows release
 packaging builds `TerraExplorer.exe`. See [CONTRIBUTING.md](CONTRIBUTING.md) and

@@ -10,10 +10,11 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from terraexplorer.config import WorldConfig
+from terraexplorer.config import WorldConfig, WorldScale
 from terraexplorer.generation import PASS_HANDLERS, apply_hardmode, final_cleanup
 from terraexplorer.model import GeneratedWorld, PassResult
 from terraexplorer.passes import PASS_SPECS, PassSpec, Phase
+from terraexplorer.source_generation import SMALL_HANDLERS
 
 
 class GenerationCancelledError(RuntimeError):
@@ -70,6 +71,8 @@ class TerraExplorerPipeline:
                 or spec.phase.value in config.enabled_phases
             )
             handler = PASS_HANDLERS.get(spec.handler or "", None) if phase_enabled else None
+            if phase_enabled and config.scale is WorldScale.SMALL:
+                handler = SMALL_HANDLERS.get(spec.handler or "", handler)
             if handler is not None:
                 handler(world, _rng_for(config.seed_value, spec.name))
             elapsed_ms = (time.perf_counter() - pass_started) * 1000.0

@@ -70,13 +70,14 @@ def test_hardmode_gif_includes_post_generation_transformation(tmp_path) -> None:
         assert animation.n_frames == 26
 
 
-def test_spawn_heat_scores_are_normalized_and_suppress_spawn() -> None:
+def test_spawn_heat_scores_are_normalized_ground_candidate_mass() -> None:
     world = generate_world(WorldConfig(seed="spawn-heat"))
     scores = _spawn_heat_scores(world)
-    spawn_x = int(world.metadata["spawn_x"])
-    spawn_y = int(world.surface[spawn_x])
 
     assert scores.shape == world.shape
     assert np.all((scores >= 0.0) & (scores <= 1.0))
-    assert np.all(scores[max(0, spawn_y - 20) : spawn_y + 21, spawn_x - 20 : spawn_x + 21] == 0)
+    # A world spawn point is not a permanently safe zone without a player.
+    # The replacement quantity is floor eligibility, conditional on an
+    # appropriately positioned hypothetical player, not arbitrary suppression.
+    assert not np.any(scores[world.tiles == 0])
     assert np.any(scores > 0)

@@ -69,6 +69,12 @@ def _place_marker(
     height: int,
     symbol: str,
 ) -> None:
+    if world.config.scale is WorldScale.SMALL:
+        right, bottom = min(world.shape[1], x + width), min(world.shape[0], y + height)
+        x, y = max(0, x), max(0, y)
+        width, height = right - x, bottom - y
+        if width <= 0 or height <= 0:
+            return
     world.structures.append(StructureMarker(kind, x, y, width, height, symbol))
 
 
@@ -1430,6 +1436,10 @@ def hives(world: GeneratedWorld, rng: np.random.Generator) -> None:
         x = int(rng.integers(max(5, center - half), min(world.shape[1] - 5, center + half)))
         y = int(rng.integers(world.layers.rock_layer, world.layers.underworld - 5))
         rx, ry = tuple(_pick(world, (5, 4), (22, 16)))
+        if world.config.scale is WorldScale.SMALL and not _can_place_structure(
+            world, x - int(rx), y - int(ry), int(rx) * 2 + 1, int(ry) * 2 + 1, padding=3
+        ):
+            continue
         stamp_ellipse(world.tiles, x, y, int(rx), int(ry), Tile.HIVE, _CARVABLE)
         stamp_ellipse(
             world.tiles, x, y, max(2, int(rx) - 2), max(2, int(ry) - 2), Tile.AIR, (Tile.HIVE,)
@@ -1594,6 +1604,10 @@ def spider_caves(world: GeneratedWorld, rng: np.random.Generator) -> None:
         x = int(rng.integers(8, world.shape[1] - 8))
         y = int(rng.integers(world.layers.rock_layer, world.layers.underworld - 5))
         rx, ry = tuple(_pick(world, (7, 5), (28, 20)))
+        if world.config.scale is WorldScale.SMALL and not _can_place_structure(
+            world, x - int(rx), y - int(ry), int(rx) * 2 + 1, int(ry) * 2 + 1, padding=3
+        ):
+            continue
         stamp_ellipse(world.tiles, x, y, int(rx), int(ry), Tile.AIR, _CARVABLE)
         x0, x1 = max(0, x - int(rx)), min(world.shape[1], x + int(rx) + 1)
         y0, y1 = max(0, y - int(ry)), min(world.shape[0], y + int(ry) + 1)
@@ -1611,6 +1625,10 @@ def gem_caves(world: GeneratedWorld, rng: np.random.Generator) -> None:
         x = int(rng.integers(8, world.shape[1] - 8))
         y = int(rng.integers(world.layers.rock_layer, world.layers.underworld - 5))
         radius = int(_pick(world, 6, 24))
+        if world.config.scale is WorldScale.SMALL and not _can_place_structure(
+            world, x - radius, y - radius // 2, radius * 2 + 1, radius + 1, padding=3
+        ):
+            continue
         stamp_ellipse(world.tiles, x, y, radius, max(3, radius // 2), Tile.AIR, _CARVABLE)
         for angle in np.linspace(0, np.pi * 2, int(_pick(world, 8, 22)), endpoint=False):
             gx = round(x + np.cos(angle) * radius)
@@ -1887,6 +1905,13 @@ def hellforge(world: GeneratedWorld, rng: np.random.Generator) -> None:
 
 def apply_hardmode(world: GeneratedWorld, rng: np.random.Generator) -> None:
     """Apply a visible evil/Hallow V after the vanilla creation passes."""
+
+    if world.config.scale is WorldScale.SMALL:
+        from terraexplorer.source_generation import hardmode
+
+        hardmode(world, rng)
+        advance_biome_spread(world, rng, iterations=6)
+        return
 
     center = int(world.metadata.get("spawn_x", world.shape[1] // 2))
     y0, y1 = world.layers.world_surface, world.layers.underworld

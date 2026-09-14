@@ -109,12 +109,14 @@ class TerraExplorerApp:
         self.evolution_direction = 1
         self.evolution_job: str | None = None
         self.display_scale = 4
+        self.fit_view = False
+        self.view_pixel_scale = (4.0, 4.0)
         self.cancel_event = threading.Event()
         self.worker: threading.Thread | None = None
         self.events: queue.Queue[tuple[str, object]] = queue.Queue()
 
         self.seed_var = tk.StringVar(value="TerraExplorer")
-        self.scale_var = tk.StringVar(value=WorldScale.PREVIEW.value)
+        self.scale_var = tk.StringVar(value=WorldScale.SMALL.value)
         self.evil_var = tk.StringVar(value=Evil.CORRUPTION.value)
         self.difficulty_var = tk.StringVar(value=Difficulty.CLASSIC.value)
         self.hardmode_var = tk.BooleanVar(value=False)
@@ -272,7 +274,7 @@ class TerraExplorerApp:
         self.root.update_idletasks()
         width = max(800, self.root.winfo_width() - 32)
         self.body.sashpos(0, 228)
-        self.body.sashpos(1, max(540, width - 238))
+        self.body.sashpos(1, max(540, width - 400))
 
     def _scrollable_controls(self, parent: ttk.Frame) -> ttk.Frame:
         self.controls_canvas = tk.Canvas(
@@ -520,20 +522,22 @@ class TerraExplorerApp:
             anchor="w", padx=8, pady=(9, 5)
         )
         columns = ("index", "name", "time")
-        self.pass_tree = ttk.Treeview(parent, columns=columns, show="headings", height=14)
+        log_frame = ttk.Frame(parent)
+        log_frame.pack(fill="both", expand=True, padx=8)
+        self.pass_tree = ttk.Treeview(log_frame, columns=columns, show="headings", height=14)
         self.pass_tree.heading("index", text="#")
         self.pass_tree.heading("name", text="Pass")
         self.pass_tree.heading("time", text="ms")
         self.pass_tree.column("index", width=32, anchor="e", stretch=False)
-        self.pass_tree.column("name", width=132, stretch=False)
-        self.pass_tree.column("time", width=42, anchor="e", stretch=False)
+        self.pass_tree.column("name", width=250, stretch=True)
+        self.pass_tree.column("time", width=50, anchor="e", stretch=False)
         self.pass_tree.tag_configure("modeled", foreground="#80dfcf")
         self.pass_tree.tag_configure("approximated", foreground="#e6bd6b")
         self.pass_tree.tag_configure("documented", foreground="#9aa9bf")
-        tree_scroll = ttk.Scrollbar(parent, orient="vertical", command=self.pass_tree.yview)
+        tree_scroll = ttk.Scrollbar(log_frame, orient="vertical", command=self.pass_tree.yview)
         self.pass_tree.configure(yscrollcommand=tree_scroll.set)
-        self.pass_tree.pack(side="top", fill="both", expand=True, padx=(8, 18))
-        tree_scroll.place(relx=1.0, rely=0.04, relheight=0.68, x=-10, anchor="ne")
+        tree_scroll.pack(side="right", fill="y")
+        self.pass_tree.pack(side="left", fill="both", expand=True)
 
     def _config(self) -> WorldConfig:
         enabled = tuple(name for name, variable in self.phase_vars.items() if variable.get())
@@ -799,6 +803,16 @@ class TerraExplorerApp:
             combined.paste(previous, (0, 0))
             combined.paste(image, (previous.width + 4, 0))
             image = combined
+        before_size = image.size
+        if self.fit_view:
+            image.thumbnail(
+                (max(1, self.canvas.winfo_width() - 4), max(1, self.canvas.winfo_height() - 4)),
+                Image.Resampling.NEAREST,
+            )
+        self.view_pixel_scale = (
+            self.display_scale * image.width / before_size[0],
+            self.display_scale * image.height / before_size[1],
+        )
         self.photo = ImageTk.PhotoImage(image)
         self.canvas.delete("all")
         self.canvas.create_image(0, 0, anchor="nw", image=self.photo)
@@ -815,9 +829,10 @@ class TerraExplorerApp:
             1,
             min(
                 8,
-                math.ceil(max(available_w / world.shape[1], available_h / world.shape[0])),
+                math.floor(min(available_w / world.shape[1], available_h / world.shape[0])),
             ),
         )
+        self.fit_view = True
         self._render_view()
         self.root.after_idle(self._center_view)
 
@@ -832,6 +847,7 @@ class TerraExplorerApp:
         self.canvas.yview_moveto(max(0.0, (image_h - available_h) / max(1, 2 * image_h)))
 
     def _zoom(self, delta: int) -> None:
+        self.fit_view = False
         self.display_scale = max(1, min(8, self.display_scale + delta))
         self._render_view()
 
@@ -862,8 +878,8 @@ class TerraExplorerApp:
             abs(event.x - self._drag_origin[0]) > 4 or abs(event.y - self._drag_origin[1]) > 4
         ):
             return
-        x = int(self.canvas.canvasx(event.x) / self.display_scale)
-        y = int(self.canvas.canvasy(event.y) / self.display_scale)
+        x = int(self.canvas.canvasx(event.x) / self.view_pixel_scale[0])
+        y = int(self.canvas.canvasy(event.y) / self.view_pixel_scale[1])
         if not (0 <= x < world.shape[1] and 0 <= y < world.shape[0]):
             return
         tile = Tile(int(world.tiles[y, x]))
