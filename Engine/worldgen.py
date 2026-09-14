@@ -148,13 +148,14 @@ def _placeBiomes(
     hell = int(layers.hellLayer)
 
     # Snow band: convert surface dirt -> snow, stone -> ice up to rockLayer.
-    for x in range(max(0, snowX - snowHalf), min(width, snowX + snowHalf)):
-        for y in range(rock):
-            t = grid[y, x]
-            if t == DIRT or t == GRASS:
-                grid[y, x] = SNOW
-            elif t == STONE:
-                grid[y, x] = ICE
+    startX = max(0, snowX - snowHalf)
+    endX = min(width, snowX + snowHalf)
+    if startX < endX and rock > 0:
+        region = grid[:rock, startX:endX]
+        dirt_grass_mask = (region == DIRT) | (region == GRASS)
+        stone_mask = region == STONE
+        region[dirt_grass_mask] = SNOW
+        region[stone_mask] = ICE
 
     # Jungle band: dirt -> mud, deeper too.
     for x in range(max(0, jungleX - jungleHalf), min(width, jungleX + jungleHalf)):
@@ -585,13 +586,14 @@ def _miniBiomes(
     rock = int(layers.rockLayer)
     hell = int(layers.hellLayer)
 
-    for x in range(max(0, snowX - snowHalf), min(width, snowX + snowHalf)):
-        for y in range(rock):
-            t = grid[y, x]
-            if t == DIRT or t == GRASS:
-                grid[y, x] = SNOW
-            elif t == STONE:
-                grid[y, x] = ICE
+    startX = max(0, snowX - snowHalf)
+    endX = min(width, snowX + snowHalf)
+    if startX < endX and rock > 0:
+        region = grid[:rock, startX:endX]
+        dirt_grass_mask = (region == DIRT) | (region == GRASS)
+        stone_mask = region == STONE
+        region[dirt_grass_mask] = SNOW
+        region[stone_mask] = ICE
 
     for x in range(max(0, jungleX - jungleHalf), min(width, jungleX + jungleHalf)):
         for y in range(hell):
