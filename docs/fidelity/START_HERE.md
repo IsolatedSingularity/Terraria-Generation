@@ -1,4 +1,8 @@
-# Bounded fidelity bootstrap routing
+# Fidelity routing
+
+**Current implementation route (2026-09-23):** before substantial generator, fidelity, importer, replay, GUI, or export work, read [../PRE_IMPLEMENTATION_QA.md](../PRE_IMPLEMENTATION_QA.md). The live pinned target is Terraria **1.4.5.7 / Steam BuildID 24825745**. The later [RUNTIME_ORACLE_REPORT.md](RUNTIME_ORACLE_REPORT.md) records successful native world generation, [CANONICAL_IMPORT_REPORT.md](CANONICAL_IMPORT_REPORT.md) records the canonical importer/reference renders, and [HIGH_FIDELITY_GENERATION_REPORT.md](HIGH_FIDELITY_GENERATION_REPORT.md) records the current source-informed Small generator. These supersede the bootstrap's old runtime-blocked state for current routing without rewriting that historical evidence.
+
+## Historical bounded fidelity bootstrap routing
 
 Start with [BOOTSTRAP_REPORT.md](BOOTSTRAP_REPORT.md) and [TARGET_LOCK.json](TARGET_LOCK.json). This is a retrieval and runtime bootstrap for the pinned Windows Terraria **1.4.5.7 / Steam BuildID 24825745** snapshot. It does not add a compatible generator or importer.
 
