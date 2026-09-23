@@ -5,6 +5,7 @@
 
 <!--
 AGENT NOTE:
+Before substantial implementation, read `docs/PRE_IMPLEMENTATION_QA.md` and resolve/acknowledge its P0/P1 handoff items.
 For technical generation references, biome mechanics, and the optional local version-locked vanilla Terraria implementation corpus, please refer to the ignored `Game Reference/` directory when it is present. It is not included in public clones.
 Start at `Game Reference/08_agent_library/START_HERE.md`, then use `Query-Terraria.ps1` and the topic routers to locate specific method ranges. Do not read massive files like `WorldGen.cs` in full.
 -->
